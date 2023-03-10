@@ -2465,8 +2465,13 @@ class Form
 		}
 
 		// include search in supplier ref
-		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF)) {
+		// Added by MMI Mathieu Moulin iProspective
+		// Hack : include search in supplier name
+		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF) || !empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
 			$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
+		}
+		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
+			$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as pf ON pfp.fk_soc = pf.rowid";
 		}
 
 		//Price by customer
@@ -2551,6 +2556,11 @@ class Form
 				}
 				if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF)) {
 					$sql .= " OR pfp.ref_fourn LIKE '".$this->db->escape($prefix.$crit)."%'";
+				}
+				// Added by MMI Mathieu Moulin iProspective
+				if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
+					$sql .= " OR pf.nom LIKE '".$this->db->escape($prefix.$crit)."%'";
+					$sql .= " OR pf.name_alias LIKE '".$this->db->escape($prefix.$crit)."%'";
 				}
 				$sql .= ")";
 				$i++;
