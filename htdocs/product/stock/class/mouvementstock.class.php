@@ -162,6 +162,8 @@ class MouvementStock extends CommonObject
 
 		// Call hook at beginning
 		global $action, $hookmanager;
+		if (empty($hookmanager))
+			$hookmanager = new HookManager($this->db);
 		$hookmanager->initHooks(array('mouvementstock'));
 
 		if (is_object($hookmanager)) {
