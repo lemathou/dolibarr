@@ -567,8 +567,12 @@ class MouvementStock extends CommonObject
 
 			// If stock is now 0, we can remove entry into llx_product_stock, but only if there is no child lines into llx_product_batch (detail of batch, because we can imagine
 			// having a lot1/qty=X and lot2/qty=-X, so 0 but we must not loose repartition of different lot.
-			$sql = "DELETE FROM ".MAIN_DB_PREFIX."product_stock WHERE reel = 0 AND rowid NOT IN (SELECT fk_product_stock FROM ".MAIN_DB_PREFIX."product_batch as pb)";
-			$resql = $this->db->query($sql);
+			// Added by MMI Mathieu Moulin iProspective
+			// DO NOT DELETE STOCK !!
+			if (! $conf->global->STOCK_KEEP_EMPTY_IN_DB) {
+				$sql = "DELETE FROM ".MAIN_DB_PREFIX."product_stock WHERE reel = 0 AND rowid NOT IN (SELECT fk_product_stock FROM ".MAIN_DB_PREFIX."product_batch as pb)";
+				$resql = $this->db->query($sql);
+			}
 			// We do not test error, it can fails if there is child in batch details
 		}
 
@@ -844,7 +848,8 @@ class MouvementStock extends CommonObject
 	 */
 	private function createBatch($dluo, $qty)
 	{
-		global $user;
+		// Added by MMI Mathieu Moulin iProspective
+		global $user, $conf;
 
 		$pdluo = new Productbatch($this->db);
 
@@ -880,7 +885,12 @@ class MouvementStock extends CommonObject
 				//print "Avant ".$pdluo->qty." Apres ".($pdluo->qty + $qty)."<br>";
 				$pdluo->qty += $qty;
 				if ($pdluo->qty == 0) {
-					$result = $pdluo->delete($user, 1);
+					// Added by MMI Mathieu Moulin iProspective
+					// DO NOT DELETE !
+					if (!empty($conf->global->STOCK_KEEP_EMPTY_IN_DB))
+						$result = $pdluo->update($user, 1);
+					else
+						$result = $pdluo->delete($user, 1);
 				} else {
 					$result = $pdluo->update($user, 1);
 				}
