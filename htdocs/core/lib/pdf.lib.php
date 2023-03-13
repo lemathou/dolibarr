@@ -1537,12 +1537,34 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 		foreach ($dbatch as $detail) {
 			$dte = array();
 			if ($detail->eatby) {
-				$dte[] = $outputlangs->transnoentitiesnoconv('printEatby', dol_print_date($detail->eatby, $format, false, $outputlangs));
+				// Added by MMI Mathieu Moulin iProspective
+				// Hack important DDM information
+				if (!empty($conf->global->SHIPPING_PDF_ANTIGASPI) && !empty($object->commande)) {
+					$eatdiff = ($detail->eatby - $object->commande->date_commande);
+					$eatdiff_days = round($eatdiff/86400);
+					$days_antigaspi = $conf->global->PRODUCT_ANTIGASPI_DAYS;
+					$days_daecourte = $conf->global->PRODUCT_DATECOURTE_DAYS;
+					//var_dump($eatdiff_days);
+					if ($eatdiff_days<$days_antigaspi)
+						$antigaspi = ' - '.$outputlangs->transnoentitiesnoconv('printAntiGaspi');
+					elseif ($eatdiff_days<$days_daecourte)
+							$antigaspi = ' - '.$outputlangs->transnoentitiesnoconv('printDateCourte');
+					else
+						$antigaspi = '';
+					//die();
+					//$antigaspi .= ' - '.$eatdiff_days;
+					$dte[] = ($antigaspi ?'<span style="color: red;">' :'').$outputlangs->transnoentitiesnoconv('printEatby', dol_print_date($detail->eatby, $format, false, $outputlangs)).($antigaspi ?$antigaspi.'</span>' :'');
+				}
+				else {
+					$dte[] = $outputlangs->transnoentitiesnoconv('printEatby', dol_print_date($detail->eatby, $format, false, $outputlangs));
+				}
 			}
 			if ($detail->sellby) {
 				$dte[] = $outputlangs->transnoentitiesnoconv('printSellby', dol_print_date($detail->sellby, $format, false, $outputlangs));
 			}
-			if ($detail->batch) {
+			// Added by MMI Mathieu Moulin iProspective
+			// Hack Hide Batch number (not very useful)
+			if ($detail->batch && empty($conf->global->SHIPPING_PDF_HIDE_BATCH)) {
 				$dte[] = $outputlangs->transnoentitiesnoconv('printBatch', $detail->batch);
 			}
 			$dte[] = $outputlangs->transnoentitiesnoconv('printQty', $detail->qty);
