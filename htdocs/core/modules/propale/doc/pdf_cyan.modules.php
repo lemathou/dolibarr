@@ -1452,6 +1452,25 @@ class pdf_cyan extends ModelePDFPropales
 			$pdf->SetTextColor(0, 0, 0);
 		}
 
+		// Added by MMI Mathieu Moulin iProspective
+		// @todo Hook
+		$acompte_p = (!empty($object->array_options['options_acompte']) && $object->array_options['options_acompte']>0) ?$object->array_options['options_acompte'] :0;
+		if (!$acompte_p)
+			$acompte_val = (!empty($object->array_options['options_acompte_val']) && $object->array_options['options_acompte_val']>0) ?round($object->array_options['options_acompte_val'], 2) :0;
+		if (!empty($object->array_options['options_acompte_aff']) && ($acompte_p || $acompte_val)) {
+			$index++;
+			$outputlangs->load('mmidocuments@mmidocuments');
+			if ($acompte_p)
+				$acompte_val = round($object->total_ttc*$acompte_p/100, 2);
+			$pdf->SetXY($col1x, $tab2_top + $tab2_hl * $index);
+			$pdf->SetFont('', 'B', $default_font_size - 1);
+			if ($acompte_p)
+				$pdf->MultiCell($col2x, $tab2_hl, $outputlangs->transnoentities('PaymentAcomptePourcent', str_replace('.', ',', $acompte_p).' %', price($acompte_val)), 0, 'L', 0);
+			else
+				$pdf->MultiCell($col2x, $tab2_hl, $outputlangs->transnoentities('PaymentAcompte', price($acompte_val)), 0, 'L', 0);
+			$posy = $pdf->GetY() + 1;
+		}
+
 		$index++;
 		return ($tab2_top + ($tab2_hl * $index));
 	}
