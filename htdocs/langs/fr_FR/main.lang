@@ -1160,3 +1160,4 @@ hasBeenValidated=%s a été validé
 ClientTZ=Fuseau horaire client (utilisateur)
 NotClosedYet=Pas encore fermé
 ClearSignature=Signature supprimée
+ToggleExtrafields=Montrer/Maqquer les champs supplémentaires

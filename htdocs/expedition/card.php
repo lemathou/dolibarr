@@ -1886,7 +1886,16 @@ if ($action == 'create') {
 
 		// Other attributes
 		$cols = 2;
+		// Added by MMI Mathieu Moulin iProspective
+		// Extrafields show/hide
+		if ($conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE) {
+			echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
+			echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
+		}
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
+		if ($conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE) {
+			echo '</tbody>';
+		}
 
 		print '</table>';
 
