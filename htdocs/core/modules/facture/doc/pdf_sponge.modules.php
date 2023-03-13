@@ -1156,6 +1156,23 @@ class pdf_sponge extends ModelePDFFactures
 			$posy = $pdf->GetY() + 3;
 		}
 
+		// Added by MMI Mathieu Moulin iProspective
+		// Show shipping date
+		if (!empty($object->array_options['options_date_livraison_aff']) && !empty($object->array_options['options_date_livraison'])) {
+			$outputlangs->load("sendings");
+			$pdf->SetFont('', 'B', $default_font_size - 2);
+			$pdf->SetXY($this->marge_gauche, $posy);
+			$liv_type = $object->array_options['options_date_livraison_aff'];
+			$titre = $outputlangs->transnoentities(($liv_type==2 ?'DeliveryDate' :"DateDeliveryPlanned")).':';
+			$pdf->MultiCell(80, 4, $titre, 0, 'L');
+			$pdf->SetFont('', '', $default_font_size - 2);
+			$pdf->SetXY($posxval, $posy);
+			$dlp = dol_print_date($object->array_options['options_date_livraison'], "daytext", false, $outputlangs, true);
+			$pdf->MultiCell(80, 4, $dlp, 0, 'L');
+
+			$posy = $pdf->GetY() + 1;
+		}
+
 		if ($object->type != 2) {
 			// Check a payment mode is defined
 			if (empty($object->mode_reglement_code)
