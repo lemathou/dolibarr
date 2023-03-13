@@ -377,6 +377,14 @@ class pdf_cyan extends ModelePDFPropales
 
 				$heightforinfotot = 40; // Height reserved to output the info and total part
 				$heightforsignature = empty($conf->global->PROPAL_DISABLE_SIGNATURE) ? (pdfGetHeightForHtmlContent($pdf, $outputlangs->transnoentities("ProposalCustomerSignature")) + 10) : 0;
+				// Added by MMI Mathieu Moulin iProspective
+				$heightfocomplement = 0;
+				if (!empty($conf->global->DOCUMENT_SHOW_COMPLEMENT)) {
+					$textComplement = $this->textComplement($object, $outputlangs);
+					$heightfocomplement = $this->heightComplementArea($pdf, $textComplement, $default_font_size);
+					//var_dump($heightfocomplement); die();
+					$heightforsignature += $heightfocomplement;
+				}
 				$heightforfreetext = (isset($conf->global->MAIN_PDF_FREETEXT_HEIGHT) ? $conf->global->MAIN_PDF_FREETEXT_HEIGHT : 5); // Height reserved to output the free text on last page
 				$heightforfooter = $this->marge_basse + (empty($conf->global->MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS) ? 12 : 22); // Height reserved to output the footer (value include bottom margin)
 				//print $heightforinfotot + $heightforsignature + $heightforfreetext + $heightforfooter;exit;
@@ -883,6 +891,11 @@ class pdf_cyan extends ModelePDFPropales
 				// Customer signature area
 				if (empty($conf->global->PROPAL_DISABLE_SIGNATURE)) {
 					$posy = $this->drawSignatureArea($pdf, $object, $posy, $outputlangs);
+				}
+
+				// Added by MMI Mathieu Moulin iProspective
+				if (!empty($textComplement)) {
+					$posy = $this->drawComplementArea($pdf, $textComplement, $posy, $outputlangs);
 				}
 
 				// Pagefoot
@@ -1815,7 +1828,71 @@ class pdf_cyan extends ModelePDFPropales
 			$pdf->addEmptySignatureAppearance($posx, $tab_top + $tab_hl, $largcol, $tab_hl * 3);
 		}
 
-		return ($tab_hl * 7);
+		return $posy+($tab_hl * 7);
+	}
+
+	/**
+	 *  Added by MMI Mathieu Moulin iProspective
+	 */
+	protected function textComplement(&$object, $outputlangs)
+	{
+		global $conf;
+		$outputlangs->load('mmidocuments@mmidocuments');
+
+		//var_dump($object); die();
+		//var_dump($object->array_options['options_cgv_cpv']); die();
+		$complement = [];
+		if (!empty($object->array_options['options_cgv_cpv']))
+			$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoCGP")."</h3>\r\n".$object->array_options['options_cgv_cpv'];
+		if (!empty($object->array_options['options_propal_decennale']))
+			$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</h3>\r\n".$conf->global->MMIPROJECT_DECENNALE_TEXT;
+
+		return !empty($complement) ?implode("\r\n", $complement) :'';
+	}
+	protected function heightComplement(&$pdf, $text, $default_font_size)
+	{
+		$pdf->SetFont('', '', $default_font_size - 2);
+		$useborder = 0;
+		$cellpadding = 0;
+		$reseth = false;
+		$autopadding = true;
+		$largcol = ($this->page_largeur - $this->marge_droite - $this->marge_gauche);
+		return $pdf->getStringHeight($largcol, strip_tags($text), $reseth, $autopadding, $cellpadding, $useborder);
+	}
+	protected function heightComplementArea(&$pdf, $text, $default_font_size)
+	{
+		$marg_top = 8;
+		$tab_titre = 4;
+		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
+		//var_dump($tab_text);
+		return $marg_top + $tab_titre + $tab_text;
+	}
+	protected function drawComplementArea(&$pdf, $text, $posy, $outputlangs)
+	{
+		global $conf;
+		
+		$default_font_size = pdf_getPDFFontSize($outputlangs);
+		$marg_top = 8;
+		$tab_top = $posy + $marg_top;
+
+		$posx = $this->marge_gauche;
+		$largcol = ($this->page_largeur - $this->marge_droite - $posx);
+
+		$pdf->SetFillColor(255, 255, 255);
+		$pdf->SetFont('', '', $default_font_size - 2);
+
+		// Titre
+		$pdf->SetXY($posx, $tab_top);
+		$tab_titre = 4;
+		$pdf->WriteHTMLCell($largcol, $tab_titre, $posx, $posy+$marg_top, '<b>'.$outputlangs->transnoentities("DocumentMoreInfo").'</b>', 0);
+		// Texte
+		$pdf->SetXY($posx, $tab_top + $tab_titre);
+		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
+		//var_dump($tab_text); die();
+		$pdf->WriteHTMLCell($largcol, $tab_text, $posx,$tab_top+$tab_titre, $text, 1, 'L');
+		//var_dump($tab_top + $tab_titre + $tab_text); die();
+
+		return $tab_top + $tab_titre + $tab_text;
 	}
 
 

@@ -384,6 +384,14 @@ class pdf_eratosthene extends ModelePDFCommandes
 				$pdf->MultiCell(0, 3, ''); // Set interline to 3
 				$pdf->SetTextColor(0, 0, 0);
 
+				// Added by MMI Mathieu Moulin iProspective
+				// New text complement zone
+				if (!empty($conf->global->DOCUMENT_SHOW_COMPLEMENT)) {
+					$textComplement = $this->textComplement($object, $outputlangs);
+					$heightfocomplement = $this->heightComplementArea($pdf, $textComplement, $default_font_size);
+					//var_dump($heightfocomplement); die();
+					//$heightforsignature += $heightfocomplement;
+				}
 
 				$tab_top = 90 + $top_shift;
 				$tab_top_newpage = (empty($conf->global->MAIN_PDF_DONOTREPEAT_HEAD) ? 42 + $top_shift : 10);
@@ -861,6 +869,11 @@ class pdf_eratosthene extends ModelePDFCommandes
 					$posy=$this->drawPaymentsTable($pdf, $object, $posy, $outputlangs);
 				}
 				*/
+
+				// MMI Hack
+				if (!empty($textComplement)) {
+					$posy = $this->drawComplementArea($pdf, $textComplement, $posy, $outputlangs);
+				}
 
 				// Pied de page
 				$this->_pagefoot($pdf, $object, $outputlangs);
@@ -1689,6 +1702,70 @@ class pdf_eratosthene extends ModelePDFCommandes
 		return pdf_pagefoot($pdf, $outputlangs, 'ORDER_FREE_TEXT', $this->emetteur, $this->marge_basse, $this->marge_gauche, $this->page_hauteur, $object, $showdetails, $hidefreetext);
 	}
 
+	/**
+	 * Added by MMI Mathieu Moulin iProspective
+	 */
+	protected function textComplement(&$object, $outputlangs)
+	{
+		global $conf;
+		$outputlangs->load('mmidocuments@mmidocuments');
+
+		//var_dump($object); die();
+		//var_dump($object->array_options['options_cgv_cpv']); die();
+		$complement = [];
+		if (!empty($object->array_options['options_cgv_cpv']))
+			$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoCGP")."</h3>\r\n".$object->array_options['options_cgv_cpv'];
+		if (!empty($object->array_options['options_propal_decennale']))
+			$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</h3>\r\n".$conf->global->MMIPROJECT_DECENNALE_TEXT;
+		//var_dump($complement); die();
+		return !empty($complement) ?implode("\r\n", $complement) :'';
+	}
+	protected function heightComplement(&$pdf, $text, $default_font_size)
+	{
+		$pdf->SetFont('', '', $default_font_size - 2);
+		$useborder = 0;
+		$cellpadding = 0;
+		$reseth = false;
+		$autopadding = true;
+		$largcol = ($this->page_largeur - $this->marge_droite - $this->marge_gauche);
+		return $pdf->getStringHeight($largcol, strip_tags($text), $reseth, $autopadding, $cellpadding, $useborder);
+	}
+	protected function heightComplementArea(&$pdf, $text, $default_font_size)
+	{
+		$marg_top = 8;
+		$tab_titre = 4;
+		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
+		//var_dump($tab_text);
+		return $marg_top + $tab_titre + $tab_text;
+	}
+	protected function drawComplementArea(&$pdf, $text, $posy, $outputlangs)
+	{
+		global $conf;
+		$outputlangs->load('mmidocuments@mmidocuments');
+		
+		$default_font_size = pdf_getPDFFontSize($outputlangs);
+		$marg_top = 8;
+		$tab_top = $posy + $marg_top;
+
+		$posx = $this->marge_gauche;
+		$largcol = ($this->page_largeur - $this->marge_droite - $posx);
+
+		$pdf->SetFillColor(255, 255, 255);
+		$pdf->SetFont('', '', $default_font_size - 2);
+
+		// Titre
+		$pdf->SetXY($posx, $tab_top);
+		$tab_titre = 4;
+		$pdf->WriteHTMLCell($largcol, $tab_titre, $posx, $posy+$marg_top, '<b>'.$outputlangs->transnoentities("DocumentMoreInfo").'</b>', 0);
+		// Texte
+		$pdf->SetXY($posx, $tab_top + $tab_titre);
+		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
+		//var_dump($tab_text); die();
+		$pdf->WriteHTMLCell($largcol, $tab_text, $posx,$tab_top+$tab_titre, $text, 1, 'L');
+		//var_dump($tab_top + $tab_titre + $tab_text); die();
+
+		return $tab_top + $tab_titre + $tab_text;
+	}
 
 
 	/**
