@@ -964,7 +964,7 @@ class pdf_rouget extends ModelePdfExpedition
 		$pdf->MultiCell($w, 4, $outputlangs->transnoentities("RefSending")." : ".$object->ref, '', 'R');
 
 		// Date planned delivery
-		if (!empty($object->date_delivery)) {
+		if (empty($conf->global->SHIPPING_PDF_HIDE_DELIVERY_DATE) && !empty($object->date_delivery)) {
 				$posy += 4;
 				$pdf->SetXY($posx, $posy);
 				$pdf->SetTextColor(0, 0, 60);
