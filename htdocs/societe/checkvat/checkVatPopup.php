@@ -27,14 +27,17 @@ require "../../main.inc.php";
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 require_once NUSOAP_PATH.'/nusoap.php';
 
+// Added by MMI Mathieu Moulin iProspective
+$hookmanager->initHooks(array('checkvatpopup'));
+
 $langs->load("companies");
 
 //http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl
 $WS_DOL_URL = 'https://ec.europa.eu/taxation_customs/vies/services/checkVatService';
 //$WS_DOL_URL_WSDL=$WS_DOL_URL.'?wsdl';
 $WS_DOL_URL_WSDL = 'https://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl';
-$WS_METHOD = 'checkVat';
-
+$WS_METHOD = !empty($conf->global->VAT_INTRA_CHECK_VIES_WS_METHOD) ?$conf->global->VAT_INTRA_CHECK_VIES_WS_METHOD :'checkVat';
+//$WS_METHOD = 'checkVatApprox';
 
 $conf->dol_hide_topmenu = 1;
 $conf->dol_hide_leftmenu = 1;
@@ -63,7 +66,10 @@ if (!$vatNumber) {
 	// Set the parameters to send to the WebService
 	$parameters = array("countryCode" => $countryCode,
 						"vatNumber" => $vatNumber);
-
+	if ($WS_METHOD == 'checkVatApprox') {
+		$parameters['requesterCountryCode'] = substr($mysoc->tva_intra, 0, 2);
+		$parameters['requesterVatNumber'] = substr($mysoc->tva_intra, 2);
+	}
 	// Set the WebService URL
 	dol_syslog("Create nusoap_client for URL=".$WS_DOL_URL." WSDL=".$WS_DOL_URL_WSDL);
 	require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
@@ -91,6 +97,17 @@ if (!$vatNumber) {
 	//var_dump($result);
 	//print $soapclient->request.'<br>';
 	//print $soapclient->response.'<br>';
+
+	$parameters = [
+		'WS_METHOD' => $WS_METHOD,
+		'parameters' => $parameters,
+		'result' => &$result,
+		'soapclient' => $soapclient,
+	];
+	$reshook = $hookmanager->executeHooks('checkVatResult', $parameters);
+	if ($reshook < 0) {
+		setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+	}
 
 	$messagetoshow = '';
 	print '<b>'.$langs->trans("Response").'</b>:<br>';
@@ -132,6 +149,10 @@ if (!$vatNumber) {
 				print '<br>';
 				print $langs->trans("Name").': '.$result['name'].'<br>';
 				print $langs->trans("Address").': '.$result['address'].'<br>';
+				$reshook = $hookmanager->executeHooks('checkVatDisplay', $parameters);
+				if ($reshook < 0) {
+					setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+				}
 			} else {
 				print '<font class="error">'.$langs->trans("No").'</font>';
 				print '<br>'."\n";
