@@ -968,7 +968,11 @@ if (!$variants) {
 	$sql .= " FROM ".MAIN_DB_PREFIX."entrepot as e,";
 	$sql .= " ".MAIN_DB_PREFIX."product_stock as ps";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product as p ON p.rowid = ps.fk_product";
-	$sql .= " WHERE ps.reel != 0";
+	// Added by MMI Mathieu Moulin iProspective
+	if (!empty($conf->global->MMI_STOCK_SHOW_EVEN_IF_EMPTY))
+		$sql .= " WHERE 1";
+	else
+		$sql .= " WHERE ps.reel != 0";
 	$sql .= " AND ps.fk_entrepot = e.rowid";
 	$sql .= " AND e.entity IN (".getEntity('stock').")";
 	$sql .= " AND ps.fk_product = ".((int) $object->id);
