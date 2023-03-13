@@ -307,6 +307,13 @@ if (!$error && $massaction == 'confirm_presend') {
 					// $subdir = get_exdir($objectobj->id, 2, 0, 0, $objectobj, $objectobj->element)
 					$filedir = $uploaddir.'/'.$subdir.dol_sanitizeFileName($objectobj->ref);
 					$file = $filedir.'/'.$filename;
+					// Added By MMI Mathieu Moulin iProspective
+					// Fix search by filename
+					if (!file_exists($file)) {
+						$files = glob($filedir.'/'.dol_sanitizeFileName($objectobj->ref).'*.pdf');
+						if (!empty($files))
+							$file = $files[0];
+					}
 
 					// For supplier invoices, we use the file provided by supplier, not the one we generate
 					if ($objectobj->element == 'invoice_supplier') {

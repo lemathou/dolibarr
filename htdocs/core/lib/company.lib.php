@@ -2121,3 +2121,13 @@ function addMailingEventTypeSQL($actioncode, $objcon, $filterobj)
 		return $sql2;
 	}
 }
+
+// Added by MMI Mathieu Moulin iProspective
+function tel_international($value) {
+	$value = str_replace([' ', '.', '-'], ['', '', ''], $value);
+	if (substr($value, 0, 2)=='00')
+		$value = '+'.substr($value, 2);
+	if (substr($value, 0, 1)=='0')
+		$value = '+33'.substr($value, 1);
+	return $value;
+}

@@ -326,6 +326,10 @@ print '<tr><td class="tdtop">'.$form->editfieldkey("Comments", 'note', $object->
 print $form->editfieldval("Note", 'note', $object->note, $object, $user->rights->facture->paiement, 'textarea:'.ROWS_3.':90%');
 print '</td></tr>';
 
+// Added by MMI Mathieu Moulin iProspective
+$parameters = array();
+$reshook = $hookmanager->executeHooks('addMoreInformations', $parameters, $object, $action);
+
 print '</table>';
 
 print '</div>';
@@ -444,6 +448,10 @@ if ($resql) {
  */
 
 print '<div class="tabsAction">';
+
+// Added by MMI Mathieu Moulin iProspective
+$parameters = array();
+$reshook = $hookmanager->executeHooks('addMoreActionsButtons', $parameters, $object, $action);
 
 if (!empty($conf->global->BILL_ADD_PAYMENT_VALIDATION)) {
 	if ($user->socid == 0 && $object->statut == 0 && $_GET['action'] == '') {

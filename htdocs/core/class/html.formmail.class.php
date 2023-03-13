@@ -852,6 +852,9 @@ class FormMail extends Form
 					require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
 					$langs->loadLangs(array('paypal', 'other'));
 					$typeforonlinepayment = 'free';
+					if ($this->param["models"] == 'propal' || $this->param["models"] == 'propal_send') {
+						$typeforonlinepayment = 'propal'; // TODO use detection on something else than template
+					}
 					if ($this->param["models"] == 'order' || $this->param["models"] == 'order_send') {
 						$typeforonlinepayment = 'order'; // TODO use detection on something else than template
 					}

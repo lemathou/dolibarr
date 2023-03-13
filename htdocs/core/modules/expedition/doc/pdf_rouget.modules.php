@@ -213,7 +213,12 @@ class pdf_rouget extends ModelePdfExpedition
 
 		// Load traductions files required by page
 		$outputlangs->loadLangs(array("main", "bills", "products", "dict", "companies", "propal", "deliveries", "sendings", "productbatch"));
-
+		// Added by MMI Mathieu Moulin iProspective
+		// Sort by Product Ref
+		if (!empty($conf->global->MMI_EXPE_ORDER_LINES_BY_REF))
+			usort($object->lines, function($i, $j){
+				return ($i->ref > $j->ref) ?1 :(($i->ref < $j->ref) ?-1 :0);
+			});
 		$nblines = count($object->lines);
 
 		// Loop on each lines to detect if there is at least one image to show
@@ -232,7 +237,7 @@ class pdf_rouget extends ModelePdfExpedition
 					$pdir = get_exdir($object->lines[$i]->fk_product, 2, 0, 0, $objphoto, 'product').$object->lines[$i]->fk_product."/photos/";
 					$dir = $conf->product->dir_output.'/'.$pdir;
 				} else {
-					$pdir = get_exdir(0, 2, 0, 0, $objphoto, 'product').dol_sanitizeFileName($objphoto->ref).'/';
+					$pdir = get_exdir(0, 2, 0, 0, $objphoto, 'product');
 					$dir = $conf->product->dir_output.'/'.$pdir;
 				}
 
@@ -475,7 +480,7 @@ class pdf_rouget extends ModelePdfExpedition
 
 					if (isset($imglinesize['width']) && isset($imglinesize['height'])) {
 						$curX = $this->posxpicture - 1;
-						$pdf->Image($realpatharray[$i], $curX + (($this->posxweightvol - $this->posxpicture - $imglinesize['width']) / 2), $curY, $imglinesize['width'], $imglinesize['height'], '', '', '', 2, 300); // Use 300 dpi
+						$pdf->Image($realpatharray[$i], $curX + (($this->posxweightvol - $this->posxpicture - $imglinesize['width']) / 2), $curY, $imglinesize['width'], $imglinesize['height'], '', '', '', 2, !empty($conf->global->MAIN_SHIPPING_PDF_IMAGE_DPI) ?$conf->global->MAIN_SHIPPING_PDF_IMAGE_DPI :300); // Use 300 dpi
 						// $pdf->Image does not increase value return by getY, so we save it manually
 						$posYAfterImage = $curY + $imglinesize['height'];
 					}
@@ -964,7 +969,7 @@ class pdf_rouget extends ModelePdfExpedition
 		$pdf->MultiCell($w, 4, $outputlangs->transnoentities("RefSending")." : ".$object->ref, '', 'R');
 
 		// Date planned delivery
-		if (!empty($object->date_delivery)) {
+		if (empty($conf->global->SHIPPING_PDF_HIDE_DELIVERY_DATE) && !empty($object->date_delivery)) {
 				$posy += 4;
 				$pdf->SetXY($posx, $posy);
 				$pdf->SetTextColor(0, 0, 60);
@@ -1067,7 +1072,7 @@ class pdf_rouget extends ModelePdfExpedition
 			}
 
 			// Recipient name
-			if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+			if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
 				$thirdparty = $object->contact;
 			} else {
 				$thirdparty = $object->thirdparty;
