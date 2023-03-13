@@ -1501,7 +1501,15 @@ if (empty($reshook)) {
 								}
 							} else {
 								if ($typeamount == 'amount') {
-									$amountdeposit[0] = $valuedeposit;
+									// Added by MMI Mathieu Moulin iProspective
+									if ($conf->global->MMI_INVOICE_DEPOSIT_USE_TVA_TX > 0) {
+										$tva_tx = $conf->global->MMI_INVOICE_DEPOSIT_USE_TVA_TX;
+										$amountdeposit[0] = 0;
+										$amountdeposit[$tva_tx] = $valuedeposit/(1+$tva_tx/100);
+									}
+									else {
+										$amountdeposit[0] = $valuedeposit;
+									}
 								} elseif ($typeamount == 'variable') {
 									if ($result > 0) {
 										$totalamount = 0;
