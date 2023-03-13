@@ -1937,6 +1937,12 @@ if (empty($reshook)) {
 		// End of object creation, we show it
 		if ($id > 0 && !$error) {
 			$db->commit();
+			
+			// Added by MMI Mathieu Moulin iProspective
+			// For payment assignment
+			$parameters = array();
+			$reshook = $hookmanager->executeHooks('afterCreateAction', $parameters, $object, $action);
+			
 
 			// Define output language
 			if (empty($conf->global->MAIN_DISABLE_PDF_AUTOUPDATE) && count($object->lines)) {
@@ -5587,6 +5593,13 @@ if ($action == 'create') {
 
 		// Show online payment link
 		$useonlinepayment = (!empty($conf->paypal->enabled) || !empty($conf->stripe->enabled) || !empty($conf->paybox->enabled));
+		// Added by MMI Mathieu Moulin iProspective
+		if (!$useonlinepayment) {
+			$parameters = array();
+			$reshook = $hookmanager->executeHooks('addOnlinePaymentMeans', $parameters, $object, $action);
+			if ($reshook==0 && !empty($hookmanager->results['useonlinepayment']))
+				$useonlinepayment = true;
+		}
 
 		if ($object->statut != Facture::STATUS_DRAFT && $useonlinepayment) {
 			print '<br><!-- Link to pay -->'."\n";

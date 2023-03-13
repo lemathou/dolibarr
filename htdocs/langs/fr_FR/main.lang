@@ -370,6 +370,7 @@ AmountInvoiced=Montant facturé
 AmountInvoicedHT=Montant facturé (HT)
 AmountInvoicedTTC=Montant facturé (TTC)
 AmountPayment=Montant paiement
+AmountAlreadyPaid=Montant déjà réglé
 AmountHTShort=Montant HT
 AmountTTCShort=Montant TTC
 AmountHT=Montant HT

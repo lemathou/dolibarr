@@ -7163,6 +7163,9 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 				require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
 				$outputlangs->loadLangs(array('paypal', 'other'));
 				$typeforonlinepayment = 'free';
+				if (is_object($object) && $object->element == 'propal') {
+					$typeforonlinepayment = 'propal';
+				}
 				if (is_object($object) && $object->element == 'commande') {
 					$typeforonlinepayment = 'order';
 				}

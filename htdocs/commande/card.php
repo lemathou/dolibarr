@@ -2398,7 +2398,13 @@ if ($action == 'create' && $usercancreate) {
 		if (!empty($conf->margin->enabled)) {
 			$formmargin->displayMarginInfos($object);
 		}
-
+	
+		// Added by MMI Mathieu Moulin iProspective
+		$parameters = array();
+		$reshook = $hookmanager->executeHooks('doDisplayMoreInfos', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
+		if ($reshook < 0) {
+			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+		}
 
 		print '</div>';
 		print '</div>';
@@ -2630,6 +2636,14 @@ if ($action == 'create' && $usercancreate) {
 
 			// Show online payment link
 			$useonlinepayment = (!empty($conf->paypal->enabled) || !empty($conf->stripe->enabled) || !empty($conf->paybox->enabled));
+			// Added by MMI Mathieu Moulin iProspective
+			if (!$useonlinepayment) {
+				$parameters = array();
+				$reshook = $hookmanager->executeHooks('addOnlinePaymentMeans', $parameters, $object, $action);
+				if ($reshook==0 && !empty($hookmanager->results['useonlinepayment']))
+					$useonlinepayment = true;
+			}
+			
 			if (!empty($conf->global->ORDER_HIDE_ONLINE_PAYMENT_ON_ORDER)) {
 				$useonlinepayment = 0;
 			}

@@ -9319,4 +9319,105 @@ abstract class CommonObject
 		$this->db->commit();
 		return true;
 	}
+
+	/**
+	 * Get linked objects ids
+	 * @author MMI Mathieu Moulin iProspective
+	 *
+	 * @return Array
+	 */
+	public function fetchObjectLinkedIDs($object_class=true)
+	{
+		$classname = strtolower(get_class($this));
+
+		$sql = 'SELECT e.sourcetype object_type, e.fk_source fk_object
+			FROM '.MAIN_DB_PREFIX.'element_element e
+			WHERE e.targettype="'.$classname.'" AND e.fk_target="'.$this->id.'"
+			UNION
+			SELECT e.targettype object_type, e.fk_target fk_object
+			FROM '.MAIN_DB_PREFIX.'element_element e
+			WHERE e.sourcetype="'.$classname.'" AND e.fk_source="'.$this->id.'"';
+		//echo $sql;
+		$resql = $this->db->query($sql);
+		if (!$resql)
+			return;
+		$l = [];
+		while ($obj = $this->db->fetch_object($resql)) {
+			//var_dump($obj);
+			$l[] = [$obj->object_type, $obj->fk_object];
+		}
+
+		return $l;
+
+	}
+
+	/**
+	 * Get total amount already paid
+	 * @author MMI Mathieu Moulin iProspective
+	 *
+	 * @return []
+	 */
+	public function getPaiements()
+	{
+		$classname = strtolower(get_class($this));
+
+		$ol = $this->fetchObjectLinkedIDs();
+		//var_dump($ol);
+		if (!is_array($ol))
+			$ol = [];
+		$ol[] = [$classname, $this->id];
+
+		$sql_w = [];
+		foreach($ol as $o) {
+			if ($o[0]=='facture')
+				$sql_w[] = "(pf.`fk_facture`='".$o[1]."')";
+			$sql_w[] = "(po.`objecttype`='".$o[0]."' AND po.`fk_object`='".$o[1]."')";
+		}
+
+		$sql = "SELECT DISTINCT p2.*, p.*
+			FROM ".MAIN_DB_PREFIX."paiement p
+			LEFT JOIN ".MAIN_DB_PREFIX."paiement_extrafields p2 ON p2.fk_object=p.rowid
+			LEFT JOIN ".MAIN_DB_PREFIX."paiement_object po ON po.fk_paiement=p.rowid
+			LEFT JOIN ".MAIN_DB_PREFIX."paiement_facture pf ON pf.fk_paiement=p.rowid
+			WHERE ".implode(' OR ', $sql_w);
+		//echo $sql;
+		$resql = $this->db->query($sql);
+		if (!$resql)
+			return;
+		$l = [];
+		while ($obj = $this->db->fetch_object($resql)) {
+			//var_dump($obj);
+			$l[$obj->rowid] = $obj;
+		}
+
+		return $l;
+	}
+	
+	/**
+	 * Get total amount already paid
+	 * @author MMI Mathieu Moulin iProspective
+	 *
+	 *	@return float
+	 */
+	public function getSommePaiement()
+	{
+		$mt = 0;
+		$l = $this->getPaiements();
+		foreach($l as $p) {
+			$mt += $p->amount;
+		}
+		//echo $mt;
+		return $mt;
+	}
+
+	/**
+	 * Get total amount already paid
+	 * @author MMI Mathieu Moulin iProspective
+	 *
+	 * @return float
+	 */
+	public function paye()
+	{
+		return $this->getSommePaiement() >= $this->total_ttc;
+	}
 }
