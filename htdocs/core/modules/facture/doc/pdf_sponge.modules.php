@@ -2391,7 +2391,7 @@ class pdf_sponge extends ModelePDFFactures
 
 				$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
 
-				$mode =  'target';
+				$mode = 'target';
 				$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
 
 				// Show recipient
@@ -2407,65 +2407,26 @@ class pdf_sponge extends ModelePDFFactures
 				}
 
 				// Show recipient frame
-				$pdf->SetTextColor(0, 0, 0);
-				$pdf->SetFont('', '', $default_font_size - 2);
-				$pdf->SetXY($posx + 2, $posy - 5);
-				$pdf->MultiCell($widthrecbox, 5, $outputlangs->transnoentities("BillTo"), 0, $ltrdirection);
-				$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
+				if (empty($conf->global->MAIN_PDF_NO_RECIPENT_FRAME)) {
+					$pdf->SetTextColor(0, 0, 0);
+					$pdf->SetFont('', '', $default_font_size - 2);
+					$pdf->SetXY($posx + 2, $posy - 5);
+					$pdf->MultiCell($widthrecbox - 2, 5, $outputlangs->transnoentities("BillTo"), 0, $ltrdirection);
+					$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
+				}
 
 				// Show recipient name
 				$pdf->SetXY($posx + 2, $posy + 3);
 				$pdf->SetFont('', 'B', $default_font_size);
-				$pdf->MultiCell($widthrecbox, 2, $carac_client_name, 0, $ltrdirection);
+				$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_name, 0, $ltrdirection);
 
 				$posy = $pdf->getY();
 
 				// Show recipient information
 				$pdf->SetFont('', '', $default_font_size - 1);
 				$pdf->SetXY($posx + 2, $posy);
-				$pdf->MultiCell($widthrecbox, 4, $carac_client, 0, $ltrdirection);
+				$pdf->MultiCell($widthrecbox - 2, 4, $carac_client, 0, $ltrdirection);
 			}
-<<<<<<< HEAD
-
-			$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
-
-			$mode = 'target';
-			$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
-
-			// Show recipient
-			$widthrecbox = !empty($conf->global->MAIN_PDF_USE_ISO_LOCATION) ? 92 : 100;
-			if ($this->page_largeur < 210) {
-				$widthrecbox = 84; // To work with US executive format
-			}
-			$posy = !empty($conf->global->MAIN_PDF_USE_ISO_LOCATION) ? 40 : 42;
-			$posy += $top_shift;
-			$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
-			if (!empty($conf->global->MAIN_INVERT_SENDER_RECIPIENT)) {
-				$posx = $this->marge_gauche;
-			}
-
-			// Show recipient frame
-			if (empty($conf->global->MAIN_PDF_NO_RECIPENT_FRAME)) {
-				$pdf->SetTextColor(0, 0, 0);
-				$pdf->SetFont('', '', $default_font_size - 2);
-				$pdf->SetXY($posx + 2, $posy - 5);
-				$pdf->MultiCell($widthrecbox - 2, 5, $outputlangs->transnoentities("BillTo"), 0, $ltrdirection);
-				$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
-			}
-
-			// Show recipient name
-			$pdf->SetXY($posx + 2, $posy + 3);
-			$pdf->SetFont('', 'B', $default_font_size);
-			$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_name, 0, $ltrdirection);
-
-			$posy = $pdf->getY();
-
-			// Show recipient information
-			$pdf->SetFont('', '', $default_font_size - 1);
-			$pdf->SetXY($posx + 2, $posy);
-			$pdf->MultiCell($widthrecbox - 2, 4, $carac_client, 0, $ltrdirection);
-=======
->>>>>>> 14.0-mmi
 		}
 
 		$pdf->SetTextColor(0, 0, 0);

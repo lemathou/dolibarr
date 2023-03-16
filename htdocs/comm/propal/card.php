@@ -2629,13 +2629,8 @@ if ($action == 'create') {
 				}
 
 				// Create an invoice and classify billed
-<<<<<<< HEAD
 				if ($object->statut == Propal::STATUS_SIGNED && empty($conf->global->PROPOSAL_ARE_NOT_BILLABLE)) {
-=======
-				// Added by MMI Mathieu Moulin iProspective
-				// Parameter to block creation of invoices for Proposals (must do it from orders)
-				if (empty($conf->global->WORKFLOW_CANNOT_CREATE_INVOICE_FROM_PROPOSAL) && $object->statut == Propal::STATUS_SIGNED) {
->>>>>>> 14.0-mmi
+
 					if (!empty($conf->facture->enabled) && $usercancreateinvoice) {
 						print '<a class="butAction" href="'.DOL_URL_ROOT.'/compta/facture/card.php?action=create&origin='.$object->element.'&originid='.$object->id.'&socid='.$object->socid.'">'.$langs->trans("CreateBill").'</a>';
 					}
