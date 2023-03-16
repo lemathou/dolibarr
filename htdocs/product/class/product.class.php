@@ -4035,6 +4035,10 @@ class Product extends CommonObject
 		if ($result < 0) {
 			return $result;
 		}
+		// Added by MIM Mathieu Moulin iProspective
+		// Call trigger
+		global $user;
+		$result = $this->call_trigger('PRODUCT_SOUSPRODUIT', $user);
 
 		// Check not already father of id_pere (to avoid father -> child -> father links)
 		$sql = "SELECT fk_product_pere from ".MAIN_DB_PREFIX."product_association";
@@ -4101,9 +4105,14 @@ class Product extends CommonObject
 		if (!$this->db->query($sql)) {
 			dol_print_error($this->db);
 			return -1;
-		} else {
-			return 1;
 		}
+
+		// Added by MIM Mathieu Moulin iProspective
+		// Call trigger
+		global $user;
+		$result = $this->call_trigger('PRODUCT_SOUSPRODUIT', $user);
+		
+		return 1;
 	}
 
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
@@ -4152,6 +4161,12 @@ class Product extends CommonObject
 				}
 			}
 		}
+
+		// Added by MIM Mathieu Moulin iProspective
+		// Call trigger
+		global $user;
+		$result = $this->call_trigger('PRODUCT_SOUSPRODUIT', $user);
+
 		return 1;
 	}
 

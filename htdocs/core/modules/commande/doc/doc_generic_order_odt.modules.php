@@ -407,6 +407,12 @@ class doc_generic_order_odt extends ModelePDFCommandes
 							} else {
 								$odfHandler->setVars($key, 'ErrorFileNotFound', true, 'UTF-8');
 							}
+						// Added by MMI Mathieu Moulin iProspective
+						// Display hypertext links
+						} elseif (is_string($value) && (preg_match('%^((https?://)|(www\.))([a-z0-9-].?)+(:[0-9]+)?(/.*)?$%i', $value) || preg_match('/^[a-z0-9\._-]+@[a-z0-9\._-]+$/i', $value))) // link
+						{
+							//var_dump($key); var_dump($value); die();
+							$odfHandler->setVars($key, '<a href="'.$value.'">'.$value.'</a>', false, 'UTF-8');
 						} else // Text
 						{
 							$odfHandler->setVars($key, $value, true, 'UTF-8');
@@ -436,7 +442,28 @@ class doc_generic_order_odt extends ModelePDFCommandes
 							$reshook = $hookmanager->executeHooks('ODTSubstitutionLine', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 							foreach ($tmparray as $key => $val) {
 								try {
-									$listlines->setVars($key, $val, true, 'UTF-8');
+									// Added by MMI Mathieu Moulin iProspective
+									// Display logos
+									if (preg_match('/logo$/', $key) || preg_match('/logo2$/', $key)) { // Image
+										//var_dump($key); var_dump($val); die();
+										if (empty($val)) {
+											$listlines->setVars($key, $val, true, 'UTF-8');
+										}
+										elseif (file_exists($val)) {
+											//var_dump($key); var_dump($val); die();
+											$listlines->setImage($key, $val);
+										} else {
+											$listlines->setVars($key, 'ErrorFileNotFound', true, 'UTF-8');
+										}
+									} elseif (preg_match('/_$/', $key)) // Text
+									{
+										//var_dump($key); var_dump($val); die();
+										$listlines->setVars($key, $val, false, 'UTF-8');
+									} else // Text
+									{
+										//var_dump($key); var_dump($val); die();
+										$listlines->setVars($key, $val, true, 'UTF-8');
+									}
 								} catch (OdfException $e) {
 									dol_syslog($e->getMessage(), LOG_INFO);
 								} catch (SegmentException $e) {

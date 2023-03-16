@@ -233,6 +233,9 @@ class Odf
 					case 'b':
 						$odtResult .= '<text:span text:style-name="boldText">' . ($tag['children'] != null ? $this->_replaceHtmlWithOdtTag($tag['children'], $customStyles, $fontDeclarations) : $tag['innerText']) . '</text:span>';
 						break;
+					case 'a':
+						$odtResult = '<text:a xlink:type="simple" xlink:href="'.(is_numeric(strpos($tag['innerText'], '@')) ?'mailto:'.$tag['innerText'] :$tag['innerText']).'" office:name="">'.$tag['innerText'].'</text:a>';
+						break;
 					case 'i':
 					case 'em':
 						$odtResult .= '<text:span text:style-name="italicText">' . ($tag['children'] != null ? $this->_replaceHtmlWithOdtTag($tag['children'], $customStyles, $fontDeclarations) : $tag['innerText']) . '</text:span>';
@@ -250,6 +253,7 @@ class Odf
 						$odtResult .= '<text:span text:style-name="supText">' . ($tag['children'] != null ? $this->_replaceHtmlWithOdtTag($tag['children'], $customStyles, $fontDeclarations) : $tag['innerText']) . '</text:span>';
 						break;
 					case 'span':
+					case 'p':
 						if (isset($tag['attributes']['style'])) {
 							$odtStyles = '';
 							foreach ($tag['attributes']['style'] as $styleName => $styleValue) {
@@ -278,13 +282,21 @@ class Odf
 											$odtStyles .= '<style:text-properties fo:color="' . $styleValue . '" />';
 										}
 										break;
+									case 'background-color':
+										if (preg_match('/#[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{3})?/', $styleValue)) {
+											$odtStyles .= '<style:text-properties fo:background-color="' . $styleValue . '" />';
+										}
+										break;
 								}
 							}
 							if (strlen($odtStyles) > 0) {
 								// Generate a unique id for the style (using microtime and random because some CPUs are really fast...)
 								$key = floatval(str_replace('.', '', microtime(true)))+rand(0, 10);
 								$customStyles[$key] = $odtStyles;
-								$odtResult .= '<text:span text:style-name="customStyle' . $key . '">' . ($tag['children'] != null ? $this->_replaceHtmlWithOdtTag($tag['children'], $customStyles, $fontDeclarations) : $tag['innerText']) . '</text:span>';
+								$odtResult .= '<text:'.($tag['name']).' text:style-name="customStyle' . $key . '">' . ($tag['children'] != null ? $this->_replaceHtmlWithOdtTag($tag['children'], $customStyles, $fontDeclarations) : $tag['innerText']) . '</text:'.($tag['name']).'>';
+							}
+							else {
+								$odtResult .= ($tag['children'] != null ? $this->_replaceHtmlWithOdtTag($tag['children'], $customStyles, $fontDeclarations) : $tag['innerText']);
 							}
 						}
 						break;

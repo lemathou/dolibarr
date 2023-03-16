@@ -2383,8 +2383,17 @@ if ($action == 'create' && $usercancreate) {
 			print '</tr>';
 		}
 
-		// Other attributes
+		// Added by MMI Mathieu Moulin iProspective
+		// Other attributes/extrafields show/hide
+		$extrafields_showhide = $conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE && (empty($action) || $action != 'edit_extras');
+		if ($extrafields_showhide) {
+			echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
+			echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
+		}
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
+		if ($extrafields_showhide) {
+			echo '</tbody>';
+		}
 
 		print '</table>';
 
@@ -2444,7 +2453,13 @@ if ($action == 'create' && $usercancreate) {
 		if (!empty($conf->margin->enabled)) {
 			$formmargin->displayMarginInfos($object);
 		}
-
+	
+		// Added by MMI Mathieu Moulin iProspective
+		$parameters = array();
+		$reshook = $hookmanager->executeHooks('doDisplayMoreInfos', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
+		if ($reshook < 0) {
+			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+		}
 
 		print '</div>';
 		print '</div>'; // Close fichecenter
@@ -2675,6 +2690,14 @@ if ($action == 'create' && $usercancreate) {
 
 			// Show online payment link
 			$useonlinepayment = (!empty($conf->paypal->enabled) || !empty($conf->stripe->enabled) || !empty($conf->paybox->enabled));
+			// Added by MMI Mathieu Moulin iProspective
+			if (!$useonlinepayment) {
+				$parameters = array();
+				$reshook = $hookmanager->executeHooks('addOnlinePaymentMeans', $parameters, $object, $action);
+				if ($reshook==0 && !empty($hookmanager->results['useonlinepayment']))
+					$useonlinepayment = true;
+			}
+			
 			if (!empty($conf->global->ORDER_HIDE_ONLINE_PAYMENT_ON_ORDER)) {
 				$useonlinepayment = 0;
 			}

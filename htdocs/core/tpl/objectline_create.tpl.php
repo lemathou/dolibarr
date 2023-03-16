@@ -256,6 +256,9 @@ if ($nolinesbefore) {
 				} else {
 					$form->select_produits(GETPOST('idprod'), 'idprod', $filtertype, $conf->product->limit_size, $buyer->price_level, $statustoshow, 2, '', 1, array(), $buyer->id, '1', 0, 'maxwidth500', 0, '', GETPOST('combinations', 'array'));
 				}
+				// Added by MMI Mathieu Moulin iProspective
+				if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL))
+					echo '<span id="added_labelprod"></span>';
 				if (!empty($conf->global->MAIN_AUTO_OPEN_SELECT2_ON_FOCUS_FOR_CUSTOMER_PRODUCTS)) {
 					?>
 				<script>
@@ -689,6 +692,19 @@ if (!empty($usemargins) && $user->rights->margins->creer) {
 	});
 		<?php
 	} ?>
+
+	<?php
+	// Added by MMI Mathieu Moulin iProspective
+	if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL)) { ?>
+	$("#idprod").change(function()
+	{
+		var label = $(this).attr('data-label');
+		$("#added_labelprod").html(label);
+	});
+		<?php
+	}
+	?>
+
 	/* When changing predefined product, we reload list of supplier prices required for margin combo */
 	$("#idprod, #idprodfournprice").change(function()
 	{

@@ -255,8 +255,21 @@ class Segment implements IteratorAggregate, Countable
         }
         // Set the width and height of the page
         list ($width, $height) = $size;
-        $width *= Odf::PIXEL_TO_CM;
-        $height *= Odf::PIXEL_TO_CM;
+        // Added by MMI Mathieu Moulin iProspective
+        if (preg_match('/produit/', $value)) {
+            if (preg_match('/logo2$/', $key)) {
+                $width = 75*Odf::PIXEL_TO_CM;
+                $height = 75*Odf::PIXEL_TO_CM;
+            }
+            else {
+                $width = 150*Odf::PIXEL_TO_CM;
+                $height = 150*Odf::PIXEL_TO_CM;
+            }
+        }
+        else {
+            $width *= Odf::PIXEL_TO_CM;
+            $height *= Odf::PIXEL_TO_CM;
+        }
         // Fix local-aware issues (eg: 12,10 -> 12.10)
         $width = sprintf("%F", $width);
         $height = sprintf("%F", $height);

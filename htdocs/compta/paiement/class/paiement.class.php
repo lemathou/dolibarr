@@ -294,6 +294,12 @@ class Paiement extends CommonObject
 			}
 		}
 
+		// Added by MMI Mathieu Moulin iProspective
+		// MMIPayment for order & propal : Permit to specify only an amount
+		if (empty($amounts) && !empty($this->amount)) {
+			$totalamount = $this->amount;
+			$totalamount_converted = $this->amount;
+		}
 
 		$totalamount = price2num($totalamount);
 		$totalamount_converted = price2num($totalamount_converted);

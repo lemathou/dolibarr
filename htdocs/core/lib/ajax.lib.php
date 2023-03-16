@@ -181,6 +181,15 @@ function ajax_autocompleter($selected, $htmlname, $url, $urloption = '', $minLen
 							$("#'.$htmlname.'").attr("data-pbqpercent", ui.item.discount);
 		';
 	}
+	// Added by MMI Mathieu Moulin iProspective
+	// Hack : to keep show product label
+	if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL)) {
+		$script .= '
+							// Add label
+							$("#'.$htmlname.'").attr("data-label", ui.item.label);
+
+		';
+	}
 	$script .= '
 							$("#'.$htmlname.'").val(ui.item.id).trigger("change");	// Select new value
 

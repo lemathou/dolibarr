@@ -1912,7 +1912,16 @@ if ($action == 'create') {
 
 		// Other attributes
 		$cols = 2;
+		// Added by MMI Mathieu Moulin iProspective
+		// Extrafields show/hide
+		if ($conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE) {
+			echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
+			echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
+		}
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
+		if ($conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE) {
+			echo '</tbody>';
+		}
 
 		print '</table>';
 
@@ -2506,7 +2515,8 @@ if ($action == 'create') {
 				if ($user->rights->facture->creer) {
 					// TODO show button only   if (! empty($conf->global->WORKFLOW_BILL_ON_SHIPMENT))
 					// If we do that, we must also make this option official.
-					print '<a class="butAction" href="'.DOL_URL_ROOT.'/compta/facture/card.php?action=create&amp;origin='.$object->element.'&amp;originid='.$object->id.'&amp;socid='.$object->socid.'">'.$langs->trans("CreateBill").'</a>';
+					if (empty($conf->global->BILL_ON_SHIPMENT_DISABLE))
+						print '<a class="butAction" href="'.DOL_URL_ROOT.'/compta/facture/card.php?action=create&amp;origin='.$object->element.'&amp;originid='.$object->id.'&amp;socid='.$object->socid.'">'.$langs->trans("CreateBill").'</a>';
 				}
 			}
 

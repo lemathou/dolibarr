@@ -1,0 +1,99 @@
+[submodule "htdocs/custom/mmicommon"]
+	path = htdocs/custom/mmicommon
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicommon.git
+[submodule "htdocs/custom/mmicompta"]
+	path = htdocs/custom/mmicompta
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicompta.git
+[submodule "htdocs/custom/sfycustom"]
+	path = htdocs/custom/sfycustom
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-sfycustom.git
+[submodule "htdocs/custom/mbietransactions"]
+	path = htdocs/custom/mbietransactions
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mbietransactions.git
+[submodule "htdocs/custom/mmiatelier"]
+	path = htdocs/custom/mmiatelier
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiatelier.git
+[submodule "htdocs/custom/mmiavisverifies"]
+	path = htdocs/custom/mmiavisverifies
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiavisverifies.git
+[submodule "htdocs/custom/mmicrm"]
+	path = htdocs/custom/mmicrm
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicrm.git
+[submodule "htdocs/custom/mmidocuments"]
+	path = htdocs/custom/mmidocuments
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmidocuments.git
+[submodule "htdocs/custom/mmientrepots"]
+	path = htdocs/custom/mmientrepots
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmientrepots.git
+[submodule "htdocs/custom/mmifilters"]
+	path = htdocs/custom/mmifilters
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmifilters.git
+[submodule "htdocs/custom/mmifournisseurprice"]
+	path = htdocs/custom/mmifournisseurprice
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmifournisseurprice.git
+[submodule "htdocs/custom/mmipayments"]
+	path = htdocs/custom/mmipayments
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmipayments.git
+[submodule "htdocs/custom/mmiprestasync"]
+	path = htdocs/custom/mmiprestasync
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiprestasync.git
+[submodule "htdocs/custom/mmiproduct"]
+	path = htdocs/custom/mmiproduct
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproduct.git
+[submodule "htdocs/custom/mmiproductdluo"]
+	path = htdocs/custom/mmiproductdluo
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproductdluo.git
+[submodule "htdocs/custom/mmiproject"]
+	path = htdocs/custom/mmiproject
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproject.git
+[submodule "htdocs/custom/mmistats"]
+	path = htdocs/custom/mmistats
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmistats.git
+[submodule "htdocs/custom/mmivateec"]
+	path = htdocs/custom/mmivateec
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmivateec.git
+[submodule "htdocs/custom/mmiworkflow"]
+	path = htdocs/custom/mmiworkflow
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmworkflow.git
+[submodule "htdocs/custom/abricot"]
+	path = htdocs/custom/abricot
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-abricot.git
+[submodule "htdocs/custom/aproximite"]
+	path = htdocs/custom/aproximite
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-aproximite.git
+[submodule "htdocs/custom/bompdf"]
+	path = htdocs/custom/bompdf
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-bompdf.git
+[submodule "htdocs/custom/contacttracking"]
+	path = htdocs/custom/contacttracking
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-contacttracking.git
+[submodule "htdocs/custom/dropdownmenu"]
+	path = htdocs/custom/dropdownmenu
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-dropdownmenu.git
+[submodule "htdocs/custom/externalaccess"]
+	path = htdocs/custom/externalaccess
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-externalaccess.git
+[submodule "htdocs/custom/inventory"]
+	path = htdocs/custom/inventory
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-inventory.git
+[submodule "htdocs/custom/margincontrol"]
+	path = htdocs/custom/margincontrol
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-margincontrol.git
+[submodule "htdocs/custom/milestone"]
+	path = htdocs/custom/milestone
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-milestone.git
+[submodule "htdocs/custom/stocktransfers"]
+	path = htdocs/custom/stocktransfers
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-stocktransfers.git
+[submodule "htdocs/custom/multismtp"]
+	path = htdocs/custom/multismtp
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-multismtp.git
+[submodule "htdocs/custom/supplierorderfromorder"]
+	path = htdocs/custom/supplierorderfromorder
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-supplierorderfromorder.git
+[submodule "htdocs/custom/zenfusionmaps"]
+	path = htdocs/custom/zenfusionmaps
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-zenfusionmaps.git
+[submodule "htdocs/custom_dolicloud"]
+	path = htdocs/custom_dolicloud
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-modules-dolicloud.git

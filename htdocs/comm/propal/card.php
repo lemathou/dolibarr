@@ -2393,10 +2393,19 @@ if ($action == 'create') {
 		}
 		print '</td></tr>';
 	}
-
-	// Other attributes
+	
+	// Added by MMI Mathieu Moulin iProspective
+	// Other attributes / extrafields show/hide
+	$extrafields_showhide = $conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE && (empty($action) || $action != 'edit_extras');
+	if ($extrafields_showhide) {
+		echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
+		echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
+	}
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
-
+	if ($extrafields_showhide) {
+		echo '</tbody>';
+	}
+	
 	print '</table>';
 
 	print '</div>';
@@ -2458,6 +2467,13 @@ if ($action == 'create') {
 	if (!empty($conf->margin->enabled)) {
 		$formmargin->displayMarginInfos($object);
 	}
+	
+	// Added by MMI Mathieu Moulin iProspective
+	$parameters = array();
+	$reshook = $hookmanager->executeHooks('doDisplayMoreInfos', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
+	if ($reshook < 0) {
+		setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+	}
 
 	print '</div>';
 	print '</div>';
@@ -2483,7 +2499,8 @@ if ($action == 'create') {
 	// Show object lines
 	$result = $object->getLinesArray();
 
-	print '	<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '' : '#line_'.GETPOST('lineid', 'int')).'" method="POST">
+	// Updated by MMI Mathieu Moulin iProspective
+	print '	<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? ($conf->global->MAIN_DOCUMENT_FORM_ADD_PRODUCT_STAY ?'#addproduct' :'') : '#line_'.GETPOST('lineid', 'int')).'" method="POST">
 	<input type="hidden" name="token" value="' . newToken().'">
 	<input type="hidden" name="action" value="' . (($action != 'editline') ? 'addline' : 'updateline').'">
 	<input type="hidden" name="mode" value="">
@@ -2612,7 +2629,13 @@ if ($action == 'create') {
 				}
 
 				// Create an invoice and classify billed
+<<<<<<< HEAD
 				if ($object->statut == Propal::STATUS_SIGNED && empty($conf->global->PROPOSAL_ARE_NOT_BILLABLE)) {
+=======
+				// Added by MMI Mathieu Moulin iProspective
+				// Parameter to block creation of invoices for Proposals (must do it from orders)
+				if (empty($conf->global->WORKFLOW_CANNOT_CREATE_INVOICE_FROM_PROPOSAL) && $object->statut == Propal::STATUS_SIGNED) {
+>>>>>>> 14.0-mmi
 					if (!empty($conf->facture->enabled) && $usercancreateinvoice) {
 						print '<a class="butAction" href="'.DOL_URL_ROOT.'/compta/facture/card.php?action=create&origin='.$object->element.'&originid='.$object->id.'&socid='.$object->socid.'">'.$langs->trans("CreateBill").'</a>';
 					}
@@ -2689,6 +2712,26 @@ if ($action == 'create') {
 			print '<br><!-- Link to sign -->';
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
 			print showOnlineSignatureUrl('proposal', $object->ref).'<br>';
+		}
+
+		// Added by MMI Mathieu Moulin iProspective
+		// Show online payment link
+		$useonlinepayment = (!empty($conf->paypal->enabled) || !empty($conf->stripe->enabled) || !empty($conf->paybox->enabled));
+		if (!$useonlinepayment) {
+			$parameters = array();
+			$reshook = $hookmanager->executeHooks('addOnlinePaymentMeans', $parameters, $object, $action);
+			if ($reshook==0 && !empty($hookmanager->results['useonlinepayment']))
+				$useonlinepayment = true;
+		}
+
+		if (!empty($conf->global->ORDER_HIDE_ONLINE_PAYMENT_ON_ORDER)) {
+			$useonlinepayment = 0;
+		}
+
+		if ($object->statut != Propal::STATUS_DRAFT && $useonlinepayment) {
+			print '<br><!-- Link to pay -->';
+			require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
+			print showOnlinePaymentUrl('propal', $object->ref).'<br>';
 		}
 
 		print '</div><div class="fichehalfright">';

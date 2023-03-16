@@ -72,6 +72,14 @@ class InterfaceWorkflowManager extends DolibarrTriggers
 		if ($action == 'PROPAL_CLOSE_SIGNED') {
 			dol_syslog("Trigger '".$this->name."' for action '$action' launched by ".__FILE__.". id=".$object->id);
 			if (!empty($conf->commande->enabled) && !empty($conf->global->WORKFLOW_PROPAL_AUTOCREATE_ORDER)) {
+				// Added by MMI Mathieu Moulin iProspective
+				// Check if there is already one
+				if (!empty($conf->global->WORKFLOW_PROPAL_AUTOCREATE_ORDER_IFNOTEXISTS)) {
+					$object->fetchObjectLinked();
+					if (!empty($object->linkedObjectsIds['commande']))
+						return $ret;
+				}
+				
 				include_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 				$newobject = new Commande($this->db);
 
