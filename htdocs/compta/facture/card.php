@@ -1501,7 +1501,15 @@ if (empty($reshook)) {
 								}
 							} else {
 								if ($typeamount == 'amount') {
-									$amountdeposit[0] = $valuedeposit;
+									// Added by MMI Mathieu Moulin iProspective
+									if ($conf->global->MMI_INVOICE_DEPOSIT_USE_TVA_TX > 0) {
+										$tva_tx = $conf->global->MMI_INVOICE_DEPOSIT_USE_TVA_TX;
+										$amountdeposit[0] = 0;
+										$amountdeposit[$tva_tx] = $valuedeposit/(1+$tva_tx/100);
+									}
+									else {
+										$amountdeposit[0] = $valuedeposit;
+									}
 								} elseif ($typeamount == 'variable') {
 									if ($result > 0) {
 										$totalamount = 0;
@@ -1951,6 +1959,12 @@ if (empty($reshook)) {
 		// End of object creation, we show it
 		if ($id > 0 && !$error) {
 			$db->commit();
+			
+			// Added by MMI Mathieu Moulin iProspective
+			// For payment assignment
+			$parameters = array();
+			$reshook = $hookmanager->executeHooks('afterCreateAction', $parameters, $object, $action);
+			
 
 			// Define output language
 			if (empty($conf->global->MAIN_DISABLE_PDF_AUTOUPDATE) && count($object->lines)) {
@@ -4704,7 +4718,17 @@ if ($action == 'create') {
 
 	// Other attributes
 	$cols = 2;
+	// Added by MMI Mathieu Moulin iProspective
+	// Hack extrafields show/hide
+	$extrafields_showhide = $conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE && (empty($action) || $action != 'edit_extras');
+	if ($extrafields_showhide) {
+		echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
+		echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
+	}
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
+	if ($extrafields_showhide) {
+		echo '</tbody>';
+	}
 
 	print '</table>';
 
@@ -5731,6 +5755,13 @@ if ($action == 'create') {
 
 		// Show online payment link
 		$useonlinepayment = (!empty($conf->paypal->enabled) || !empty($conf->stripe->enabled) || !empty($conf->paybox->enabled));
+		// Added by MMI Mathieu Moulin iProspective
+		if (!$useonlinepayment) {
+			$parameters = array();
+			$reshook = $hookmanager->executeHooks('addOnlinePaymentMeans', $parameters, $object, $action);
+			if ($reshook==0 && !empty($hookmanager->results['useonlinepayment']))
+				$useonlinepayment = true;
+		}
 
 		if ($object->statut != Facture::STATUS_DRAFT && $useonlinepayment) {
 			print '<br><!-- Link to pay -->'."\n";

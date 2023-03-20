@@ -328,7 +328,15 @@ if (!$error && $massaction == 'confirm_presend') {
 					// TODO Set subdir to be compatible with multi levels dir trees
 					// $subdir = get_exdir($objectobj->id, 2, 0, 0, $objectobj, $objectobj->element)
 					$filedir = $uploaddir.'/'.$subdir.dol_sanitizeFileName($objectobj->ref);
+
 					$filepath = $filedir.'/'.$filename;
+					// Added By MMI Mathieu Moulin iProspective
+					// Fix search by filename
+					if (!file_exists($filepath)) {
+						$files = glob($filedir.'/'.dol_sanitizeFileName($objectobj->ref).'*.pdf');
+						if (!empty($files))
+							$filepath = $files[0];
+					}
 
 					// For supplier invoices, we use the file provided by supplier, not the one we generate
 					if ($objectobj->element == 'invoice_supplier') {

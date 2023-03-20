@@ -2388,6 +2388,11 @@ function dol_format_address($object, $withcountry = 0, $sep = "\n", $outputlangs
 	if (empty($mode)) {
 		$ret .= ($extralangcode ? $object->array_languages['address'][$extralangcode] : (empty($object->address) ? '' : $object->address));
 	}
+	// Added by MMI Mathieu Moulin iProspective
+	// MMIPrestaSync : Complément d'adresse
+	if (!empty($object->array_options['options_p_address2'])) {
+		$ret .= (empty($object->address) ? '' : ($ret ? $sep : '').$object->array_options['options_p_address2']);
+	}
 	// Zip/Town/State
 	if (isset($object->country_code) && in_array($object->country_code, array('AU', 'CA', 'US', 'CN')) || !empty($conf->global->MAIN_FORCE_STATE_INTO_ADDRESS)) {
 		// US: title firstname name \n address lines \n town, state, zip \n country
@@ -7629,6 +7634,9 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 				require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
 				$outputlangs->loadLangs(array('paypal', 'other'));
 				$typeforonlinepayment = 'free';
+				if (is_object($object) && $object->element == 'propal') {
+					$typeforonlinepayment = 'propal';
+				}
 				if (is_object($object) && $object->element == 'commande') {
 					$typeforonlinepayment = 'order';
 				}

@@ -456,7 +456,10 @@ class modFournisseur extends DolibarrModules
 			'fd.tva_tx'=>"LineVATRate", 'fd.qty'=>"LineQty", 'fd.remise_percent'=>"Discount", 'fd.total_ht'=>"LineTotalHT", 'fd.total_ttc'=>"LineTotalTTC",
 			'fd.total_tva'=>"LineTotalVAT", 'fd.date_start'=>"DateStart", 'fd.date_end'=>"DateEnd", 'fd.special_code'=>'SpecialCode',
 			'fd.product_type'=>'TypeOfLineServiceOrProduct', 'fd.ref'=>'RefSupplier', 'fd.fk_product'=>'ProductId',
+			// Added by MMI Mathieu Moulin iProspective : add BarCodeValue
+			'p.barcode'=>'BarcodeValue',
 			'p.ref'=>'ProductRef', 'p.label'=>'ProductLabel', 'project.rowid'=>'ProjectId', 'project.ref'=>'ProjectRef', 'project.title'=>'ProjectLabel'
+
 		);
 		if (!empty($conf->multicurrency->enabled)) {
 			$this->export_fields_array[$r]['f.multicurrency_code'] = 'Currency';
@@ -476,6 +479,8 @@ class modFournisseur extends DolibarrModules
 			'f.fk_statut'=>'Status', 'f.date_valid'=>'Date', 'f.date_approve'=>'Date', 'f.date_approve2'=>'Date', 'f.note_public'=>"Text", 'f.note_private'=>"Text", 'fd.description'=>"Text",
 			'fd.tva_tx'=>"Numeric", 'fd.qty'=>"Numeric", 'fd.remise_percent'=>"Numeric", 'fd.total_ht'=>"Numeric", 'fd.total_ttc'=>"Numeric", 'fd.total_tva'=>"Numeric",
 			'fd.date_start'=>"Date", 'fd.date_end'=>"Date", 'fd.special_code'=>"Numeric",
+			// Added by MMI Mathieu Moulin iProspective : add BarCodeValue
+			'p.barcode'=>'Text',
 			'fd.product_type'=>'Numeric', 'fd.ref'=>'Text', 'fd.fk_product'=>'List:product:label', 'p.ref'=>'Text', 'p.label'=>'Text', 'project.ref'=>'Text', 'project.title'=>'Text'
 		);
 		$this->export_entities_array[$r] = array(
@@ -484,7 +489,10 @@ class modFournisseur extends DolibarrModules
 			'ua2.login'=>'user', 'fd.rowid'=>'order_line', 'fd.description'=>"order_line", 'fd.tva_tx'=>"order_line", 'fd.qty'=>"order_line", 'fd.remise_percent'=>"order_line",
 			'fd.total_ht'=>"order_line", 'fd.total_ttc'=>"order_line", 'fd.total_tva'=>"order_line", 'fd.date_start'=>"order_line", 'fd.date_end'=>"order_line", 'fd.special_code'=>"order_line",
 			'fd.product_type'=>'order_line', 'fd.ref'=>'order_line', 'fd.fk_product'=>'product',
+			// Added by MMI Mathieu Moulin iProspective : add BarCodeValue
+			'p.barcode'=>'product',
 			'p.ref'=>'product', 'p.label'=>'product', 'project.rowid'=>'project', 'project.ref'=>'project', 'project.title'=>'project'
+
 		);
 		$this->export_dependencies_array[$r] = array('order_line'=>'fd.rowid', 'product'=>'fd.rowid'); // To add unique key if we ask a field of a child to avoid the DISTINCT to discard them
 		// Add extra fields object

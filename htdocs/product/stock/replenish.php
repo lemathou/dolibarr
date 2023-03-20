@@ -525,6 +525,18 @@ if ($usevirtualstock) {
 	}
 }
 
+// Added by MMI Mathieu Moulin iProspective
+// Add Having from hooks
+$parameters = array(
+	'includeproductswithoutdesiredqty' => $includeproductswithoutdesiredqty,
+	//'sqlCommandesCli' => $sqlCommandesCli,
+	//'sqlExpeditionsCli' => $sqlExpeditionsCli,
+	//'sqlCommandesFourn' => $sqlCommandesFourn,
+	//'sqlReceptionFourn' => $sqlReceptionFourn,
+);
+$reshook = $hookmanager->executeHooks('printFieldListHaving', $parameters); // Note that $action and $object may have been modified by hook
+$sql .= $hookmanager->resPrint;
+
 $includeproductswithoutdesiredqtychecked = '';
 if ($includeproductswithoutdesiredqty == 'on') {
 	$includeproductswithoutdesiredqtychecked = 'checked';
@@ -671,6 +683,13 @@ if ($limit > 0 && $limit != $conf->liste_limit) {
 }
 if (!empty($includeproductswithoutdesiredqty)) $filters .= '&includeproductswithoutdesiredqty='.urlencode($includeproductswithoutdesiredqty);
 if (!empty($salert)) $filters .= '&salert='.urlencode($salert);
+
+// Added by MMI Mathieu Moulin iProspective
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListFilters', $parameters);
+if (empty($reshook)) {
+	$filters .= $hookmanager->resPrint;
+}
 
 $param = (isset($type) ? '&type='.urlencode($type) : '');
 $param .= '&fourn_id='.urlencode($fourn_id).'&search_label='.urlencode($search_label).'&includeproductswithoutdesiredqty='.urlencode($includeproductswithoutdesiredqty).'&salert='.urlencode($salert).'&draftorder='.urlencode($draftorder);

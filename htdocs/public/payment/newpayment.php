@@ -1009,6 +1009,151 @@ if (!$source) {
 }
 
 
+// Added by MMI Mathieu Moulin iProspective
+// Payment on customer propal
+if ($source == 'propal') {
+	$found = true;
+	$langs->load("propal");
+
+	require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
+
+	$propal = new Propal($db);
+	$result = $propal->fetch('', $ref);
+	if ($result <= 0) {
+		$mesg = $propal->error;
+		$error++;
+	} else {
+		$result = $propal->fetch_thirdparty($propal->socid);
+	}
+	$object = $propal;
+
+	if ($action != 'dopayment') { // Do not change amount if we just click on first dopayment
+		$dejaregle = $propal->getSommePaiement();
+		$amount = max(0, $propal->total_ttc - $dejaregle);
+		$paye = $propal->paye();
+		if (GETPOST("amount", 'alpha')) {
+			$amount = GETPOST("amount", 'alpha');
+		}
+		$amount = price2num($amount);
+	}
+
+	if (GETPOST('fulltag', 'alpha')) {
+		$fulltag = GETPOST('fulltag', 'alpha');
+	} else {
+		$fulltag = 'PRO='.$propal->id.'.CUS='.$propal->thirdparty->id;
+		if (!empty($TAG)) {
+			$tag = $TAG; $fulltag .= '.TAG='.$TAG;
+		}
+	}
+	$fulltag = dol_string_unaccent($fulltag);
+
+	// Creditor
+	print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("Creditor");
+	print '</td><td class="CTableRow2"><b>'.$creditor.'</b>';
+	print '<input type="hidden" name="creditor" value="'.$creditor.'">';
+	print '</td></tr>'."\n";
+
+	// Debitor
+	print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("ThirdParty");
+	print '</td><td class="CTableRow2"><b>'.$propal->thirdparty->name.'</b>';
+	print '</td></tr>'."\n";
+
+	// Object
+	$text = '<b>'.$langs->trans("PaymentPropalRef", $propal->ref).'</b>';
+	if (GETPOST('desc', 'alpha')) {
+		$text = '<b>'.$langs->trans(GETPOST('desc', 'alpha')).'</b>';
+	}
+	print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("Designation");
+	print '</td><td class="CTableRow2">'.$text;
+	print '<input type="hidden" name="s" value="'.dol_escape_htmltag($source).'">';
+	print '<input type="hidden" name="ref" value="'.dol_escape_htmltag($propal->ref).'">';
+	print '<input type="hidden" name="dol_id" value="'.dol_escape_htmltag($propal->id).'">';
+	$directdownloadlink = $propal->getLastMainDocLink('propal');
+	if ($directdownloadlink) {
+		print '<br><a href="'.$directdownloadlink.'" rel="nofollow noopener">';
+		print img_mime($propal->last_main_doc, '');
+		print $langs->trans("DownloadDocument").'</a>';
+	}
+	print '</td></tr>'."\n";
+
+	// MMI
+	if ($dejaregle) {
+		// Total
+		print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("AmountTotal");
+		print '</td><td class="CTableRow2">';
+		print '<b>'.price2num($propal->total_ttc).'</b>';
+		print ' <b>'.$langs->trans("Currency".$currency).'</b>';
+		print '</td></tr>'."\n";
+		// Déjà réglé
+		print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("AmountAlreadyPaid");
+		print '</td><td class="CTableRow2">';
+		print '<b>'.price2num($dejaregle).'</b>';
+		print ' <b>'.$langs->trans("Currency".$currency).'</b>';
+		print '</td></tr>'."\n";
+	}
+	
+	if (! $paye) {
+		// Amount
+		print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("AmountPayment");
+		if (empty($amount)) {
+			print ' ('.$langs->trans("ToComplete").')';
+		}
+		print '</td><td class="CTableRow2">';
+		if (empty($amount) || !is_numeric($amount)) {
+			print '<input type="hidden" name="amount" value="'.price2num(GETPOST("amount", 'alpha'), 'MT').'">';
+			print '<input class="flat maxwidth75" type="text" name="newamount" value="'.price2num(GETPOST("newamount", "alpha"), 'MT').'">';
+		} else {
+			print '<b>'.price($amount).'</b>';
+			print '<input type="hidden" name="amount" value="'.$amount.'">';
+			print '<input type="hidden" name="newamount" value="'.$amount.'">';
+		}
+		// Currency
+		print ' <b>'.$langs->trans("Currency".$currency).'</b>';
+		print '<input type="hidden" name="currency" value="'.$currency.'">';
+		print '</td></tr>'."\n";
+
+		// Tag
+		print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("PaymentCode");
+		print '</td><td class="CTableRow2"><b style="word-break: break-all;">'.$fulltag.'</b>';
+		print '<input type="hidden" name="tag" value="'.dol_escape_htmltag($tag).'">';
+		print '<input type="hidden" name="fulltag" value="'.dol_escape_htmltag($fulltag).'">';
+		print '</td></tr>'."\n";
+	}
+
+	// Shipping address
+	$shipToName = $propal->thirdparty->name;
+	$shipToStreet = $propal->thirdparty->address;
+	$shipToCity = $propal->thirdparty->town;
+	$shipToState = $propal->thirdparty->state_code;
+	$shipToCountryCode = $propal->thirdparty->country_code;
+	$shipToZip = $propal->thirdparty->zip;
+	$shipToStreet2 = '';
+	$phoneNum = $propal->thirdparty->phone;
+	if ($shipToName && $shipToStreet && $shipToCity && $shipToCountryCode && $shipToZip) {
+		print '<input type="hidden" name="shipToName" value="'.dol_escape_htmltag($shipToName).'">'."\n";
+		print '<input type="hidden" name="shipToStreet" value="'.dol_escape_htmltag($shipToStreet).'">'."\n";
+		print '<input type="hidden" name="shipToCity" value="'.dol_escape_htmltag($shipToCity).'">'."\n";
+		print '<input type="hidden" name="shipToState" value="'.dol_escape_htmltag($shipToState).'">'."\n";
+		print '<input type="hidden" name="shipToCountryCode" value="'.dol_escape_htmltag($shipToCountryCode).'">'."\n";
+		print '<input type="hidden" name="shipToZip" value="'.dol_escape_htmltag($shipToZip).'">'."\n";
+		print '<input type="hidden" name="shipToStreet2" value="'.dol_escape_htmltag($shipToStreet2).'">'."\n";
+		print '<input type="hidden" name="phoneNum" value="'.dol_escape_htmltag($phoneNum).'">'."\n";
+	} else {
+		print '<!-- Shipping address not complete, so we don t use it -->'."\n";
+	}
+	if (is_object($propal->thirdparty)) {
+		print '<input type="hidden" name="thirdparty_id" value="'.$propal->thirdparty->id.'">'."\n";
+	}
+	print '<input type="hidden" name="email" value="'.$propal->thirdparty->email.'">'."\n";
+	print '<input type="hidden" name="vatnumber" value="'.dol_escape_htmltag($propal->thirdparty->tva_intra).'">'."\n";
+	$labeldesc = $langs->trans("Propal").' '.$propal->ref;
+	if (GETPOST('desc', 'alpha')) {
+		$labeldesc = GETPOST('desc', 'alpha');
+	}
+	print '<input type="hidden" name="desc" value="'.dol_escape_htmltag($labeldesc).'">'."\n";
+}
+
+
 // Payment on customer order
 if ($source == 'order') {
 	$found = true;
@@ -1027,7 +1172,10 @@ if ($source == 'order') {
 	$object = $order;
 
 	if ($action != 'dopayment') { // Do not change amount if we just click on first dopayment
-		$amount = $order->total_ttc;
+		// Added by MMI Mathieu Moulin iProspective
+		$dejaregle = $order->getSommePaiement();
+		$amount = max(0, $order->total_ttc - $dejaregle);
+		$paye = $order->paye();
 		if (GETPOST("amount", 'alpha')) {
 			$amount = GETPOST("amount", 'alpha');
 		}
@@ -1077,31 +1225,49 @@ if ($source == 'order') {
 	}
 	print '</td></tr>'."\n";
 
-	// Amount
-	print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("Amount");
-	if (empty($amount)) {
-		print ' ('.$langs->trans("ToComplete").')';
-	}
-	print '</td><td class="CTableRow2">';
-	if (empty($amount) || !is_numeric($amount)) {
-		print '<input type="hidden" name="amount" value="'.price2num(GETPOST("amount", 'alpha'), 'MT').'">';
-		print '<input class="flat maxwidth75" type="text" name="newamount" value="'.price2num(GETPOST("newamount", "alpha"), 'MT').'">';
-		// Currency
+	// Added by MMI Mathieu Moulin iProspective
+	if ($dejaregle) {
+		// Total
+		print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("AmountTotal");
+		print '</td><td class="CTableRow2">';
+		print '<b>'.price2num($order->total_ttc).'</b>';
 		print ' <b>'.$langs->trans("Currency".$currency).'</b>';
-	} else {
-		print '<b class="amount">'.price($amount, 1, $langs, 1, -1, -1, $currency).'</b>';	// Price with currency
-		print '<input type="hidden" name="amount" value="'.$amount.'">';
-		print '<input type="hidden" name="newamount" value="'.$amount.'">';
+		print '</td></tr>'."\n";
+		// Déjà réglé
+		print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("AmountAlreadyPaid");
+		print '</td><td class="CTableRow2">';
+		print '<b>'.price2num($dejaregle).'</b>';
+		print ' <b>'.$langs->trans("Currency".$currency).'</b>';
+		print '</td></tr>'."\n";
 	}
-	print '<input type="hidden" name="currency" value="'.$currency.'">';
-	print '</td></tr>'."\n";
+	
+	if (! $paye) {
+		// Amount
+		print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("AmountPayment");
+		if (empty($amount)) {
+			print ' ('.$langs->trans("ToComplete").')';
+		}
+		print '</td><td class="CTableRow2">';
+		if (empty($amount) || !is_numeric($amount)) {
+			print '<input type="hidden" name="amount" value="'.price2num(GETPOST("amount", 'alpha'), 'MT').'">';
+			print '<input class="flat maxwidth75" type="text" name="newamount" value="'.price2num(GETPOST("newamount", "alpha"), 'MT').'">';
+			// Currency
+			print ' <b>'.$langs->trans("Currency".$currency).'</b>';
+		} else {
+			print '<b class="amount">'.price($amount, 1, $langs, 1, -1, -1, $currency).'</b>';	// Price with currency
+			print '<input type="hidden" name="amount" value="'.$amount.'">';
+			print '<input type="hidden" name="newamount" value="'.$amount.'">';
+		}
+		print '<input type="hidden" name="currency" value="'.$currency.'">';
+		print '</td></tr>'."\n";
 
-	// Tag
-	print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("PaymentCode");
-	print '</td><td class="CTableRow2"><b style="word-break: break-all;">'.$fulltag.'</b>';
-	print '<input type="hidden" name="tag" value="'.dol_escape_htmltag($tag).'">';
-	print '<input type="hidden" name="fulltag" value="'.dol_escape_htmltag($fulltag).'">';
-	print '</td></tr>'."\n";
+		// Tag
+		print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("PaymentCode");
+		print '</td><td class="CTableRow2"><b style="word-break: break-all;">'.$fulltag.'</b>';
+		print '<input type="hidden" name="tag" value="'.dol_escape_htmltag($tag).'">';
+		print '<input type="hidden" name="fulltag" value="'.dol_escape_htmltag($fulltag).'">';
+		print '</td></tr>'."\n";
+	}
 
 	// Shipping address
 	$shipToName = $order->thirdparty->name;
@@ -1601,7 +1767,7 @@ if ($source == 'member' || $source == 'membersubscription') {
 				print '</td><td class="CTableRow2">';
 				print $form->selectarray("typeid", $adht->liste_array(1), $member->typeid, 0, 0, 0, 'onchange="window.location.replace(\''.$urlwithroot.'/public/payment/newpayment.php?source='.urlencode($source).'&ref='.urlencode($ref).'&amount='.urlencode($amount).'&typeid=\' + this.value + \'&securekey='.urlencode($SECUREKEY).'\');"', 0, 0, 0, '', '', 1);
 				print "</td></tr>\n";
-			} elseif ($action == dopayment) {
+			} elseif ($action == 'dopayment') {
 				print '<tr class="CTableRow2"><td class="CTableRow2">'.$langs->trans("NewMemberType");
 				print '</td><td class="CTableRow2">'.dol_escape_htmltag($member->type);
 				print '<input type="hidden" name="membertypeid" value="'.$member->typeid.'">';
@@ -2065,7 +2231,10 @@ if ($action != 'dopayment') {
 			print $hookmanager->resPrint;
 		}
 
-		if ($source == 'order' && $object->billed) {
+		// Added by MMI Mathieu Moulin iProspective
+		if ($source == 'propal' && $object->paye()) {
+			print '<br><br><span class="amountpaymentcomplete size15x">'.$langs->trans("PropalPaid").'</span>';
+		} elseif ($source == 'order' && $object->billed) {
 			print '<br><br><span class="amountpaymentcomplete size15x">'.$langs->trans("OrderBilled").'</span>';
 		} elseif ($source == 'invoice' && $object->paye) {
 			print '<br><br><span class="amountpaymentcomplete size15x">'.$langs->trans("InvoicePaid").'</span>';
@@ -2083,7 +2252,8 @@ if ($action != 'dopayment') {
 
 			// This hook is used to add Button to newpayment.php for external payment modules (ie Payzen, ...)
 			$parameters = [
-				'paymentmethod' => $paymentmethod
+				'paymentmethod' => $paymentmethod,
+				'amount' => price2num(GETPOST("amount", 'alpha')),
 			];
 			$reshook = $hookmanager->executeHooks('doAddButton', $parameters, $object, $action);
 			if ($reshook < 0) {

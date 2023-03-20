@@ -723,7 +723,12 @@ if ($id > 0 || !empty($ref)) {
 		$sql .= $hookmanager->resPrint;
 
 		//$sql .= " GROUP BY p.ref, p.label, p.tobatch, p.fk_default_warehouse, l.rowid, l.fk_product, l.subprice, l.remise_percent, l.ref"; // Calculation of amount dispatched is done per fk_product so we must group by fk_product
-		$sql .= " ORDER BY l.rang, p.ref, p.label";
+		// Added by MMI Mathieu Moulin iProspective
+		// Sort commandedet lines by id when receive
+		if (!empty($conf->global->ORDER_DISPATCH_BY_COMMANDEDET_ID))
+			$sql .= " ORDER BY l.rowid";
+		else
+			$sql .= " ORDER BY l.rang, p.ref, p.label";
 
 		$resql = $db->query($sql);
 		if ($resql) {

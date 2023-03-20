@@ -146,7 +146,7 @@ function payment_supplier_prepare_head(Paiement $object)
  */
 function getValidOnlinePaymentMethods($paymentmethod = '')
 {
-	global $conf, $langs;
+	global $conf, $langs, $db;// @todo, $user;
 
 	$validpaymentmethod = array();
 
@@ -162,8 +162,16 @@ function getValidOnlinePaymentMethods($paymentmethod = '')
 		$langs->load("stripe");
 		$validpaymentmethod['stripe'] = 'valid';
 	}
+	// Added by MMI Mathieu Moulin iProspective
+	if ((empty($paymentmethod) || $paymentmethod == 'mbietransactions') && !empty($conf->mbietransactions->enabled)) {
+		$langs->load("mbietransactions@mbietransactions");
+		$validpaymentmethod['mbietransactions'] = 'valid';
+	}
 	// TODO Add trigger
-
+	//include_once DOL_DOCUMENT_ROOT.'/core/class/interfaces.class.php';
+	//$interface = new Interfaces($db);
+	//$result = $interface->run_triggers('', NULL, $user, $langs, $conf);
+	//var_dump($validpaymentmethod);
 
 	return $validpaymentmethod;
 }
@@ -247,7 +255,31 @@ function getOnlinePaymentUrl($mode, $type, $ref = '', $amount = '9.99', $freetag
 			}
 		}
 		//if ($mode) $out.='&noidempotency=1';
-	} elseif ($type == 'order') {
+	// Added by MMI Mathieu Moulin iProspective
+	} elseif ($type == 'propal') {
+		$out = $urltouse.'/public/payment/newpayment.php?source='.$type.'&ref='.($mode ? '<span style="color: #666666">' : '');
+		if ($mode == 1) {
+			$out .= 'propal_ref';
+		}
+		if ($mode == 0) {
+			$out .= urlencode($ref);
+		}
+		$out .= ($mode ? '</font>' : '');
+		if (!empty($conf->global->PAYMENT_SECURITY_TOKEN)) {
+			if (empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+				$out .= '&securekey='.urlencode($conf->global->PAYMENT_SECURITY_TOKEN);
+			} else {
+				$out .= '&securekey='.($mode ? '<font color="#666666">' : '');
+				if ($mode == 1) {
+					$out .= "hash('".$conf->global->PAYMENT_SECURITY_TOKEN."' + '".$type."' + propal_ref)";
+				}
+				if ($mode == 0) {
+					$out .= dol_hash($conf->global->PAYMENT_SECURITY_TOKEN.$type.$ref, 2);
+				}
+				$out .= ($mode ? '</font>' : '');
+			}
+		}
+	}  elseif ($type == 'order') {
 		$out = $urltouse.'/public/payment/newpayment.php?source='.$type.'&ref='.($mode ? '<span style="color: #666666">' : '');
 		if ($mode == 1) {
 			$out .= 'order_ref';

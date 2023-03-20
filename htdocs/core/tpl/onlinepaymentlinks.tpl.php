@@ -30,6 +30,29 @@ print '<u>'.$langs->trans("FollowingUrlAreAvailableToMakePayments").':</u><br><b
 print img_picto('', 'globe').' <span class="opacitymedium">'.$langs->trans("ToOfferALinkForOnlinePaymentOnFreeAmount", $servicename).':</span><br>';
 print '<strong class="wordbreak">'.getOnlinePaymentUrl(1, 'free')."</strong><br><br>\n";
 
+// Added by MMI Mathieu Moulin iProspective
+if (!empty($conf->propal->enabled)) {
+	print '<div id="propal"></div>';
+	print img_picto('', 'globe').' <span class="opacitymedium">'.$langs->trans("ToOfferALinkForOnlinePaymentOnPropal", $servicename).':</span><br>';
+	print '<strong class="wordbreak">'.getOnlinePaymentUrl(1, 'propal')."</strong><br>\n";
+	if (!empty($conf->global->PAYMENT_SECURITY_TOKEN) && !empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+		$langs->load("propals");
+		print '<form action="'.$_SERVER["PHP_SELF"].'#order" method="POST">';
+		print '<input type="hidden" name="token" value="'.newToken().'">';
+
+		print $langs->trans("EnterRefToBuildUrl", $langs->transnoentitiesnoconv("Propal")).': ';
+		print '<input type="text class="flat" id="generate_propal_ref" name="generate_propal_ref" value="'.GETPOST('generate_propal_ref', 'alpha').'" size="10">';
+		print '<input type="submit" class="none reposition button smallpaddingimp" value="'.$langs->trans("GetSecuredUrl").'">';
+		if (GETPOST('generate_propal_ref', 'alpha')) {
+			print '<br> -> <strong class="wordbreak">';
+			$url = getOnlinePaymentUrl(0, 'propal', GETPOST('generate_propal_ref', 'alpha'));
+			print $url;
+			print "</strong><br>\n";
+		}
+		print '</form>';
+	}
+	print '<br>';
+}
 if (!empty($conf->commande->enabled)) {
 	print '<div id="order"></div>';
 	print img_picto('', 'globe').' <span class="opacitymedium">'.$langs->trans("ToOfferALinkForOnlinePaymentOnOrder", $servicename).':</span><br>';

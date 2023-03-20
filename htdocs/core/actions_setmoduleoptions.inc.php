@@ -47,6 +47,10 @@ if ($action == 'update' && is_array($arrayofparameters) && !empty($user->admin))
 				} else {
 					$val_const = GETPOST($key, 'int');
 				}
+			// Added by MMI Mathieu Moulin iProspective
+			// Action:setmoduleoption:update Permit html data in module parameter
+			} elseif ($val['type']=='html') {
+				$val_const = GETPOST($key, 'html');
 			} else {
 				$val_const = GETPOST($key, 'alpha');
 			}

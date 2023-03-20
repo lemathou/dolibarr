@@ -4,6 +4,7 @@ WorkflowDesc=This module provides some automatic actions. By default, the workfl
 ThereIsNoWorkflowToModify=There is no workflow modifications available with the activated modules.
 # Autocreate
 descWORKFLOW_PROPAL_AUTOCREATE_ORDER=Automatically create a sales order after a commercial proposal is signed (the new order will have same amount as the proposal)
+descWORKFLOW_PROPAL_AUTOCREATE_ORDER_IFNOTEXISTS=Automatically create a sales order after a commercial proposal is signed only if the is no order already linked to the proposal
 descWORKFLOW_PROPAL_AUTOCREATE_INVOICE=Automatically create a customer invoice after a commercial proposal is signed (the new invoice will have same amount as the proposal)
 descWORKFLOW_CONTRACT_AUTOCREATE_INVOICE=Automatically create a customer invoice after a contract is validated
 descWORKFLOW_ORDER_AUTOCREATE_INVOICE=Automatically create a customer invoice after a sales order is closed (the new invoice will have same amount as the order)

@@ -111,3 +111,5 @@ PropalAlreadyRefused=Proposition déjà refusée
 PropalSigned=Proposition acceptée
 PropalRefused=Proposition refusée
 ConfirmRefusePropal=Êtes-vous sûr de vouloir refuser cette proposition ?
+PaymentPropalRef=Paiement Proposition %s
+PropalPaid=Proposition commerciale déjà réglée

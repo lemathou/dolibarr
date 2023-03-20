@@ -197,6 +197,15 @@ function ajax_autocompleter($selected, $htmlname, $url, $urloption = '', $minLen
 							$("#'.$htmlnamejquery.'").attr("data-pbqpercent", ui.item.discount);
 		';
 	}
+	// Added by MMI Mathieu Moulin iProspective
+	// Hack : to keep show product label
+	if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL)) {
+		$script .= '
+							// Add label
+							$("#'.$htmlname.'").attr("data-label", ui.item.label);
+
+		';
+	}
 	$script .= '
 							// A new value has been selected, we trigger the handlers on #htmlnamejquery
 							console.log("Trigger changes on #'.$htmlnamejquery.'");

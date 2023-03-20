@@ -2595,8 +2595,13 @@ class Form
 		}
 
 		// include search in supplier ref
-		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF)) {
+		// Added by MMI Mathieu Moulin iProspective
+		// Hack : include search in supplier name
+		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF) || !empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
 			$sql .= " LEFT JOIN ".$this->db->prefix()."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
+		}
+		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
+			$sql .= " LEFT JOIN ".$this->db->prefix()."societe as pf ON pfp.fk_soc = pf.rowid";
 		}
 
 		//Price by customer
@@ -2688,6 +2693,11 @@ class Form
 				}
 				if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF)) {
 					$sql .= " OR pfp.ref_fourn LIKE '".$this->db->escape($prefix.$crit)."%'";
+				}
+				// Added by MMI Mathieu Moulin iProspective
+				if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
+					$sql .= " OR pf.nom LIKE '".$this->db->escape($prefix.$crit)."%'";
+					$sql .= " OR pf.name_alias LIKE '".$this->db->escape($prefix.$crit)."%'";
 				}
 				$sql .= ")";
 				$i++;
@@ -6148,10 +6158,11 @@ class Form
 		}
 		if (!empty($conf->global->SERVICE_ARE_ECOMMERCE_200238EC)) {    // If option to have vat for end customer for services is on
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
-			if (!isInEEC($societe_vendeuse) && (!is_object($societe_acheteuse) || (isInEEC($societe_acheteuse) && !$societe_acheteuse->isACompany()))) {
+			if (isInEEC($societe_vendeuse) && (is_object($societe_acheteuse) && (isInEEC($societe_acheteuse) && !$societe_acheteuse->isACompany()))) {
+				//var_dump($type); die();
 				// We also add the buyer
 				if (is_numeric($type)) {
-					if ($type == 1) { // We know product is a service
+					if ($type == 1 || $type == 0) { // We know product is a service
 						$code_country .= ",'".$societe_acheteuse->country_code."'";
 					}
 				} elseif (!$idprod) {  // We don't know type of product
@@ -6159,7 +6170,7 @@ class Form
 				} else {
 					$prodstatic = new Product($this->db);
 					$prodstatic->fetch($idprod);
-					if ($prodstatic->type == Product::TYPE_SERVICE) {   // We know product is a service
+					if ($prodstatic->type == Product::TYPE_SERVICE || $prodstatic->type == Product::TYPE_PRODUCT) {   // We know product is a service
 						$code_country .= ",'".$societe_acheteuse->country_code."'";
 					}
 				}
