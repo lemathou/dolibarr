@@ -1684,6 +1684,14 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 		}
 	}
 
+	// Added by MMI Mathieu Moulin iProspective
+	// Show barcode if shipping
+	$objecttype = get_class($object);
+	if (in_array($objecttype, ['Expedition']) && (!empty($conf->global->SHIPPING_PDF_BARCODE))) {
+		if ($prodser->barcode)
+			$libelleproduitservice .= '__N__  Barcode: '.$prodser->barcode;
+	}
+
 	// Now we convert \n into br
 	if (dol_textishtml($libelleproduitservice)) {
 		$libelleproduitservice = preg_replace('/__N__/', '<br>', $libelleproduitservice);
