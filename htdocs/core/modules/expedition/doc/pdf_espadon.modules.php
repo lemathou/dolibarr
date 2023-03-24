@@ -195,6 +195,12 @@ class pdf_espadon extends ModelePdfExpedition
 			$outputlangsbis->loadLangs(array("main", "bills", "orders", "products", "dict", "companies", "propal", "deliveries", "sendings", "productbatch"));
 		}
 
+		// Added by MMI Mathieu Moulin iProspective
+		// Sort by Product Ref
+		if (!empty($conf->global->MMI_EXPE_ORDER_LINES_BY_REF))
+			usort($object->lines, function($i, $j){
+				return ($i->ref > $j->ref) ?1 :(($i->ref < $j->ref) ?-1 :0);
+			});
 		$nblines = count($object->lines);
 
 		// Loop on each lines to detect if there is at least one image to show
