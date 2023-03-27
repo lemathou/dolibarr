@@ -85,6 +85,9 @@ class CSMSFile
 			return -1;
 		}
 
+		if (!empty($conf->global->MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT))
+			$to = $this->tel_international($to, $conf->global->MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT);
+
 		dol_syslog("CSMSFile::CSMSFile: MAIN_SMS_SENDMODE=".$conf->global->MAIN_SMS_SENDMODE." charset=".$conf->file->character_set_client." from=".$from.", to=".$to.", msg length=".strlen($msg), LOG_DEBUG);
 		dol_syslog("CSMSFile::CSMSFile: deferred=".$deferred." priority=".$priority." class=".$class, LOG_DEBUG);
 
@@ -261,5 +264,19 @@ class CSMSFile
 				@chmod($outputfile, octdec($conf->global->MAIN_UMASK));
 			}
 		}
+	}
+
+	// Added by MMI Mathieu Moulin iProspective
+	function tel_international($value, $prefix='') {
+		if (empty($prefix)) {
+			global $conf;
+			$prefix = $conf->global->MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT;
+		}
+		$value = str_replace([' ', '.', '-'], ['', '', ''], $value);
+		if (substr($value, 0, 2)=='00')
+			$value = '+'.substr($value, 2);
+		if (substr($value, 0, 1)=='0')
+			$value = $prefix.substr($value, 1);
+		return $value;
 	}
 }

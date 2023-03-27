@@ -312,6 +312,7 @@ MAIN_MAIL_EMAIL_DKIM_PRIVATE_KEY=Clé privée pour générer la signature DKIM
 MAIN_DISABLE_ALL_SMS=Désactiver globalement tout envoi de Sms (pour mode test ou démos)
 MAIN_SMS_SENDMODE=Méthode d'envoi des SMS
 MAIN_MAIL_SMS_FROM=Numéro de téléphone par défaut pour envoi Sms
+MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT=Préfix par défaut pour envoi Sms
 MAIN_MAIL_DEFAULT_FROMTYPE=Expéditeur par défaut des e-mails pour les envois manuels (e-mail utilisateur ou de la société)
 UserEmail=Email utilisateur
 CompanyEmail=Email organization
