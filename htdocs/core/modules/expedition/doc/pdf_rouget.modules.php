@@ -386,47 +386,37 @@ class pdf_rouget extends ModelePdfExpedition
 					}
 				}
 
-				if (!empty($object->note_public) || !empty($object->tracking_number)) {
+				// Tracking number
+				if (!empty($object->shipping_method_id) || !empty($object->tracking_number)) {
+					$label = '';
+					if ($object->shipping_method_id > 0) {
+						// Get code using getLabelFromKey
+						$code = $outputlangs->getLabelFromKey($this->db, $object->shipping_method_id, 'c_shipment_mode', 'rowid', 'code');
+						$label = $outputlangs->trans("SendingMethod").": ".$outputlangs->trans("SendingMethod".strtoupper($code));
+					}
+
+					$object->getUrlTrackingStatus($object->tracking_number);
+					if (!empty($object->tracking_url) && $object->shipping_method_id > 0 && $object->tracking_url != $object->tracking_number)
+						$label .= ($label ?' / ' :'').$outputlangs->trans("LinkToTrackYourPackage").' : '.$object->tracking_url;
+					if (!empty($object->tracking_number))
+						$label .= ($label ?' / ' :'').$outputlangs->transnoentities("TrackingNumber")." : ".$object->tracking_number;
+
+					$tab_top = 88 + $height_incoterms;
+					$tab_top_alt = $tab_top;
+					$pdf->SetFont('', 'B', $default_font_size - 2);
+					$pdf->writeHTMLCell(160, 4, $this->posxdesc - 1, $tab_top_alt, $label, 0, 1, false, true, 'L');
+
+					$tab_top_alt = $pdf->GetY();
+					$height_incoterms += 10;
+				}
+
+				// Notes
+				if (!empty($object->note_public)) {
 					$tab_top = 88 + $height_incoterms;
 					$tab_top_alt = $tab_top;
 
-					$pdf->SetFont('', 'B', $default_font_size - 2);
-
-					//$tab_top_alt += 1;
-
-					// Tracking number
-					if (!empty($object->tracking_number)) {
-						$pdf->writeHTMLCell(60, 4, $this->posxdesc - 1, $tab_top - 1, $outputlangs->transnoentities("TrackingNumber")." : ".$object->tracking_number, 0, 1, false, true, 'L');
-						$tab_top_alt = $pdf->GetY();
-
-						$object->getUrlTrackingStatus($object->tracking_number);
-						if (!empty($object->tracking_url)) {
-							if ($object->shipping_method_id > 0) {
-								// Get code using getLabelFromKey
-								$code = $outputlangs->getLabelFromKey($this->db, $object->shipping_method_id, 'c_shipment_mode', 'rowid', 'code');
-								$label = '';
-								if ($object->tracking_url != $object->tracking_number) {
-									$label .= $outputlangs->trans("LinkToTrackYourPackage")."<br>";
-								}
-								$label .= $outputlangs->trans("SendingMethod").": ".$outputlangs->trans("SendingMethod".strtoupper($code));
-								//var_dump($object->tracking_url != $object->tracking_number);exit;
-								if ($object->tracking_url != $object->tracking_number) {
-									$label .= " : ";
-									$label .= $object->tracking_url;
-								}
-								$pdf->SetFont('', 'B', $default_font_size - 2);
-								$pdf->writeHTMLCell(60, 4, $this->posxdesc - 1, $tab_top_alt, $label, 0, 1, false, true, 'L');
-
-								$tab_top_alt = $pdf->GetY();
-							}
-						}
-					}
-
-					// Notes
-					if (!empty($object->note_public)) {
-						$pdf->SetFont('', '', $default_font_size - 1); // Dans boucle pour gerer multi-page
-						$pdf->writeHTMLCell(190, 3, $this->posxdesc - 1, $tab_top_alt, dol_htmlentitiesbr($object->note_public), 0, 1);
-					}
+					$pdf->SetFont('', '', $default_font_size - 1); // Dans boucle pour gerer multi-page
+					$pdf->writeHTMLCell(190, 3, $this->posxdesc - 1, $tab_top_alt, dol_htmlentitiesbr($object->note_public), 0, 1);
 
 					$nexY = $pdf->GetY();
 					$height_note = $nexY - $tab_top;

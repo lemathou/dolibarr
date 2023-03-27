@@ -372,43 +372,32 @@ class pdf_espadon extends ModelePdfExpedition
 					$notetoshow = dol_concatdesc($notetoshow, $extranote);
 				}
 
-				if (!empty($notetoshow) || !empty($object->tracking_number)) {
+				if (!empty($notetoshow) || !empty($object->shipping_method_id) || !empty($object->tracking_number)) {
 					$tab_top -= 2;
 
-					// Tracking number
-					if (!empty($object->tracking_number)) {
-						$pdf->SetFont('', 'B', $default_font_size - 2);
-						$pdf->writeHTMLCell(60, 4, $this->posxdesc - 1, $tab_top - 1, $outputlangs->transnoentities("TrackingNumber") . " : " . $object->tracking_number, 0, 1, false, true, 'L');
-
-						$tab_top_alt = $pdf->GetY();
-						$object->getUrlTrackingStatus($object->tracking_number);
-						if (!empty($object->tracking_url)) {
-							if ($object->shipping_method_id > 0) {
-								// Get code using getLabelFromKey
-								$code = $outputlangs->getLabelFromKey($this->db, $object->shipping_method_id, 'c_shipment_mode', 'rowid', 'code');
-								$label = '';
-								if ($object->tracking_url != $object->tracking_number) {
-									$label .= $outputlangs->trans("LinkToTrackYourPackage")."<br>";
-								}
-								$label .= $outputlangs->trans("SendingMethod").": ".$outputlangs->trans("SendingMethod".strtoupper($code));
-								//var_dump($object->tracking_url != $object->tracking_number);exit;
-								if ($object->tracking_url != $object->tracking_number) {
-									$label .= " : ";
-									$label .= $object->tracking_url;
-								}
-								$pdf->SetFont('', 'B', $default_font_size - 2);
-								$pdf->writeHTMLCell(60, 4, $this->posxdesc - 1, $tab_top_alt, $label, 0, 1, false, true, 'L');
-
-								$tab_top = $pdf->GetY();
-							}
+					if (!empty($object->shipping_method_id) || !empty($object->tracking_number)) {
+						$label = '';
+						if ($object->shipping_method_id > 0) {
+							// Get code using getLabelFromKey
+							$code = $outputlangs->getLabelFromKey($this->db, $object->shipping_method_id, 'c_shipment_mode', 'rowid', 'code');
+							$label = $outputlangs->trans("SendingMethod").": ".$outputlangs->trans("SendingMethod".strtoupper($code));
 						}
-					}
 
+						$object->getUrlTrackingStatus($object->tracking_number);
+						if (!empty($object->tracking_url) && $object->shipping_method_id > 0 && $object->tracking_url != $object->tracking_number)
+							$label .= ($label ?' / ' :'').$outputlangs->trans("LinkToTrackYourPackage").' : '.$object->tracking_url;
+						if (!empty($object->tracking_number))
+							$label .= ($label ?' / ' :'').$outputlangs->transnoentities("TrackingNumber")." : ".$object->tracking_number;
+
+						$pdf->SetFont('', 'B', $default_font_size - 2);
+						$pdf->writeHTMLCell(160, 4, $this->posxdesc - 1, $tab_top, $label, 0, 1, false, true, 'L');
+						$tab_top += 5;
+					}
 
 					// Notes
 					$pagenb = $pdf->getPage();
 					if (!empty($notetoshow)) {
-						$tab_top -= 2;
+						$tab_top += 2;
 
 						$tab_width = $this->page_largeur - $this->marge_gauche - $this->marge_droite;
 						$pageposbeforenote = $pagenb;
