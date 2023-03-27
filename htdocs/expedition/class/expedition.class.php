@@ -781,6 +781,16 @@ class Expedition extends CommonObject
 						}
 					}
 				}
+
+				// If some stock lines are now 0, we can remove entry into llx_product_stock, but only if there is no child lines into llx_product_batch (detail of batch, because we can imagine
+				// having a lot1/qty=X and lot2/qty=-X, so 0 but we must not loose repartition of different lot.
+				// Added by MMI Mathieu Moulin iProspective
+				// DO NOT DELETE STOCK !!
+				if (empty($conf->global->STOCK_KEEP_EMPTY_IN_DB)) {
+					$sql = "DELETE FROM ".MAIN_DB_PREFIX."product_stock WHERE reel = 0 AND rowid NOT IN (SELECT fk_product_stock FROM ".MAIN_DB_PREFIX."product_batch as pb)";
+					$resql = $this->db->query($sql);
+				}
+				// We do not test error, it can fails if there is child in batch details
 			} else {
 				$this->db->rollback();
 				$this->error = $this->db->error();

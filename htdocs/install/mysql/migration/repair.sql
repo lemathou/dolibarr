@@ -157,8 +157,8 @@ CREATE TABLE tmp_llx_product_batch2 AS select pb.rowid, pb.fk_product_stock, pb.
 DELETE FROM llx_product_batch WHERE rowid IN (select rowid FROM tmp_llx_product_batch2);
 INSERT INTO llx_product_batch(fk_product_stock, eatby, sellby, batch, qty) SELECT fk_product_stock, eatby, sellby, batch, qty FROM tmp_llx_product_batch;
 
-DELETE FROM llx_product_stock WHERE reel = 0 AND rowid NOT IN (SELECT fk_product_stock FROM llx_product_batch as pb);
-DELETE FROM llx_product_batch WHERE qty = 0;
+-- NO! DELETE FROM llx_product_stock WHERE reel = 0 AND rowid NOT IN (SELECT fk_product_stock FROM llx_product_batch as pb);
+-- NO! DELETE FROM llx_product_batch WHERE qty = 0;
 
 
 -- Stock calculation on product
