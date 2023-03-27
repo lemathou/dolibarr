@@ -629,6 +629,8 @@ if (empty($reshook)) {
 
 								$line->detail_batch->fk_origin_stock = $batch_id;
 								$line->detail_batch->batch = $lotStock->batch;
+								$line->detail_batch->sellby = $lotStock->sellby;
+								$line->detail_batch->eatby = $lotStock->eatby;
 								$line->detail_batch->id = $detail_batch->id;
 								$line->detail_batch->entrepot_id = $lotStock->warehouseid;
 								$line->detail_batch->qty = $batch_qty;
@@ -672,6 +674,8 @@ if (empty($reshook)) {
 								if ($line->fetch($lineIdToAddLot) > 0) {
 									$line->detail_batch->fk_origin_stock = $batch_id;
 									$line->detail_batch->batch = $lotStock->batch;
+									$line->detail_batch->sellby = $lotStock->sellby;
+									$line->detail_batch->eatby = $lotStock->eatby;
 									$line->detail_batch->entrepot_id = $lotStock->warehouseid;
 									$line->detail_batch->qty = $batch_qty;
 									if ($line->update($user) < 0) {
@@ -689,6 +693,8 @@ if (empty($reshook)) {
 								$line->detail_batch[0] = new ExpeditionLineBatch($db);
 								$line->detail_batch[0]->fk_origin_stock = $batch_id;
 								$line->detail_batch[0]->batch = $lotStock->batch;
+								$line->detail_batch[0]->sellby = $lotStock->sellby;
+								$line->detail_batch[0]->eatby = $lotStock->eatby;
 								$line->detail_batch[0]->entrepot_id = $lotStock->warehouseid;
 								$line->detail_batch[0]->qty = $batch_qty;
 								if ($object->create_line_batch($line, $line->array_options) < 0) {
@@ -1527,6 +1533,12 @@ if ($action == 'create') {
 										$result = $productlotObject->fetch(0, $line->fk_product, $dbatch->batch);
 										if ($result > 0) {
 											print $productlotObject->getNomUrl(1);
+											if (empty($conf->global->PRODUCT_DISABLE_SELLBY) && !empty($dbatch->sellby)) {
+												print ' - '.$langs->trans("SellByDate").': '.dol_print_date($dbatch->sellby, "day");
+											}
+											if (empty($conf->global->PRODUCT_DISABLE_EATBY) && !empty($dbatch->eatby)) {
+												print ' - '.$langs->trans("EatByDate").': '.dol_print_date($dbatch->eatby, "day");
+											}
 										} else {
 											print 'TableLotIncompleteRunRepairWithParamStandardEqualConfirmed';
 										}
