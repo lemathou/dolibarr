@@ -1404,6 +1404,9 @@ class Propal extends CommonObject
 							$pu_ht = $prod->price;
 							$tva_tx = get_default_tva($mysoc, $objsoc, $prod->id);
 							$remise_percent = $objsoc->remise_percent;
+							// Added by MMI
+							if (!empty($conf->global->MMI_PROPAL_CLONE_USE_NEW_COST_PRICE))
+								$pa_ht = $prod->cost_price;
 
 							if (!empty($conf->global->PRODUIT_MULTIPRICES) && $objsoc->price_level > 0) {
 								$pu_ht = $prod->multiprices[$objsoc->price_level];
@@ -1427,7 +1430,10 @@ class Propal extends CommonObject
 									}
 								}
 							}
-
+							
+							// Added by MMI
+							if (!empty($pa_ht))
+								$line->pa_ht = $pa_ht;
 							$line->subprice = $pu_ht;
 							$line->tva_tx = $tva_tx;
 							$line->remise_percent = $remise_percent;
