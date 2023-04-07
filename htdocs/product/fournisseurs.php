@@ -455,6 +455,13 @@ if ($id > 0 || $ref) {
 			}
 			print '</td></tr>';
 
+			// MMI Extrafields
+			$parameters = array('socid'=>$socid, 'id_prod'=>$id, 'form'=>$form, 'usercancreate'=>$usercancreate);
+			$reshook = $hookmanager->executeHooks('ObjectExtraFields', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
+			if ($reshook < 0) {
+				setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+			}
+
 			print '</table>';
 
 			print '</div>';
