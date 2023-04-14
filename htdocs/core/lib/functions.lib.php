@@ -1295,7 +1295,6 @@ function dol_sanitizeUrl($stringtoclean, $type = 1)
 function dol_string_unaccent($str)
 {
 	global $conf;
-
 	if (utf8_check($str)) {
 		if (extension_loaded('intl') && !empty($conf->global->MAIN_UNACCENT_USE_TRANSLITERATOR)) {
 			$transliterator = \Transliterator::createFromRules(':: Any-Latin; :: Latin-ASCII; :: NFD; :: [:Nonspacing Mark:] Remove; :: NFC;', \Transliterator::FORWARD);
@@ -1323,6 +1322,10 @@ function dol_string_unaccent($str)
 		'%C3%B9' => 'u', '%C3%BA' => 'u', '%C3%BB' => 'u', '%C3%BC' => 'u',
 		'%C3%BD' => 'y', '%C3%BF' => 'y'
 		);
+		$string = strtr($string, $replacements);
+		$replacements = [];
+		foreach(['%CC%8','%CC%9','%CC%A','%CC%B','%CD%8','%CD%9','%CD%A'] as $i) foreach([0,1,2,3,4,5,6,7,8,9,'A','B','C','D','E','F'] as $j)
+				$replacements["$i$j"] = '';
 		$string = strtr($string, $replacements);
 		return rawurldecode($string);
 	} else {
