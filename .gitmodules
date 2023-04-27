@@ -130,3 +130,7 @@
 	path = htdocs/custom_dolicloud
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-modules-dolicloud.git
 	branch = 16.0-mmi
+[submodule "htdocs/custom/attachments"]
+	path = htdocs/custom/attachments
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-attachments.git
+	branch = 16.0-mmi
