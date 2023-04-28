@@ -841,6 +841,10 @@ class CommandeFournisseur extends CommonOrder
 			if (isset($this->statut)) {
 				$label .= ' '.$this->getLibStatut(5);
 			}
+			$this->fetch_thirdparty();
+			if (!empty($this->thirdparty)) {
+				$label .= '<br><b>'.$langs->trans('Societe').':</b> '.$this->thirdparty->name;
+			}
 			if (!empty($this->ref)) {
 				$label .= '<br><b>'.$langs->trans('Ref').':</b> '.$this->ref;
 			}
