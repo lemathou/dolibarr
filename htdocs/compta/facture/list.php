@@ -199,6 +199,7 @@ $fieldstosearchall = array(
 	'f.note_public'=>'NotePublic',
 	's.nom'=>"ThirdParty",
 	's.name_alias'=>"AliasNameShort",
+	's.address'=>"Adresse",
 	's.zip'=>"Zip",
 	's.town'=>"Town",
 	's.email'=>"Email",

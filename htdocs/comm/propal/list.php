@@ -192,6 +192,7 @@ $fieldstosearchall = array(
 	'pd.description'=>'Description',
 	's.nom'=>"ThirdParty",
 	's.name_alias'=>"AliasNameShort",
+	's.address'=>"Adresse",
 	's.zip'=>"Zip",
 	's.town'=>"Town",
 	's.email'=>"Email",
