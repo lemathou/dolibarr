@@ -130,3 +130,15 @@
 	path = htdocs/custom_dolicloud
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-modules-dolicloud.git
 	branch = 16.0-mmi
+[submodule "htdocs/custom/attachments"]
+	path = htdocs/custom/attachments
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-attachments.git
+	branch = 16.0-mmi
+[submodule "htdocs/custom/propalehistory"]
+	path = htdocs/custom/propalehistory
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-propalehistory.git
+	branch = 16.0-mmi
+[submodule "htdocs/custom/listincsv"]
+	path = htdocs/custom/listincsv
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-listincsv.git
+	branch = 16.0-mmi
