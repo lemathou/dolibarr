@@ -2910,7 +2910,8 @@ if ($action == 'create') {
 		$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem, $compatibleImportElementsList);
 
 		// Show online signature link
-		$useonlinesignature = 1;
+		// Hack MMI Mathieu Moulin : add option to hide
+		$useonlinesignature = empty($conf->global->PROPAL_HIDE_ONLINE_SIGNATURE);
 
 		if ($object->statut != Propal::STATUS_DRAFT && $useonlinesignature) {
 			print '<br><!-- Link to sign -->';
