@@ -8646,7 +8646,7 @@ class Form
 						global $noMoreLinkedObjectBlockAfter;
 						$noMoreLinkedObjectBlockAfter = 1;
 					}
-
+					//var_dump($reldir.'/'.$tplname.'.tpl.php'); var_dump($linkedObjectBlock);
 					$res = @include dol_buildpath($reldir.'/'.$tplname.'.tpl.php');
 					if ($res) {
 						$nboftypesoutput++;
