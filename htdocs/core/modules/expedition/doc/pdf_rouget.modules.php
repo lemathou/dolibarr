@@ -408,6 +408,7 @@ class pdf_rouget extends ModelePdfExpedition
 
 					$tab_top_alt = $pdf->GetY();
 					$height_incoterms += 10;
+					$tab_top += 10;
 				}
 
 				// Notes
