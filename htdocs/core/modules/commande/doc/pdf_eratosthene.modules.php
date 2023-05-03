@@ -966,6 +966,7 @@ class pdf_eratosthene extends ModelePDFCommandes
 			'object' => $object,
 			'outputlangs' => $outputlangs,
 			'mysoc' => $mysoc,
+			'emetteur' => $this->emetteur,
 		);
 		$reshook = $hookmanager->executeHooks('VATNotificationOnPDF', $parameters, $this); // Note that $object may have been modified by hook
 		//var_dump($hookmanager); die();
