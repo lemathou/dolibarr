@@ -959,12 +959,30 @@ class pdf_eratosthene extends ModelePDFCommandes
 
 		$pdf->SetFont('', '', $default_font_size - 1);
 
-		// If France, show VAT mention if not applicable
-		if ($this->emetteur->country_code == 'FR' && empty($mysoc->tva_assuj)) {
+		// MMI Mathieu Moulin iProspective
+		// Replacement for VAT exempt notice
+		global $hookmanager;
+		$parameters = array(
+			'object' => $object,
+			'outputlangs' => $outputlangs,
+			'mysoc' => $mysoc,
+		);
+		$reshook = $hookmanager->executeHooks('VATNotificationOnPDF', $parameters, $this); // Note that $object may have been modified by hook
+		//var_dump($hookmanager); die();
+		//var_dump($reshook); die();
+		if ($reshook < 0) {
+			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+		} elseif (empty($reshook)) {
+			// If France, show VAT mention if not applicable
+			if ($this->emetteur->country_code == 'FR' && empty($mysoc->tva_assuj))
+				$vat_info = $outputlangs->transnoentities("VATIsNotUsedForInvoice");
+		} else {
+			$vat_info = $hookmanager->resPrint;
+		}
+		if (!empty($vat_info)) {
 			$pdf->SetFont('', 'B', $default_font_size - 2);
 			$pdf->SetXY($this->marge_gauche, $posy);
-			$pdf->MultiCell(100, 3, $outputlangs->transnoentities("VATIsNotUsedForInvoice"), 0, 'L', 0);
-
+			$pdf->MultiCell(100, 3, $vat_info, 0, 'L', 0);
 			$posy = $pdf->GetY() + 4;
 		}
 
