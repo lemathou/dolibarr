@@ -2597,7 +2597,7 @@ class Form
 		// include search in supplier ref
 		// Added by MMI Mathieu Moulin iProspective
 		// Hack : include search in supplier name
-		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF) || !empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
+		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_SHOW_MULTIPLE) || !empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF) || !empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
 			$sql .= " LEFT JOIN ".$this->db->prefix()."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
 		}
 		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
@@ -2691,10 +2691,10 @@ class Form
 						$sql .= " OR pl.description LIKE '".$this->db->escape($prefix.$crit)."%'";
 					}
 				}
+				// Added by MMI Mathieu Moulin iProspective
 				if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF)) {
 					$sql .= " OR pfp.ref_fourn LIKE '".$this->db->escape($prefix.$crit)."%'";
 				}
-				// Added by MMI Mathieu Moulin iProspective
 				if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
 					$sql .= " OR pf.nom LIKE '".$this->db->escape($prefix.$crit)."%'";
 					$sql .= " OR pf.name_alias LIKE '".$this->db->escape($prefix.$crit)."%'";
@@ -2712,6 +2712,11 @@ class Form
 		}
 		if (count($warehouseStatusArray)) {
 			$sql .= " GROUP BY ".$selectFields;
+		}
+		// Added by MMI Mathieu Moulin iProspective
+		// @todo gérer le cas où on affiche plusieurs lignes par produit et on sélectionne => mettre le bon prix d'achat, etc.
+		elseif (empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_SHOW_MULTIPLE) && (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF) || !empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL))) {
+			$sql .= " GROUP BY p.rowid";
 		}
 
 		//Sort by category
@@ -2851,7 +2856,7 @@ class Form
 	 * This define value for &$opt and &$optJson.
 	 * This function is called by select_produits_list().
 	 *
-	 * @param 	resource	$objp			    Resultset of fetch
+	 * @param 	resource|object	$objp			    Resultset of fetch
 	 * @param 	string		$opt			    Option (var used for returned value in string option format)
 	 * @param 	string		$optJson		    Option (var used for returned value in json format)
 	 * @param 	int			$price_level	    Price level
