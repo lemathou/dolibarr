@@ -238,19 +238,19 @@ if (!$error && $massaction == 'confirm_presend') {
 
 			foreach ($listofobjectref[$thirdpartyid] as $objectid => $objectobj) {
 				//var_dump($thirdpartyid.' - '.$objectid.' - '.$objectobj->statut);
-				if ($objectclass == 'Propal' && $objectobj->statut == Propal::STATUS_DRAFT) {
+				if ($objectclass == 'Propal' && $objectobj->statut == Propal::STATUS_DRAFT && empty($conf->global->DOCUMENT_DRAFT_MASSACTION_CAN_SEND) && empty($conf->global->PROPAL_DRAFT_MASSACTION_CAN_SEND)) {
 					$langs->load("errors");
 					$nbignored++;
 					$resaction .= '<div class="error">'.$langs->trans('ErrorOnlyProposalNotDraftCanBeSentInMassAction', $objectobj->ref).'</div><br>';
 					continue; // Payment done or started or canceled
 				}
-				if ($objectclass == 'Commande' && $objectobj->statut == Commande::STATUS_DRAFT) {
+				if ($objectclass == 'Commande' && $objectobj->statut == Commande::STATUS_DRAFT && empty($conf->global->DOCUMENT_DRAFT_MASSACTION_CAN_SEND) && empty($conf->global->ORDER_DRAFT_MASSACTION_CAN_SEND)) {
 					$langs->load("errors");
 					$nbignored++;
 					$resaction .= '<div class="error">'.$langs->trans('ErrorOnlyOrderNotDraftCanBeSentInMassAction', $objectobj->ref).'</div><br>';
 					continue;
 				}
-				if ($objectclass == 'Facture' && $objectobj->statut == Facture::STATUS_DRAFT) {
+				if ($objectclass == 'Facture' && $objectobj->statut == Facture::STATUS_DRAFT && empty($conf->global->INVOICE_DRAFT_MASSACTION_CAN_SEND)) {
 					$langs->load("errors");
 					$nbignored++;
 					$resaction .= '<div class="error">'.$langs->trans('ErrorOnlyInvoiceValidatedCanBeSentInMassAction', $objectobj->ref).'</div><br>';

@@ -108,6 +108,7 @@ $search_town = GETPOST('search_town', 'alpha');
 $search_zip = GETPOST('search_zip', 'alpha');
 $search_state = GETPOST("search_state");
 $search_country = GETPOST("search_country", 'alpha');
+$search_email = GETPOST('search_email', 'alpha');
 $search_type_thirdparty = GETPOST("search_type_thirdparty", 'int');
 $search_user = GETPOST('search_user', 'int');
 $search_sale = GETPOST('search_sale', 'int');
@@ -198,8 +199,10 @@ $fieldstosearchall = array(
 	'f.note_public'=>'NotePublic',
 	's.nom'=>"ThirdParty",
 	's.name_alias'=>"AliasNameShort",
+	's.address'=>"Adresse",
 	's.zip'=>"Zip",
 	's.town'=>"Town",
+	's.email'=>"Email",
 	'pd.description'=>'Description',
 );
 if (empty($user->socid)) {
@@ -223,6 +226,7 @@ $arrayfields = array(
 	's.zip'=>array('label'=>"Zip", 'checked'=>1, 'position'=>60),
 	'state.nom'=>array('label'=>"StateShort", 'checked'=>0, 'position'=>65),
 	'country.code_iso'=>array('label'=>"Country", 'checked'=>0, 'position'=>70),
+	's.email'=>array('label'=>"Email", 'checked'=>0, 'position'=>71),
 	'typent.code'=>array('label'=>"ThirdPartyType", 'checked'=>$checkedtypetiers, 'position'=>75),
 	'f.fk_mode_reglement'=>array('label'=>"PaymentMode", 'checked'=>1, 'position'=>80),
 	'f.fk_cond_reglement'=>array('label'=>"PaymentConditionsShort", 'checked'=>1, 'position'=>85),
@@ -337,6 +341,7 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter', 
 	$search_state = "";
 	$search_type = '';
 	$search_country = '';
+	$search_email = "";
 	$search_type_thirdparty = '';
 	$search_date_startday = '';
 	$search_date_startmonth = '';
@@ -565,7 +570,7 @@ $sql .= ' f.datef, f.date_valid, f.date_lim_reglement as datelimite, f.module_so
 $sql .= ' f.paye as paye, f.fk_statut, f.close_code,';
 $sql .= ' f.datec as date_creation, f.tms as date_update, f.date_closing as date_closing,';
 $sql .= ' f.retained_warranty, f.retained_warranty_date_limit, f.situation_final, f.situation_cycle_ref, f.situation_counter,';
-$sql .= ' s.rowid as socid, s.nom as name, s.name_alias as alias, s.email, s.phone, s.fax, s.address, s.town, s.zip, s.fk_pays, s.client, s.fournisseur, s.code_client, s.code_fournisseur, s.code_compta as code_compta_client, s.code_compta_fournisseur,';
+$sql .= ' s.rowid as socid, s.nom as name, s.name_alias as alias, s.email, s.phone, s.fax, s.address, s.town, s.zip, s.fk_pays, s.email, s.client, s.fournisseur, s.code_client, s.code_fournisseur, s.code_compta as code_compta_client, s.code_compta_fournisseur,';
 $sql .= ' typent.code as typent_code,';
 $sql .= ' state.code_departement as state_code, state.nom as state_name,';
 $sql .= ' country.code as country_code,';
@@ -701,6 +706,9 @@ if ($search_zip) {
 }
 if ($search_state) {
 	$sql .= natural_search("state.nom", $search_state);
+}
+if ($search_email) {
+	$sql .= natural_search("s.email", $search_email);
 }
 if (strlen(trim($search_country))) {
 	$arrayofcode = getCountriesInEEC();
@@ -844,7 +852,7 @@ if (!$sall) {
 	$sql .= ' f.retained_warranty, f.retained_warranty_date_limit, f.situation_final, f.situation_cycle_ref, f.situation_counter,';
 	$sql .= ' f.fk_user_author, f.fk_multicurrency, f.multicurrency_code, f.multicurrency_tx, f.multicurrency_total_ht,';
 	$sql .= ' f.multicurrency_total_tva, f.multicurrency_total_ttc,';
-	$sql .= ' s.rowid, s.nom, s.name_alias, s.email, s.phone, s.fax, s.address, s.town, s.zip, s.fk_pays, s.client, s.fournisseur, s.code_client, s.code_fournisseur, s.code_compta, s.code_compta_fournisseur,';
+	$sql .= ' s.rowid, s.nom, s.name_alias, s.email, s.phone, s.fax, s.address, s.town, s.zip, s.fk_pays, s.email, s.client, s.fournisseur, s.code_client, s.code_fournisseur, s.code_compta, s.code_compta_fournisseur,';
 	$sql .= ' typent.code,';
 	$sql .= ' state.code_departement, state.nom,';
 	$sql .= ' country.code,';
@@ -1034,6 +1042,9 @@ if ($resql) {
 	}
 	if ($search_country) {
 		$param .= "&search_country=".urlencode($search_country);
+	}
+	if ($search_email) {
+		$param .= '&search_email='.urlencode($search_email);
 	}
 	if ($search_sale > 0) {
 		$param .= '&search_sale='.urlencode($search_sale);
@@ -1361,6 +1372,10 @@ if ($resql) {
 		print $form->select_country($search_country, 'search_country', '', 0, 'minwidth150imp maxwidth150', 'code2', 1, 0, 1, null, 1);
 		print '</td>';
 	}
+	// Email
+	if (!empty($arrayfields['s.email']['checked'])) {
+		print '<td class="liste_titre"><input class="flat maxwidth50imp" type="text" name="search_email" value="'.dol_escape_htmltag($search_email).'"></td>';
+	}
 	// Company type
 	if (!empty($arrayfields['typent.code']['checked'])) {
 		print '<td class="liste_titre maxwidthonsmartphone" align="center">';
@@ -1595,6 +1610,9 @@ if ($resql) {
 	if (!empty($arrayfields['country.code_iso']['checked'])) {
 		print_liste_field_titre($arrayfields['country.code_iso']['label'], $_SERVER["PHP_SELF"], "country.code_iso", "", $param, 'align="center"', $sortfield, $sortorder);
 	}
+	if (!empty($arrayfields['s.email']['checked'])) {
+		print_liste_field_titre($arrayfields['s.email']['label'], $_SERVER["PHP_SELF"], 's.email', '', $param, '', $sortfield, $sortorder);
+	}
 	if (!empty($arrayfields['typent.code']['checked'])) {
 		print_liste_field_titre($arrayfields['typent.code']['label'], $_SERVER["PHP_SELF"], "typent.code", "", $param, 'align="center"', $sortfield, $sortorder);
 	}
@@ -1783,6 +1801,7 @@ if ($resql) {
 			$companystatic->zip = $obj->zip;
 			$companystatic->town = $obj->town;
 			$companystatic->country_code = $obj->country_code;
+			$companystatic->email = $obj->email;
 
 			$projectstatic->id = $obj->project_id;
 			$projectstatic->ref = $obj->project_ref;
@@ -1994,6 +2013,15 @@ if ($resql) {
 				print '<td class="center">';
 				$tmparray = getCountry($obj->fk_pays, 'all');
 				print $tmparray['label'];
+				print '</td>';
+				if (!$i) {
+					$totalarray['nbfield']++;
+				}
+			}
+			// Email
+			if (!empty($arrayfields['s.email']['checked'])) {
+				print '<td class="nowraponall">';
+				print dol_escape_htmltag($obj->email);
 				print '</td>';
 				if (!$i) {
 					$totalarray['nbfield']++;

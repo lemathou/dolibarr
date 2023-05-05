@@ -2843,7 +2843,12 @@ if ($action == 'create') {
 					if (isModEnabled('facture') && $usercancreateinvoice) {
 						print '<a class="butAction" href="'.DOL_URL_ROOT.'/compta/facture/card.php?action=create&origin='.$object->element.'&originid='.$object->id.'&socid='.$object->socid.'">'.$langs->trans("CreateBill").'</a>';
 					}
-
+				}
+				
+				// MMI Mathieu Moulin iProspective
+				// Déplacement en dehors de la condition PROPOSAL_ARE_NOT_BILLABLE
+				// afin de pouvoir classer facturé une propale avec différence dans le montant des factures associées aux commandes
+				if ($object->statut == Propal::STATUS_SIGNED) {
 					$arrayofinvoiceforpropal = $object->getInvoiceArrayList();
 					if ((is_array($arrayofinvoiceforpropal) && count($arrayofinvoiceforpropal) > 0) || empty($conf->global->WORKFLOW_PROPAL_NEED_INVOICE_TO_BE_CLASSIFIED_BILLED)) {
 						if ($usercanclose) {
@@ -2910,7 +2915,8 @@ if ($action == 'create') {
 		$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem, $compatibleImportElementsList);
 
 		// Show online signature link
-		$useonlinesignature = 1;
+		// Hack MMI Mathieu Moulin : add option to hide
+		$useonlinesignature = empty($conf->global->PROPAL_HIDE_ONLINE_SIGNATURE);
 
 		if ($object->statut != Propal::STATUS_DRAFT && $useonlinesignature) {
 			print '<br><!-- Link to sign -->';
