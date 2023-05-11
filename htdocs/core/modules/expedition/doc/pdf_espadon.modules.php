@@ -114,6 +114,16 @@ class pdf_espadon extends ModelePdfExpedition
 	 */
 	public $emetteur;
 
+	// MMI Missing fields
+	public $posxdesc;
+	public $watermark;
+	public $tabTitleHeight;
+	public $atleastonephoto;
+	public $posxpicture;
+	public $posxweightvol;
+	public $defaultContentsFieldsStyle;
+	public $defaultTitlesFieldsStyle;
+	public $cols;
 
 	/**
 	 *	Constructor
@@ -374,6 +384,8 @@ class pdf_espadon extends ModelePdfExpedition
 
 				if (!empty($notetoshow) || !empty($object->shipping_method_id) || !empty($object->tracking_number)) {
 					$tab_top -= 2;
+					$tab_topbeforetrackingnumber = $tab_top;
+					$height_trackingnumber = 4;
 
 					if (!empty($object->shipping_method_id) || !empty($object->tracking_number)) {
 						$label = '';
@@ -390,14 +402,16 @@ class pdf_espadon extends ModelePdfExpedition
 							$label .= ($label ?' / ' :'').$outputlangs->transnoentities("TrackingNumber")." : ".$object->tracking_number;
 
 						$pdf->SetFont('', 'B', $default_font_size - 2);
-						$pdf->writeHTMLCell(160, 4, $this->posxdesc - 1, $tab_top, $label, 0, 1, false, true, 'L');
+						$pdf->writeHTMLCell(160, $height_trackingnumber, $this->posxdesc - 1, $tab_top, $label, 0, 1, false, true, 'L');
 						$tab_top += 5;
 					}
 
 					// Notes
 					$pagenb = $pdf->getPage();
+
 					if (!empty($notetoshow)) {
 						$tab_top += 2;
+
 
 						$tab_width = $this->page_largeur - $this->marge_gauche - $this->marge_droite;
 						$pageposbeforenote = $pagenb;
@@ -460,11 +474,21 @@ class pdf_espadon extends ModelePdfExpedition
 								$pdf->SetDrawColor(128, 128, 128);
 								// Draw note frame
 								if ($i > $pageposbeforenote) {
-									$height_note = $this->page_hauteur - ($tab_top_newpage + $heightforfooter);
-									$pdf->Rect($this->marge_gauche, $tab_top_newpage - 1, $tab_width, $height_note + 1);
+									if (empty($height_trackingnumber)) {
+										$height_note = $this->page_hauteur - ($tab_top_newpage + $heightforfooter);
+									} else {
+										$height_note = $this->page_hauteur - ($tab_top_newpage + $heightforfooter) + $height_trackingnumber + 1;
+										$tab_top_newpage = $tab_topbeforetrackingnumber;
+									}
+									$pdf->Rect($this->marge_gauche, $tab_top_newpage - 1, $tab_width, $height_note + 2);
 								} else {
-									$height_note = $this->page_hauteur - ($tab_top + $heightforfooter);
-									$pdf->Rect($this->marge_gauche, $tab_top - 1, $tab_width, $height_note + 1);
+									if (empty($height_trackingnumber)) {
+										$height_note = $this->page_hauteur - ($tab_top + $heightforfooter);
+									} else {
+										$height_note = $this->page_hauteur - ($tab_top + $heightforfooter)+ $height_trackingnumber + 1;
+										$tab_top = $tab_topbeforetrackingnumber;
+									}
+									$pdf->Rect($this->marge_gauche, $tab_top - 1, $tab_width, $height_note + 2);
 								}
 
 								// Add footer
@@ -484,8 +508,13 @@ class pdf_espadon extends ModelePdfExpedition
 						{
 							$pdf->commitTransaction();
 							$posyafter = $pdf->GetY();
-							$height_note = $posyafter - $tab_top;
-							$pdf->Rect($this->marge_gauche, $tab_top - 1, $tab_width, $height_note + 1);
+							if (empty($height_trackingnumber)) {
+								$height_note = $posyafter - $tab_top + 1;
+							} else {
+								$height_note = $posyafter - $tab_top + $height_trackingnumber + 1;
+								$tab_top = $tab_topbeforetrackingnumber;
+							}
+							$pdf->Rect($this->marge_gauche, $tab_top - 1, $tab_width, $height_note + 2);
 
 
 							if ($posyafter > ($this->page_hauteur - ($heightforfooter + $heightforfreetext + 20))) {
