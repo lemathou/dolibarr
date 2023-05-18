@@ -1870,6 +1870,9 @@ class pdf_sponge extends ModelePDFFactures
 			if ($creditnoteamount) {
 				$labeltouse = ($outputlangs->transnoentities("CreditNotesOrExcessReceived") != "CreditNotesOrExcessReceived") ? $outputlangs->transnoentities("CreditNotesOrExcessReceived") : $outputlangs->transnoentities("CreditNotes");
 				$labeltouse .= (is_object($outputlangsbis) ? (' / '.($outputlangsbis->transnoentities("CreditNotesOrExcessReceived") != "CreditNotesOrExcessReceived") ? $outputlangsbis->transnoentities("CreditNotesOrExcessReceived") : $outputlangsbis->transnoentities("CreditNotes")) : '');
+				// MMIDocument Moulin Mathieu Feature update
+				if (!empty($object->array_options['options_avoirs_as_acompte']))
+					$labeltouse = $outputlangs->transnoentities("CreditNotesReceivedBefore") ;
 				$index++;
 				$pdf->SetXY($col1x, $tab2_top + $tab2_hl * $index);
 				$pdf->MultiCell($col2x - $col1x, $tab2_hl, $labeltouse, 0, 'L', 0);
