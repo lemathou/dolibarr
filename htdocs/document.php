@@ -263,6 +263,9 @@ if (preg_match('/\.\./', $fullpath_original_file) || preg_match('/[<>|]/', $full
 
 clearstatcache();
 
+// MMI Fix ODT to PDF
+$fullpath_original_file = preg_replace('/(\.odt)$/i', '.pdf', $fullpath_original_file);
+
 $filename = basename($fullpath_original_file);
 $filename = preg_replace('/\.noexe$/i', '', $filename);
 
