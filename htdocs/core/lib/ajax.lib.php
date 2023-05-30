@@ -202,7 +202,7 @@ function ajax_autocompleter($selected, $htmlname, $url, $urloption = '', $minLen
 	if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL)) {
 		$script .= '
 							// Add label
-							$("#'.$htmlname.'").attr("data-label", ui.item.label);
+							$("#'.$htmlnamejquery.'").attr("data-label", ui.item.label);
 
 		';
 	}
