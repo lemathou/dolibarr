@@ -3436,7 +3436,7 @@ abstract class CommonObject
 	public function update_note($note, $suffix = '')
 	{
 		// phpcs:enable
-		global $user;
+		global $user, $conf;
 
 		if (!$this->table_element) {
 			$this->error = 'update_note was called on objet with property table_element not defined';
@@ -3476,6 +3476,19 @@ abstract class CommonObject
 			} else {
 				$this->note = $note; // deprecated
 				$this->note_private = $note;
+			}
+			// MMI Trigger
+			if (!empty($conf->global->MMICORE_UPDATE_NOTE_TRIGGER_UPDATE) && !empty($conf->global->MMICORE_UPDATE_NOTE_TRIGGER_UPDATE_LIST) && !empty($this->element)) {
+				$list = [];
+				preg_match_all('/([a-z_]+):([A-Z_]+)/', $conf->global->MMICORE_UPDATE_NOTE_TRIGGER_UPDATE_LIST, $matches);
+				if (!empty($matches)) foreach($matches[1] as $i=>$j) {
+					$list[$j] = $matches[2][$i];
+				}
+				//var_dump($list); die();
+				if (isset($list[$this->element])) {
+					//echo $list[$this->element].'_MODIFY';
+					$result = $this->call_trigger($list[$this->element].'_MODIFY', $user);
+				}
 			}
 			return 1;
 		} else {
