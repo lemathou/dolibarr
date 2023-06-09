@@ -263,6 +263,8 @@ if ($sall || $search_product_category > 0 || $search_user > 0) {
 $sql .= " e.rowid, e.ref, e.ref_customer, e.date_expedition as date_expedition, e.weight, e.weight_units, e.date_delivery as delivery_date, e.fk_statut, e.billed, e.tracking_number, e.fk_shipping_method,";
 $sql .= " l.date_delivery as date_reception,";
 $sql .= " s.rowid as socid, s.nom as name, s.town, s.zip, s.fk_pays, s.client, s.code_client, ";
+// MMI : get soc private note
+$sql .= ' s.note_private soc_note_private,';
 $sql .= " typent.code as typent_code,";
 $sql .= " state.code_departement as state_code, state.nom as state_name,";
 $sql .= " e.date_creation as date_creation, e.tms as date_update,";
@@ -826,6 +828,8 @@ while ($i < min($num, $limit)) {
 	$companystatic->id = $obj->socid;
 	$companystatic->ref = $obj->name;
 	$companystatic->name = $obj->name;
+	// MMI : get soc private note
+	$companystatic->note_private = $obj->soc_note_private;
 
 	$object = new Expedition($db);
 	$object->fetch($obj->rowid);

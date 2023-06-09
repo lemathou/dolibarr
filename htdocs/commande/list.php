@@ -791,6 +791,8 @@ if ($sall || $search_product_category > 0 || $search_user > 0) {
 	$sql = 'SELECT DISTINCT';
 }
 $sql .= ' s.rowid as socid, s.nom as name, s.name_alias as alias, s.email, s.phone, s.fax, s.address, s.town, s.zip, s.fk_pays, s.email, s.client, s.code_client,';
+// MMI : get soc private note
+$sql .= ' s.note_private soc_note_private,';
 $sql .= " typent.code as typent_code,";
 $sql .= " state.code_departement as state_code, state.nom as state_name,";
 $sql .= " country.code as country_code,";
@@ -1880,6 +1882,8 @@ if ($resql) {
 		$companystatic->town = $obj->town;
 		$companystatic->country_code = $obj->country_code;
 		$companystatic->email = $obj->email;
+		// MMI : get soc private note
+		$companystatic->note_private = $obj->soc_note_private;
 		if (!isset($getNomUrl_cache[$obj->socid])) {
 			$getNomUrl_cache[$obj->socid] = $companystatic->getNomUrl(1, 'customer');
 		}
