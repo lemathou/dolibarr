@@ -2719,6 +2719,10 @@ class Societe extends CommonObject
 		if (!empty($conf->accounting->enabled) && $this->fournisseur) {
 			$label2 .= '<br><b>'.$langs->trans('SupplierAccountancyCode').':</b> '.$this->code_compta_fournisseur;
 		}
+		// MMI : Show picto if private note
+		if (!empty($conf->global->MMICORE_SHOW_PICTO_NOTE) && !empty($this->note_private)) {
+			$label2 .= '<br><b>'.$langs->trans('NotePrivate').':</b> '.$this->note_private;
+		}
 		$label .= ($label2 ? '<br>'.$label2 : '').'</div>';
 
 		// Add type of canvas
@@ -2758,6 +2762,10 @@ class Societe extends CommonObject
 		$result .= $linkstart;
 		if ($withpicto) {
 			$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="'.(($withpicto != 2) ? 'paddingright ' : '').'classfortooltip"'), 0, 0, $notooltip ? 0 : 1);
+			// MMI : Show picto if private note
+			if (!empty($conf->global->MMICORE_SHOW_PICTO_NOTE) && !empty($this->note_private)) {
+				$result .= '<span class="far fa-sticky-note" style=" color: #999;"></span> ';
+			}
 		}
 		if ($withpicto != 2) {
 			$result .= dol_escape_htmltag($maxlen ? dol_trunc($name, $maxlen) : $name);
