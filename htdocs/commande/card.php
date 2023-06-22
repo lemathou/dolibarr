@@ -872,7 +872,7 @@ if (empty($reshook)) {
 				if (!empty($product_desc) && !empty($conf->global->MAIN_NO_CONCAT_DESCRIPTION)) {
 					$desc = $product_desc;
 				} else {
-					$desc = dol_concatdesc($desc, $product_desc, '', !empty($conf->global->MAIN_CHANGE_ORDER_CONCAT_DESCRIPTION));
+					$desc = dol_concatdesc($desc, $product_desc, !empty($conf->global->MAIN_USE_XML_TAGS), !empty($conf->global->MAIN_CHANGE_ORDER_CONCAT_DESCRIPTION));
 				}
 
 				// Add custom code and origin country into description
@@ -914,7 +914,7 @@ if (empty($reshook)) {
 						}
 					}
 					$tmptxt .= ')';
-					$desc = dol_concatdesc($desc, $tmptxt);
+					$desc = dol_concatdesc($desc, $tmptxt, !empty($conf->global->MAIN_USE_XML_TAGS));
 				}
 
 				$type = $prod->type;
