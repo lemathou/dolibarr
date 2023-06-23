@@ -149,6 +149,53 @@ if ($action == 'fetch' && !empty($id)) {
 			}
 		}
 
+		// MMI
+		// Price by DDM
+		if (!empty($conf->global->MMIPRODUCTDLUO_ORDER_PROMOPRICE_ENABLE)) { // If we need a particular price related to qty
+			$sql = "SELECT l.rowid, l.fk_product, l.sellby, sl.qty stock";
+			$sql .= " FROM ".MAIN_DB_PREFIX."product_lot l";
+			$sql .= " INNER JOIN ".MAIN_DB_PREFIX."product_stock s ON s.fk_product=l.fk_product";
+			$sql .= " INNER JOIN ".MAIN_DB_PREFIX."product_batch sl ON sl.fk_product_stock=s.rowid AND sl.batch=l.batch";
+			$sql .= " WHERE l.fk_product = ".((int) $id);
+			$sql .= " AND sl.qty >0";
+			$sql .= " ORDER BY l.sellby";
+			$sql .= " LIMIT 1";
+			// @todo considérer le stock réservé ET ce qui est déjà mis dans le même document !
+			// cela permettra d'ajouter le même produit plusieurs fois,
+			// et au fur et à mesure les lots les plus vieux disparaissent et les prix sont bons
+			//echo $sql; die();
+
+			$result = $db->query($sql);
+			if ($result) {
+				$time = time();
+				$date_promo = date('Y-m-d', $time+86400*$conf->global->MMIPRODUCTDLUO_PROMO);
+				$date_antigaspi = date('Y-m-d', $time+86400*$conf->global->MMIPRODUCTDLUO_ANTIGASPI);
+				$objp = $db->fetch_object($result);
+				$sellby = $objp->sellby;
+				$lot_qty = $objp->stock;
+				if ($objp) {
+					//var_dump($objp); die();
+					if ($objp->sellby < $date_antigaspi) {
+						$outdiscount = $conf->global->MMIPRODUCTDLUO_ORDER_PROMOPRICE_ANTIGASPI;
+						$upd = true;
+					}
+					elseif ($objp->sellby < $date_promo) {
+						$outdiscount = $conf->global->MMIPRODUCTDLUO_ORDER_PROMOPRICE_PROMO;
+						$upd = true;
+					}
+				}
+				if (!empty($upd)) {
+					$found = true;
+					$outprice_ht = price($object->price*(100-$outdiscount)/100);
+					$outprice_ttc = price($object->price_ttc*(100-$outdiscount)/100);
+					$outqty = $objp->stock;
+					$outpricebasetype = $object->price_base_type;
+					$outtva_tx = $object->tva_tx;
+					$outdefault_vat_code = $object->default_vat_code;
+				}
+			}
+		}
+
 		// Multiprice (1 price per level)
 		if (!$found && isset($price_level) && $price_level >= 1 && (!empty($conf->global->PRODUIT_MULTIPRICES) || !empty($conf->global->PRODUIT_CUSTOMER_PRICES_BY_QTY_MULTIPRICES))) { // If we need a particular price level (from 1 to 6)
 			$sql = "SELECT price, price_ttc, price_base_type,";
@@ -225,6 +272,10 @@ if ($action == 'fetch' && !empty($id)) {
 			'discount' => $outdiscount,
 			'mandatory_period' => $mandatory_period,
 			'array_options'=>$object->array_options);
+		if (!empty($sellby)) {
+			$outjson['sellby'] = $sellby;
+			$outjson['lot_qty'] = $lot_qty;
+		}
 	}
 
 	echo json_encode($outjson);

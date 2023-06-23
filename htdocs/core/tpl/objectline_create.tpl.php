@@ -263,9 +263,6 @@ if ($nolinesbefore) {
 				} else {
 					$form->select_produits(GETPOST('idprod'), 'idprod', $filtertype, $conf->product->limit_size, $buyer->price_level, $statustoshow, 2, '', 1, array(), $buyer->id, '1', 0, 'maxwidth500', 0, '', GETPOST('combinations', 'array'));
 				}
-				// Added by MMI Mathieu Moulin iProspective
-				if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL))
-					echo '<span id="added_labelprod"></span>';
 				if (!empty($conf->global->MAIN_AUTO_OPEN_SELECT2_ON_FOCUS_FOR_CUSTOMER_PRODUCTS)) {
 					?>
 				<script>
@@ -346,6 +343,9 @@ if ($nolinesbefore) {
 				echo '<div id="attributes_box"></div>';
 			}
 		}
+		// Added by MMI Mathieu Moulin iProspective
+		if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL))
+			echo '<div id="added_labelprod"></div>';
 		// Editor wysiwyg
 		require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 		$nbrows = ROWS_2;
@@ -714,18 +714,6 @@ if (!empty($usemargins) && $user->rights->margins->creer) {
 		<?php
 	} ?>
 
-	<?php
-	// Added by MMI Mathieu Moulin iProspective
-	if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL)) { ?>
-	$("#idprod").change(function()
-	{
-		var label = $(this).attr('data-label');
-		$("#added_labelprod").html(label);
-	});
-		<?php
-	}
-	?>
-
 	/* When changing predefined product, we reload list of supplier prices required for margin combo */
 	$("#idprod, #idprodfournprice").change(function()
 	{
@@ -775,6 +763,19 @@ if (!empty($usemargins) && $user->rights->margins->creer) {
 
 						console.log("objectline_create.tpl set content of price_ht");
 						jQuery("#price_ht").val(data.price_ht);
+						// Added by MMI Mathieu Moulin iProspective
+						<?php
+						if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL)) { ?>
+						if (data.ref != undefined) {
+							var label = data.ref+' - '+data.label+' - QTY: '+data.qty;
+							if (data.sellby != undefined)
+								label += ' - DDM: '+data.sellby.split('-').reverse().join('/')+' (QTY:'+data.lot_qty+')';
+							$("#added_labelprod").html('<b>'+label+'</b>');
+						}
+						<?php } ?>
+						// MMI Discount
+						//alert(data.discount);
+						jQuery("#remise_percent").val(data.discount);
 						<?php
 						if (!empty($conf->global->PRODUIT_AUTOFILL_DESC) && $conf->global->PRODUIT_AUTOFILL_DESC == 1) {
 							if (!empty($conf->global->MAIN_MULTILANGS) && !empty($conf->global->PRODUIT_TEXTS_IN_THIRDPARTY_LANGUAGE)) { ?>
