@@ -74,6 +74,10 @@
 	path = htdocs/custom/mmiworkflow
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiworkflow.git
 	branch = 16.0
+[submodule "htdocs/custom/mmishipping"]
+	path = htdocs/custom/mmishipping
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmishipping.git
+	branch = 16.0
 [submodule "htdocs/custom/abricot"]
 	path = htdocs/custom/abricot
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-abricot.git
@@ -142,3 +146,4 @@
 	path = htdocs/custom/listincsv
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-listincsv.git
 	branch = 16.0-mmi
+
