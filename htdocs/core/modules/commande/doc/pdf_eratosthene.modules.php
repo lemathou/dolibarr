@@ -329,6 +329,13 @@ class pdf_eratosthene extends ModelePDFCommandes
 				global $action;
 				$reshook = $hookmanager->executeHooks('beforePDFCreation', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
 
+				// MMI update for height calculation
+				if (!empty($conf->global->MMI_DOCUMENT_PDF_HEIGHT_CALC)) {
+					$infottot_height = 0;
+					$parameters = array('object'=>$object, 'outputlangs'=>$outputlangs, 'infottot_height'=>&$infottot_height);
+					$reshook = $hookmanager->executeHooks('beforePDFCalculation', $parameters, $object, $action); 
+				}
+
 				// Set nblines with the new command lines content after hook
 				$nblines = count($object->lines);
 
@@ -338,6 +345,10 @@ class pdf_eratosthene extends ModelePDFCommandes
 				$pdf->SetAutoPageBreak(1, 0);
 
 				$heightforinfotot = 40; // Height reserved to output the info and total part
+				// MMI update for height calculation
+				if (!empty($conf->global->MMI_DOCUMENT_PDF_HEIGHT_CALC))
+					$heightforinfotot = $infottot_height;
+				//var_dump($heightforinfotot); die();
 				$heightforfreetext = (isset($conf->global->MAIN_PDF_FREETEXT_HEIGHT) ? $conf->global->MAIN_PDF_FREETEXT_HEIGHT : 5); // Height reserved to output the free text on last page
 				$heightforfooter = $this->marge_basse + (empty($conf->global->MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS) ? 12 : 22); // Height reserved to output the footer (value include bottom margin)
 
@@ -1061,6 +1072,23 @@ class pdf_eratosthene extends ModelePDFCommandes
 			$pdf->MultiCell(80, 4, $lib_availability, 0, 'L');
 
 			$posy = $pdf->GetY() + 1;
+		}
+
+		// MMI Hook
+		$parameters = array(
+			'object' => $object,
+			'outputlangs' => $outputlangs,
+			'pdf' => $pdf,
+			'posy' => &$posy,
+			'posxval' => $posxval,
+			'default_font_size' => $default_font_size,
+			'marge_gauche' => $this->marge_gauche,
+		);
+		$reshook = $hookmanager->executeHooks('drawInfoTable', $parameters, $this); // Note that $object may have been modified by hook
+		//var_dump($hookmanager); die();
+		//var_dump($reshook); die();
+		if ($reshook < 0) {
+			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 		}
 
 		// Show payment mode
