@@ -602,7 +602,10 @@ class AccountancyExport
 					$Tab['lib_compte'] = str_pad(self::trunc(dol_string_unaccent($data->subledger_label), 30), 30);
 
 				if ($data->doc_type == 'customer_invoice') {
-					$Tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($data->subledger_label), 6), 6));
+					if (!empty($conf->global->MMI_COMPTA_EXPORT_LIBALPHA_USE_1STLETTER))
+						$Tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($data->subledger_label), 1), 6));
+					else
+						$Tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($data->subledger_label), 6), 6));
 					$Tab['filler'] = str_repeat(' ', 52);
 					$Tab['coll_compte'] = str_pad(self::trunc($conf->global->ACCOUNTING_ACCOUNT_CUSTOMER, 8), 8);
 				} elseif ($data->doc_type == 'supplier_invoice') {
