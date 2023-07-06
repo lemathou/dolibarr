@@ -1001,7 +1001,25 @@ class MouvementStock extends CommonObject
 		}
 
 		if ($origin->fetch($origin_id) > 0) {
-			return $origin->getNomUrl(1);
+			$ret = $origin->getNomUrl(1);
+			// MMI
+			global $conf;
+			if (!empty($conf->global->MMI_MOVEMENT_LIST_ENHANCE)) {
+				if ($origin_type=='shipping') {
+					require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
+					if ($origin->origin=='commande' && !empty($origin->origin_id)) {
+						$cmd = new Commande($this->db);
+						$cmd->fetch($origin->origin_id);
+						$ret .= ' '.$cmd->getNomUrl(1);
+					}
+					require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
+					$soc = new Societe($this->db);
+					$soc->fetch($origin->socid);
+					$ret .= ' '.$soc->getNomUrl(1);
+				}
+				return $ret;
+			}
+			return $ret;
 		}
 
 		return '';
