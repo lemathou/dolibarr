@@ -338,7 +338,7 @@ if ($action == 'dispatch' && $permissiontoreceive) {
 				}
 
 				if (!$error) {
-					$result = $object->dispatchProduct($user, GETPOST($prod, 'int'), GETPOST($qty), GETPOST($ent, 'int'), GETPOST($pu), GETPOST('comment'), $dDLUO, $dDLC, GETPOST($lot, 'alpha'), GETPOST($fk_commandefourndet, 'int'), $notrigger);
+					$result = $object->dispatchProduct($user, GETPOST($prod, 'int'), GETPOST($qty), GETPOST($ent, 'int'), GETPOST($pu), GETPOST('comment'), $dDLC, $dDLUO, GETPOST($lot, 'alpha'), GETPOST($fk_commandefourndet, 'int'), $notrigger);
 					if ($result < 0) {
 						setEventMessages($object->error, $object->errors, 'errors');
 						$error++;
@@ -742,10 +742,10 @@ if ($id > 0 || !empty($ref)) {
 				if (!empty($conf->productbatch->enabled)) {
 					print '<td class="dispatch_batch_number_title">'.$langs->trans("batch_number").'</td>';
 					if (empty($conf->global->PRODUCT_DISABLE_SELLBY)) {
-						print '<td class="dispatch_dlc_title">'.$langs->trans("SellByDate").'</td>';
+						print '<td class="dispatch_dluo_title">'.$langs->trans("SellByDate").'</td>';
 					}
 					if (empty($conf->global->PRODUCT_DISABLE_EATBY)) {
-						print '<td class="dispatch_dluo_title">'.$langs->trans("EatByDate").'</td>';
+						print '<td class="dispatch_dlc_title">'.$langs->trans("EatByDate").'</td>';
 					}
 				} else {
 					print '<td></td>';
@@ -846,10 +846,10 @@ if ($id > 0 || !empty($ref)) {
 								print "</td>";
 								print '<td class="dispatch_batch_number"></td>';
 								if (empty($conf->global->PRODUCT_DISABLE_SELLBY)) {
-									print '<td class="dispatch_dlc"></td>';
+									print '<td class="dispatch_dluo"></td>';
 								}
 								if (empty($conf->global->PRODUCT_DISABLE_EATBY)) {
-									print '<td class="dispatch_dluo"></td>';
+									print '<td class="dispatch_dlc"></td>';
 								}
 							} else {
 								// Product
@@ -860,10 +860,10 @@ if ($id > 0 || !empty($ref)) {
 								print $langs->trans("ProductDoesNotUseBatchSerial");
 								print '</td>';
 								if (empty($conf->global->PRODUCT_DISABLE_SELLBY)) {
-									print '<td class="dispatch_dlc"></td>';
+									print '<td class="dispatch_dluo"></td>';
 								}
 								if (empty($conf->global->PRODUCT_DISABLE_EATBY)) {
-									print '<td class="dispatch_dluo"></td>';
+									print '<td class="dispatch_dlc"></td>';
 								}
 							}
 						} else {
@@ -935,14 +935,14 @@ if ($id > 0 || !empty($ref)) {
 							print '</td>';
 							if (empty($conf->global->PRODUCT_DISABLE_SELLBY)) {
 								print '<td class="nowraponall">';
-								$dlcdatesuffix = dol_mktime(0, 0, 0, GETPOST('dlc'.$suffix.'month'), GETPOST('dlc'.$suffix.'day'), GETPOST('dlc'.$suffix.'year'));
-								print $form->selectDate($dlcdatesuffix, 'dlc'.$suffix, '', '', 1, '');
+								$dluodatesuffix = dol_mktime(0, 0, 0, GETPOST('dluo'.$suffix.'month'), GETPOST('dluo'.$suffix.'day'), GETPOST('dluo'.$suffix.'year'));
+								print $form->selectDate($dluodatesuffix, 'dluo'.$suffix, '', '', 1, '');
 								print '</td>';
 							}
 							if (empty($conf->global->PRODUCT_DISABLE_EATBY)) {
 								print '<td class="nowraponall">';
-								$dluodatesuffix = dol_mktime(0, 0, 0, GETPOST('dluo'.$suffix.'month'), GETPOST('dluo'.$suffix.'day'), GETPOST('dluo'.$suffix.'year'));
-								print $form->selectDate($dluodatesuffix, 'dluo'.$suffix, '', '', 1, '');
+								$dlcdatesuffix = dol_mktime(0, 0, 0, GETPOST('dlc'.$suffix.'month'), GETPOST('dlc'.$suffix.'day'), GETPOST('dlc'.$suffix.'year'));
+								print $form->selectDate($dlcdatesuffix, 'dlc'.$suffix, '', '', 1, '');
 								print '</td>';
 							}
 							print '<td colspan="3">&nbsp;</td>'; // Supplier ref + Qty ordered + qty already dispatched
@@ -1183,10 +1183,10 @@ if ($id > 0 || !empty($ref)) {
 			if (!empty($conf->productbatch->enabled)) {
 				print '<td class="dispatch_batch_number_title">'.$langs->trans("batch_number").'</td>';
 				if (empty($conf->global->PRODUCT_DISABLE_SELLBY)) {
-					print '<td class="dispatch_dlc_title">'.$langs->trans("SellByDate").'</td>';
+					print '<td class="dispatch_dluo_title">'.$langs->trans("SellByDate").'</td>';
 				}
 				if (empty($conf->global->PRODUCT_DISABLE_EATBY)) {
-					print '<td class="dispatch_dluo_title">'.$langs->trans("EatByDate").'</td>';
+					print '<td class="dispatch_dlc_title">'.$langs->trans("EatByDate").'</td>';
 				}
 			}
 			print '<td class="right">'.$langs->trans("QtyDispatched").'</td>';
@@ -1252,18 +1252,18 @@ if ($id > 0 || !empty($ref)) {
 						$lot->fetch(0, $objp->pid, $objp->batch);
 						print '<td class="dispatch_batch_number">'.$lot->getNomUrl(1).'</td>';
 						if (empty($conf->global->PRODUCT_DISABLE_SELLBY)) {
-							print '<td class="dispatch_dlc">'.dol_print_date($lot->sellby, 'day').'</td>';
+							print '<td class="dispatch_duo">'.dol_print_date($lot->sellby, 'day').'</td>';
 						}
 						if (empty($conf->global->PRODUCT_DISABLE_EATBY)) {
-							print '<td class="dispatch_dluo">'.dol_print_date($lot->eatby, 'day').'</td>';
+							print '<td class="dispatch_dlc">'.dol_print_date($lot->eatby, 'day').'</td>';
 						}
 					} else {
 						print '<td class="dispatch_batch_number"></td>';
 						if (empty($conf->global->PRODUCT_DISABLE_SELLBY)) {
-							print '<td class="dispatch_dlc"></td>';
+							print '<td class="dispatch_dluo"></td>';
 						}
 						if (empty($conf->global->PRODUCT_DISABLE_EATBY)) {
-							print '<td class="dispatch_dluo"></td>';
+							print '<td class="dispatch_dlc"></td>';
 						}
 					}
 				}
