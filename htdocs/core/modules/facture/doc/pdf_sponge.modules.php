@@ -991,7 +991,7 @@ class pdf_sponge extends ModelePDFFactures
 				// Added by MMI Mathieu Moulin iProspective
 				// Text complement
 				if (!empty($textComplement)) {
-					$posy = $this->drawComplementArea($pdf, $textComplement, $posy, $outputlangs);
+					$posy = $this->drawComplementArea($pdf, $textComplement, $posy, $outputlangs)+2;
 				}
 
 				// Pagefoot
@@ -1445,9 +1445,11 @@ class pdf_sponge extends ModelePDFFactures
 
 		// overall percentage of advancement
 		$percent = 0;
+		$total_a_payer_real = 0;
 		$i = 0;
 		foreach ($object->lines as $line) {
 			$percent += $line->situation_percent;
+			$total_a_payer_real += $line->subprice*$line->qty;
 			$i++;
 		}
 
@@ -1468,6 +1470,8 @@ class pdf_sponge extends ModelePDFFactures
 		}
 		$total_a_payer += $object->total_ht;
 		$total_a_payer_ttc += $object->total_ttc;
+
+		$avancementGlobalReal = round(100*$total_a_payer/$total_a_payer_real);
 
 		if (!empty($avancementGlobal)) {
 			$total_a_payer = $total_a_payer * 100 / $avancementGlobal;
@@ -1538,7 +1542,7 @@ class pdf_sponge extends ModelePDFFactures
 			$pdf->SetFont('', '', $default_font_size - 1);
 			$pdf->SetFillColor(255, 255, 255);
 			$pdf->SetXY($col1x, $posy);
-			$pdf->MultiCell($col2x - $col1x, $tab2_hl, $outputlangs->transnoentities("SituationTotalProgress", $avancementGlobal), 0, 'L', 1);
+			$pdf->MultiCell($col2x - $col1x, $tab2_hl, $outputlangs->transnoentities("SituationTotalProgress", $avancementGlobalReal), 0, 'L', 1);
 
 			$pdf->SetXY($col2x, $posy);
 			$pdf->MultiCell($largcol2, $tab2_hl, price($total_a_payer * $avancementGlobal / 100, 0, $outputlangs), 0, 'R', 1);
@@ -2506,7 +2510,7 @@ class pdf_sponge extends ModelePDFFactures
 	}
 	protected function heightComplementArea(&$pdf, $text, $default_font_size)
 	{
-		$marg_top = 8;
+		$marg_top = 12;
 		$tab_titre = 4;
 		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
 		//var_dump($tab_text);
@@ -2518,7 +2522,7 @@ class pdf_sponge extends ModelePDFFactures
 		$outputlangs->load('mmidocuments@mmidocuments');
 		
 		$default_font_size = pdf_getPDFFontSize($outputlangs);
-		$marg_top = 8;
+		$marg_top = 12;
 		$tab_top = $posy + $marg_top;
 
 		$posx = $this->marge_gauche;
