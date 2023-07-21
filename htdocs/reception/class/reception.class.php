@@ -1240,6 +1240,16 @@ class Reception extends CommonObject
 		$label = img_picto('', $this->picto).' <u>'.$langs->trans("Reception").'</u>';
 		$label .= '<br><b>'.$langs->trans('Ref').':</b> '.$this->ref;
 		$label .= '<br><b>'.$langs->trans('RefSupplier').':</b> '.($this->ref_supplier ? $this->ref_supplier : '');
+		// MMI Hook
+		global $action;
+		$hookmanager->initHooks(array($this->element . 'dao'));
+		$parameters = array('id'=>$this->id, 'label' => &$label);
+		$reshook = $hookmanager->executeHooks('getLabel', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+		if ($reshook > 0) {
+			$label = $hookmanager->resPrint;
+		} else {
+			$label .= $hookmanager->resPrint;
+		}
 
 		$url = DOL_URL_ROOT.'/reception/card.php?id='.$this->id;
 
@@ -1269,8 +1279,6 @@ class Reception extends CommonObject
 		}
 		$result .= $linkstart.$this->ref.$linkend;
 
-		global $action;
-		$hookmanager->initHooks(array($this->element . 'dao'));
 		$parameters = array('id'=>$this->id, 'getnomurl' => &$result);
 		$reshook = $hookmanager->executeHooks('getNomUrl', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 		if ($reshook > 0) {
