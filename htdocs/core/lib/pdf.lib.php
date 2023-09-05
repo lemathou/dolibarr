@@ -635,25 +635,35 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 
 			// Intra VAT
 			if (empty($conf->global->MAIN_TVAINTRA_NOT_IN_ADDRESS)) {
-				if ($targetcompany->tva_intra) {
+				// MMI Hack
+				if ($usecontact && is_object($targetcontact) && !empty($targetcontact->array_options['tva_intra']))
+					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("VATIntraShort").': '.$outputlangs->convToOutputCharset($targetcontact->array_options['tva_intra']);
+				elseif ($targetcompany->tva_intra)
 					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("VATIntraShort").': '.$outputlangs->convToOutputCharset($targetcompany->tva_intra);
-				}
 			}
 
 			// Professionnal Ids
-			if (!empty($conf->global->MAIN_PROFID1_IN_ADDRESS) && !empty($targetcompany->idprof1)) {
+			if (!empty($conf->global->MAIN_PROFID1_IN_ADDRESS)) {
 				$tmp = $outputlangs->transcountrynoentities("ProfId1", $targetcompany->country_code);
 				if (preg_match('/\((.+)\)/', $tmp, $reg)) {
 					$tmp = $reg[1];
 				}
-				$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof1);
+				// MMI Hack
+				if ($usecontact && is_object($targetcontact) && !empty($targetcontact->array_options['options_siren']))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcontact->array_options['options_siren']);
+				elseif (!empty($targetcompany->idprof1))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof1);
 			}
-			if (!empty($conf->global->MAIN_PROFID2_IN_ADDRESS) && !empty($targetcompany->idprof2)) {
+			if (!empty($conf->global->MAIN_PROFID2_IN_ADDRESS)) {
 				$tmp = $outputlangs->transcountrynoentities("ProfId2", $targetcompany->country_code);
 				if (preg_match('/\((.+)\)/', $tmp, $reg)) {
 					$tmp = $reg[1];
 				}
-				$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof2);
+				// MMI Hack
+				if ($usecontact && is_object($targetcontact) && !empty($targetcontact->array_options['options_siret']))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcontact->array_options['options_siret']);
+				elseif (!empty($targetcompany->idprof2))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof2);
 			}
 			if (!empty($conf->global->MAIN_PROFID3_IN_ADDRESS) && !empty($targetcompany->idprof3)) {
 				$tmp = $outputlangs->transcountrynoentities("ProfId3", $targetcompany->country_code);
