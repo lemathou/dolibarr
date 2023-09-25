@@ -1701,6 +1701,16 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 		if ($prodser->barcode)
 			$libelleproduitservice .= '__N__  Barcode: '.$prodser->barcode;
 	}
+	// Show Location
+	if (in_array($objecttype, ['Expedition']) && (true || !empty($conf->global->SHIPPING_PDF_LOCATION))) {
+		if (!empty($prodser->array_options['options_fk_categorie'])) {
+			include_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
+			$categorie = new Categorie($db);
+			$categorie->fetch($prodser->array_options['options_fk_categorie']);
+			$libelleproduitservice .= '__N__  Localisation: '.$categorie->label;
+			//var_dump($prodser->array_options['options_fk_categorie']); die();
+		}
+	}
 
 	// Now we convert \n into br
 	if (dol_textishtml($libelleproduitservice)) {
