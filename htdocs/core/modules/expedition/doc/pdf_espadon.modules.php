@@ -593,7 +593,7 @@ class pdf_espadon extends ModelePdfExpedition
 
 
 						if (!empty($this->cols['photo']) && isset($imglinesize['width']) && isset($imglinesize['height'])) {
-							$pdf->Image($realpatharray[$i], $this->getColumnContentXStart('photo'), $curY + 1, $imglinesize['width'], $imglinesize['height'], '', '', '', 2, 300); // Use 300 dpi
+							$pdf->Image($realpatharray[$i], $this->getColumnContentXStart('photo'), $curY + 1, $imglinesize['width'], $imglinesize['height'], '', '', '', 2, !empty($conf->global->MAIN_SHIPPING_PDF_IMAGE_DPI) ?$conf->global->MAIN_SHIPPING_PDF_IMAGE_DPI :300); // Use 300 dpi
 							// $pdf->Image does not increase value return by getY, so we save it manually
 							$posYAfterImage = $curY + $imglinesize['height'];
 						}
@@ -1057,7 +1057,7 @@ class pdf_espadon extends ModelePdfExpedition
 		$pdf->MultiCell($w, 4, $outputlangs->transnoentities("RefSending")." : ".$object->ref, '', 'R');
 
 		// Date planned delivery
-		if (!empty($object->date_delivery)) {
+		if (empty($conf->global->SHIPPING_PDF_HIDE_DELIVERY_DATE) && !empty($object->date_delivery)) {
 				$posy += 4;
 				$pdf->SetXY($posx, $posy);
 				$pdf->SetTextColor(0, 0, 60);

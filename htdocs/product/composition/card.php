@@ -371,6 +371,10 @@ if ($id > 0 || !empty($ref)) {
 		if (!empty($conf->stock->enabled)) {
 			print '<td class="right">'.$langs->trans('Stock').'</td>';
 		}
+		// Other fields
+		$parameters = array();
+		$reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters, $object); // Note that $action and $object may have been modified by hook
+		print $hookmanager->resPrint;
 		// Qty in kit
 		print '<td class="center">'.$langs->trans('Qty').'</td>';
 		// Stoc inc/dev
@@ -446,6 +450,11 @@ if ($id > 0 || !empty($ref)) {
 					if (!empty($conf->stock->enabled)) {
 						print '<td class="right">'.$value['stock'].'</td>'; // Real stock
 					}
+
+					// Other fields
+					$parameters = array('value'=>&$value, 'prods_arbo'=>$prods_arbo);
+					$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object); // Note that $action and $object may have been modified by hook
+					print $hookmanager->resPrint;
 
 					// Qty + IncDec
 					if ($user->rights->produit->creer || $user->rights->service->creer) {

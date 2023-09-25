@@ -635,25 +635,35 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 
 			// Intra VAT
 			if (empty($conf->global->MAIN_TVAINTRA_NOT_IN_ADDRESS)) {
-				if ($targetcompany->tva_intra) {
+				// MMI Hack
+				if ($usecontact && is_object($targetcontact) && !empty($targetcontact->array_options['tva_intra']))
+					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("VATIntraShort").': '.$outputlangs->convToOutputCharset($targetcontact->array_options['tva_intra']);
+				elseif ($targetcompany->tva_intra)
 					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("VATIntraShort").': '.$outputlangs->convToOutputCharset($targetcompany->tva_intra);
-				}
 			}
 
 			// Professionnal Ids
-			if (!empty($conf->global->MAIN_PROFID1_IN_ADDRESS) && !empty($targetcompany->idprof1)) {
+			if (!empty($conf->global->MAIN_PROFID1_IN_ADDRESS)) {
 				$tmp = $outputlangs->transcountrynoentities("ProfId1", $targetcompany->country_code);
 				if (preg_match('/\((.+)\)/', $tmp, $reg)) {
 					$tmp = $reg[1];
 				}
-				$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof1);
+				// MMI Hack
+				if ($usecontact && is_object($targetcontact) && !empty($targetcontact->array_options['options_siren']))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcontact->array_options['options_siren']);
+				elseif (!empty($targetcompany->idprof1))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof1);
 			}
-			if (!empty($conf->global->MAIN_PROFID2_IN_ADDRESS) && !empty($targetcompany->idprof2)) {
+			if (!empty($conf->global->MAIN_PROFID2_IN_ADDRESS)) {
 				$tmp = $outputlangs->transcountrynoentities("ProfId2", $targetcompany->country_code);
 				if (preg_match('/\((.+)\)/', $tmp, $reg)) {
 					$tmp = $reg[1];
 				}
-				$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof2);
+				// MMI Hack
+				if ($usecontact && is_object($targetcontact) && !empty($targetcontact->array_options['options_siret']))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcontact->array_options['options_siret']);
+				elseif (!empty($targetcompany->idprof2))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof2);
 			}
 			if (!empty($conf->global->MAIN_PROFID3_IN_ADDRESS) && !empty($targetcompany->idprof3)) {
 				$tmp = $outputlangs->transcountrynoentities("ProfId3", $targetcompany->country_code);
@@ -1690,6 +1700,31 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 	if (in_array($objecttype, ['Expedition']) && (!empty($conf->global->SHIPPING_PDF_BARCODE))) {
 		if ($prodser->barcode)
 			$libelleproduitservice .= '__N__  Barcode: '.$prodser->barcode;
+	}
+	// Show Location
+	if (in_array($objecttype, ['Expedition']) && !empty($conf->global->SHIPPING_PDF_LOCATION) && !empty($conf->categorie->enabled)) {
+		if (!empty($prodser->array_options['options_fk_categorie'])) {
+			include_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
+			$categorie = new Categorie($db);
+			$categorie->fetch($prodser->array_options['options_fk_categorie']);
+			$categorie_parent = $categorie;
+			while(empty($categorie_parent->array_options['options_fk_entrepot_loc']) && !empty($categorie_parent->fk_parent)) {
+				$fk_parent = $categorie_parent->fk_parent;
+				$categorie_parent = new Categorie($db);
+				$categorie_parent->fetch($fk_parent);
+			}
+			if(!empty($categorie_parent->array_options['options_fk_entrepot_loc'])) {
+				$sql = 'SELECT label
+					FROM '.MAIN_DB_PREFIX.'c_entrepot_loc
+					WHERE rowid='.$categorie_parent->array_options['options_fk_entrepot_loc'];
+				$q = $db->query($sql);
+				list($entrepot_loc) = $q->fetch_row();
+				$libelleproduitservice .= '__N__  Localisation: '.$entrepot_loc.' -> '.$categorie->label;
+			}
+			else
+				$libelleproduitservice .= '__N__  Localisation: '.$categorie->label;
+			//var_dump($prodser->array_options['options_fk_categorie']); die();
+		}
 	}
 
 	// Now we convert \n into br
