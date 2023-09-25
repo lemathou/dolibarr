@@ -1702,12 +1702,27 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 			$libelleproduitservice .= '__N__  Barcode: '.$prodser->barcode;
 	}
 	// Show Location
-	if (in_array($objecttype, ['Expedition']) && (true || !empty($conf->global->SHIPPING_PDF_LOCATION))) {
+	if (in_array($objecttype, ['Expedition']) && !empty($conf->global->SHIPPING_PDF_LOCATION) && !empty($conf->categorie->enabled)) {
 		if (!empty($prodser->array_options['options_fk_categorie'])) {
 			include_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
 			$categorie = new Categorie($db);
 			$categorie->fetch($prodser->array_options['options_fk_categorie']);
-			$libelleproduitservice .= '__N__  Localisation: '.$categorie->label;
+			$categorie_parent = $categorie;
+			while(empty($categorie_parent->array_options['options_fk_entrepot_loc']) && !empty($categorie_parent->fk_parent)) {
+				$fk_parent = $categorie_parent->fk_parent;
+				$categorie_parent = new Categorie($db);
+				$categorie_parent->fetch($fk_parent);
+			}
+			if(!empty($categorie_parent->array_options['options_fk_entrepot_loc'])) {
+				$sql = 'SELECT label
+					FROM '.MAIN_DB_PREFIX.'c_entrepot_loc
+					WHERE rowid='.$categorie_parent->array_options['options_fk_entrepot_loc'];
+				$q = $db->query($sql);
+				list($entrepot_loc) = $q->fetch_row();
+				$libelleproduitservice .= '__N__  Localisation: '.$entrepot_loc.' -> '.$categorie->label;
+			}
+			else
+				$libelleproduitservice .= '__N__  Localisation: '.$categorie->label;
 			//var_dump($prodser->array_options['options_fk_categorie']); die();
 		}
 	}
