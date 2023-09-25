@@ -146,4 +146,9 @@
 	path = htdocs/custom/listincsv
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-listincsv.git
 	branch = 16.0-mmi
+[submodule "htdocs/custom/mmisecurity"]
+	path = htdocs/custom/mmisecurity
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmisecurity.git
+	branch = 16.0
+
 
