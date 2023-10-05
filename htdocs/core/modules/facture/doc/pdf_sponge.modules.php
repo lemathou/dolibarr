@@ -1848,6 +1848,20 @@ class pdf_sponge extends ModelePDFFactures
 					$pdf->MultiCell($col2x - $col1x, $tab2_hl, $retainedWarrantyToPayOn, $useborder, 'L', 1);
 					$pdf->SetXY($col2x, $tab2_top + $tab2_hl * $index);
 					$pdf->MultiCell($largcol2, $tab2_hl, price($retainedWarranty), $useborder, 'R', 1);
+
+					// MMI Moulin Mathieu iProspective
+					if ($conf->global->INVOICE_RETAINED_WARRANTY_CUMULATED_SHOW) {
+						// retained warranty cumulated
+						$index++;
+						$index++;
+						$pdf->SetXY($col1x, $tab2_top + $tab2_hl * $index);
+
+						$retainedWarrantyToPayOn = $outputlangs->transnoentities("RetainedWarrantyCumulated");
+
+						$pdf->MultiCell($col2x - $col1x, $tab2_hl, $retainedWarrantyToPayOn, $useborder, 'L', 1);
+						$pdf->SetXY($col2x, $tab2_top + $tab2_hl * $index);
+						$pdf->MultiCell($largcol2, $tab2_hl, price(round($total_a_payer_ttc * $avancementGlobal/100 * $object->retained_warranty/100, 2)), $useborder, 'R', 1);
+					}
 				}
 			}
 		}
