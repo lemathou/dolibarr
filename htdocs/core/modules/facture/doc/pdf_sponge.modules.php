@@ -1461,10 +1461,14 @@ class pdf_sponge extends ModelePDFFactures
 
 		$object->fetchPreviousNextSituationInvoice();
 		$TPreviousIncoice = $object->tab_previous_situation_invoice;
+		$TPreviousIncoice2 = [];
+		foreach($TPreviousIncoice as &$fac) {
+			$TPreviousIncoice2[$fac->situation_counter] = $fac;
+		}
 
 		$total_a_payer = 0;
 		$total_a_payer_ttc = 0;
-		foreach ($TPreviousIncoice as &$fac) {
+		foreach ($TPreviousIncoice2 as &$fac) {
 			$total_a_payer += $fac->total_ht;
 			$total_a_payer_ttc += $fac->total_ttc;
 		}
@@ -1486,7 +1490,7 @@ class pdf_sponge extends ModelePDFFactures
 			$pdf->setY($tab2_top);
 			$posy = $pdf->GetY();
 
-			foreach ($TPreviousIncoice as &$fac) {
+			foreach ($TPreviousIncoice2 as &$fac) {
 				if ($posy > $this->page_hauteur - 4) {
 					$this->_pagefoot($pdf, $object, $outputlangs, 1);
 					$pdf->addPage();
