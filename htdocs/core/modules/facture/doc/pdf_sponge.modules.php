@@ -1860,7 +1860,16 @@ class pdf_sponge extends ModelePDFFactures
 						$index++;
 						$pdf->SetXY($col1x, $tab2_top + $tab2_hl * $index);
 
-						$retainedWarrantyToPayOn = $outputlangs->transnoentities("RetainedWarrantyCumulated");
+						$retainedWarrantyToPayOn = $outputlangs->transnoentities("RetainedWarrantyCumulated").(is_object($outputlangsbis) ? ' / '.$outputlangsbis->transnoentities("RetainedWarrantyCumulated") : '');
+						//var_dump($object); die();
+						if (!empty($object->retained_warranty_fk_cond_reglement)) {
+							global $db;
+							$sql = 'SELECT code, libelle FROM '.MAIN_DB_PREFIX.'c_payment_term WHERE rowid='.$object->retained_warranty_fk_cond_reglement;
+							$resql = $this->db->query($sql);
+							if ($resql && ($obj = $this->db->fetch_object($resql)) && $obj->code=='1AN') {
+								$retainedWarrantyToPayOn .= ' : '.$outputlangs->transnoentities('ToPay').' '.$outputlangs->transnoentities($obj->libelle);
+							}
+						}
 
 						$pdf->MultiCell($col2x - $col1x, $tab2_hl, $retainedWarrantyToPayOn, $useborder, 'L', 1);
 						$pdf->SetXY($col2x, $tab2_top + $tab2_hl * $index);
