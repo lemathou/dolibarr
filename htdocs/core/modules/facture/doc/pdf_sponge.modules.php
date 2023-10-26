@@ -2528,8 +2528,11 @@ class pdf_sponge extends ModelePDFFactures
 		$complement = [];
 		if (!empty($object->array_options['options_cgv_cpv']))
 			$complement[] = '<p><b>'.$outputlangs->transnoentities("DocumentMoreInfoCGP")."</b></p>\r\n".$object->array_options['options_cgv_cpv'];
-		if (!empty($object->array_options['options_propal_decennale']))
-			$complement[] = '<p><b>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</b></p>\r\n".$conf->global->MMIPROJECT_DECENNALE_TEXT;
+		if (!empty($object->array_options['options_propal_decennale'])) {
+			if (!empty($conf->global->MMIPROJECT_DECENNALE_TITLE))
+				$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</h3>";
+			$complement[] = $conf->global->MMIPROJECT_DECENNALE_TEXT;
+		}
 		//var_dump($complement); die();
 		return !empty($complement) ?implode("\r\n", $complement) :'';
 	}

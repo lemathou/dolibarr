@@ -2057,8 +2057,11 @@ class pdf_cyan extends ModelePDFPropales
 		$complement = [];
 		if (!empty($object->array_options['options_cgv_cpv']))
 			$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoCGP")."</h3>\r\n".$object->array_options['options_cgv_cpv'];
-		if (!empty($object->array_options['options_propal_decennale']))
-			$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</h3>\r\n".$conf->global->MMIPROJECT_DECENNALE_TEXT;
+		if (!empty($object->array_options['options_propal_decennale'])) {
+			if (!empty($conf->global->MMIPROJECT_DECENNALE_TITLE))
+				$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</h3>";
+			$complement[] = $conf->global->MMIPROJECT_DECENNALE_TEXT;
+		}
 
 		return !empty($complement) ?implode("\r\n", $complement) :'';
 	}
