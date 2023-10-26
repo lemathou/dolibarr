@@ -10136,7 +10136,8 @@ abstract class CommonObject
 		if (!empty($conf->global->MMIDOCUMENT_PDF_RENAME_REF_CUSTOMER) && !empty($this->ref_customer)) {
 			$file_e[] = $this->ref_customer;
 		}
-		return preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '-', iconv('UTF-8','ASCII//TRANSLIT', implode('-', $file_e))));
+		$filename = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '-', iconv('UTF-8','ASCII//TRANSLIT', implode('-', $file_e))));
+		return !empty($conf->global->MMIDOCUMENT_PDF_RENAME_UPPERCASE) ?strtoupper($filename) :$filename;
 	}
 
 	/**
