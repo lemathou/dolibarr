@@ -186,8 +186,8 @@ if ($action == 'fetch' && !empty($id)) {
 				}
 				if (!empty($upd)) {
 					$found = true;
-					$outprice_ht = price($object->price*(100-$outdiscount)/100);
-					$outprice_ttc = price($object->price_ttc*(100-$outdiscount)/100);
+					$outprice_ht = price($object->price);
+					$outprice_ttc = price($object->price_ttc);
 					$outqty = $objp->stock;
 					$outpricebasetype = $object->price_base_type;
 					$outtva_tx = $object->tva_tx;
