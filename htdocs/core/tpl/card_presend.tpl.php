@@ -50,7 +50,8 @@ if ($action == 'presend') {
 		if ($object->element == 'invoice_supplier') {
 			$fileparams = dol_most_recent_file($diroutput.'/'.get_exdir($object->id, 2, 0, 0, $object, $object->element).$ref, preg_quote($ref, '/').'([^\-])+');
 		} else {
-			$fileparams = dol_most_recent_file($diroutput.'/'.$ref, preg_quote($ref, '/').'[^\-]+');
+			$filename = (!empty($conf->global->MMIDOCUMENT_PDF_RENAME)) ?$object->pdf_filename() :$ref;
+			$fileparams = dol_most_recent_file($diroutput.'/'.$ref, preg_quote($filename, '/').'[^\-]+');
 		}
 
 		$file = $fileparams['fullname'];
@@ -98,7 +99,8 @@ if ($action == 'presend') {
 			if ($object->element == 'invoice_supplier') {
 				$fileparams = dol_most_recent_file($diroutput.'/'.get_exdir($object->id, 2, 0, 0, $object, $object->element).$ref, preg_quote($ref, '/').'([^\-])+');
 			} else {
-				$fileparams = dol_most_recent_file($diroutput.'/'.$ref, preg_quote($ref, '/').'[^\-]+');
+				$filename = (!empty($conf->global->MMIDOCUMENT_PDF_RENAME)) ?$object->pdf_filename() :$ref;
+				$fileparams = dol_most_recent_file($diroutput.'/'.$ref, preg_quote($filename, '/').'[^\-]+');
 			}
 
 			$file = $fileparams['fullname'];

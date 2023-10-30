@@ -10111,6 +10111,36 @@ abstract class CommonObject
 	}
 
 	/**
+	 * Get filename for PDF
+	 * @author MMI Mathieu Moulin iProspective
+	 *
+	 * @return string
+	 */
+	public function pdf_filename()
+	{
+		global $conf;
+		
+		if (empty($conf->global->MMIDOCUMENT_PDF_RENAME))
+			return;
+		
+		$thirdparty = $this->thirdparty;
+		$file_e = [];
+		$file_e[] = dol_sanitizeFileName($this->ref);
+		if (!empty($conf->global->MMIDOCUMENT_PDF_RENAME_MYSOC)) {
+			global $mysoc;
+			$file_e[] = $mysoc->name;
+		}
+		if (!empty($conf->global->MMIDOCUMENT_PDF_RENAME_THIRDPARTY)) {
+			$file_e[] = $thirdparty->name;
+		}
+		if (!empty($conf->global->MMIDOCUMENT_PDF_RENAME_REF_CUSTOMER) && !empty($this->ref_customer)) {
+			$file_e[] = $this->ref_customer;
+		}
+		$filename = preg_replace('/[^A-Za-z0-9\-]/', '', str_replace(' ', '-', iconv('UTF-8','ASCII//TRANSLIT', implode('-', $file_e))));
+		return !empty($conf->global->MMIDOCUMENT_PDF_RENAME_UPPERCASE) ?strtoupper($filename) :$filename;
+	}
+
+	/**
 	 * Get total amount already paid
 	 * @author MMI Mathieu Moulin iProspective
 	 *

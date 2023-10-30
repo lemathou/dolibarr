@@ -308,7 +308,13 @@ class pdf_eratosthene extends ModelePDFCommandes
 			} else {
 				$objectref = dol_sanitizeFileName($object->ref);
 				$dir = $conf->commande->multidir_output[$object->entity]."/".$objectref;
-				$file = $dir."/".$objectref.".pdf";
+				// MMIDocument PDF rename
+				if (!empty($conf->global->MMIDOCUMENT_PDF_RENAME)) {
+					$filename = $object->pdf_filename();
+					$file = $dir."/".$filename.".pdf";
+				}
+				else
+					$file = $dir."/".$objectref.".pdf";
 			}
 
 			if (!file_exists($dir)) {
@@ -1932,10 +1938,16 @@ class pdf_eratosthene extends ModelePDFCommandes
 		//var_dump($object); die();
 		//var_dump($object->array_options['options_cgv_cpv']); die();
 		$complement = [];
-		if (!empty($object->array_options['options_cgv_cpv']))
-			$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoCGP")."</h3>\r\n".$object->array_options['options_cgv_cpv'];
-		if (!empty($object->array_options['options_propal_decennale']))
-			$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</h3>\r\n".$conf->global->MMIPROJECT_DECENNALE_TEXT;
+		if (!empty($object->array_options['options_cgv_cpv'])) {
+			if (!empty($conf->global->MMIDOCUMENT_CGP_TITLE))
+				$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoCGP")."</h3>";
+			$complement[] = $object->array_options['options_cgv_cpv'];
+		}
+		if (!empty($object->array_options['options_propal_decennale'])) {
+			if (!empty($conf->global->MMIPROJECT_DECENNALE_TITLE))
+				$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</h3>";
+			$complement[] = $conf->global->MMIPROJECT_DECENNALE_TEXT;
+		}
 		//var_dump($complement); die();
 		return !empty($complement) ?implode("\r\n", $complement) :'';
 	}
@@ -1973,9 +1985,11 @@ class pdf_eratosthene extends ModelePDFCommandes
 		$pdf->SetFont('', '', $default_font_size - 2);
 
 		// Titre
-		$pdf->SetXY($posx, $tab_top);
-		$tab_titre = 4;
-		$pdf->WriteHTMLCell($largcol, $tab_titre, $posx, $posy+$marg_top, '<b>'.$outputlangs->transnoentities("DocumentMoreInfo").'</b>', 0);
+		if (!empty($conf->global->DOCUMENT_COMPLEMENT_TITLE)) {
+			$pdf->SetXY($posx, $tab_top);
+			$tab_titre = 4;
+			$pdf->WriteHTMLCell($largcol, $tab_titre, $posx, $posy+$marg_top, '<b>'.$outputlangs->transnoentities("DocumentMoreInfo").'</b>', 0);
+		}
 		// Texte
 		$pdf->SetXY($posx, $tab_top + $tab_titre);
 		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
