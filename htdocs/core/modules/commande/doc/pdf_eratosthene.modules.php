@@ -1851,6 +1851,14 @@ class pdf_eratosthene extends ModelePDFCommandes
 					$usecontact = true;
 					$result = $object->fetch_contact($arrayidcontact[0]);
 				}
+				// If BILLING contact defined, we use it
+				if (! $usecontact) {
+					$arrayidcontact = $object->getIdContact('external', 'BILLING');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
+				}
 
 				// Recipient name
 				if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
