@@ -2272,24 +2272,11 @@ class pdf_sponge extends ModelePDFFactures
 			// Added by MMI Mathieu Moulin iProspective
 			// Multiple contacts shipping & invoice
 			// If CUSTOMER/SHIPPING contact defined, we use it
-			$useshippingcontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'SHIPPING');
-			if (count($arrayidcontact) > 0) {
-				$usecontact = true;
-				$useshippingcontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
+			$useshippingcontact = !empty($object->getIdContact('external', 'SHIPPING'));
 			// If Maîtrise d'oeuvre defined, we use it
-			if (!empty($object->array_options['options_appeloffre_maitrise'])) {
-				$usemaitrisecontact = true;
-			}
+			$usemaitrisecontact = !empty($object->getIdContact('external', 'MGMT'));
 			// If CUSTOMER/BILLING contact defined, we use it
-			$usebillingcontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'BILLING');
-			if (count($arrayidcontact) > 0) {
-				$usebillingcontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
+			$usebillingcontact = !empty($object->getIdContact('external', 'BILLING'));
 			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && ($useshippingcontact || $usemaitrisecontact))
 				$widthrecbox = 60;
 
@@ -2333,6 +2320,7 @@ class pdf_sponge extends ModelePDFFactures
 					$result = $object->fetch_contact($arrayidcontact[0]);
 				}
 				// If Maîtrise d'oeuvre defined, we use it
+				$usemaitrisecontact = false;
 				$arrayidcontact = $object->getIdContact('external', 'MGMT');
 				if (count($arrayidcontact) > 0) {
 					$usecontact = true;

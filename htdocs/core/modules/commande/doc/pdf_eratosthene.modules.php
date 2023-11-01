@@ -1684,24 +1684,11 @@ class pdf_eratosthene extends ModelePDFCommandes
 
 			// Added by MMI Mathieu Moulin iProspective
 			// If CUSTOMER/SHIPPING contact defined, we use it
-			$useshippingcontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'SHIPPING');
-			if (count($arrayidcontact) > 0) {
-				$usecontact = true;
-				$useshippingcontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
+			$useshippingcontact = !empty($object->getIdContact('external', 'SHIPPING'));
 			// If Maîtrise d'oeuvre defined, we use it
-			if (!empty($object->array_options['options_appeloffre_maitrise'])) {
-				$usemaitrisecontact = true;
-			}
+			$usemaitrisecontact = !empty($object->getIdContact('external', 'MGMT'));
 			// If CUSTOMER/BILLING contact defined, we use it
-			$usebillingcontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'BILLING');
-			if (count($arrayidcontact) > 0) {
-				$usebillingcontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
+			$usebillingcontact = !empty($object->getIdContact('external', 'BILLING'));
 			// MMI Hack size
 			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && ($useshippingcontact || $usemaitrisecontact))
 				$widthrecbox = 60;
