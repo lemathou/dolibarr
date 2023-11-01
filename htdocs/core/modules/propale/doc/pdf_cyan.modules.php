@@ -1782,6 +1782,10 @@ class pdf_cyan extends ModelePDFPropales
 				$useshippingcontact = true;
 				$result = $object->fetch_contact($arrayidcontact[0]);
 			}
+			// If Maîtrise d'oeuvre defined, we use it
+			if (!empty($object->array_options['options_appeloffre_maitrise'])) {
+				$usemaitrisecontact = true;
+			}
 			// If CUSTOMER/BILLING contact defined, we use it
 			$usebillingcontact = false;
 			$arrayidcontact = $object->getIdContact('external', 'BILLING');
@@ -1789,7 +1793,7 @@ class pdf_cyan extends ModelePDFPropales
 				$usebillingcontact = true;
 				$result = $object->fetch_contact($arrayidcontact[0]);
 			}
-			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && $useshippingcontact)
+			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && ($useshippingcontact || $usemaitrisecontact))
 				$widthrecbox = 60;
 
 			// Show sender frame
@@ -1827,6 +1831,16 @@ class pdf_cyan extends ModelePDFPropales
 				$arrayidcontact = $object->getIdContact('external', 'SHIPPING');
 				if (count($arrayidcontact) > 0) {
 					$usecontact = true;
+					$recipient_type = 'SHIPPING';
+					$address_type_label = $outputlangs->transnoentities("DeliveryAddress");
+					$result = $object->fetch_contact($arrayidcontact[0]);
+				}
+				// If Maîtrise d'oeuvre defined, we use it
+				$arrayidcontact = $object->getIdContact('external', 'MGMT');
+				if (count($arrayidcontact) > 0) {
+					$usecontact = true;
+					$recipient_type = 'MGMT';
+					$address_type_label = $outputlangs->transnoentities("ProjectManagementAddress");
 					$result = $object->fetch_contact($arrayidcontact[0]);
 				}
 
@@ -1837,7 +1851,7 @@ class pdf_cyan extends ModelePDFPropales
 					$thirdparty = $object->thirdparty;
 				}
 
-				$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
+				$carac_client_name = $recipient_type != 'MGMT' ?pdfBuildThirdpartyName($thirdparty, $outputlangs) :'';
 
 				$mode =  'target';
 				$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
@@ -1860,7 +1874,7 @@ class pdf_cyan extends ModelePDFPropales
 				$pdf->SetTextColor(0, 0, 0);
 				$pdf->SetFont('', '', $default_font_size - 2);
 				$pdf->SetXY($posx + 2, $posy - 5);
-				$pdf->MultiCell($widthrecbox, 5, $outputlangs->transnoentities("DeliveryAddress"), 0, $ltrdirection);
+				$pdf->MultiCell($widthrecbox, 5, $address_type_label, 0, $ltrdirection);
 				$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
 
 				// Show recipient name
