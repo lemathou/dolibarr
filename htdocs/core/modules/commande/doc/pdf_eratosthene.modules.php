@@ -1742,13 +1742,13 @@ class pdf_eratosthene extends ModelePDFCommandes
 				}
 
 				// Recipient name
-				if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+				if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
 					$thirdparty = $object->contact;
 				} else {
 					$thirdparty = $object->thirdparty;
 				}
 
-				$carac_client_name = $recipient_type != 'MGMT' ?pdfBuildThirdpartyName($thirdparty, $outputlangs) :'';
+				$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
 
 				$mode =  'target';
 				$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
@@ -1797,7 +1797,7 @@ class pdf_eratosthene extends ModelePDFCommandes
 				}
 
 				// Recipient name
-				if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+				if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
 					$thirdparty = $object->contact;
 				} else {
 					$thirdparty = $object->thirdparty;
