@@ -340,12 +340,21 @@ class pdf_sponge extends ModelePDFFactures
 				$nblines = count($object->lines);
 				$nbpayments = count($object->getListOfPayments());
 
+				// MMI Fix infotot height if multiple situations
+				$object->fetchPreviousNextSituationInvoice();
+				$TPreviousIncoice = $object->tab_previous_situation_invoice;
+				$TPreviousIncoice2 = [];
+				foreach($TPreviousIncoice as &$fac) {
+					$TPreviousIncoice2[$fac->situation_counter] = $fac;
+				}
+
 				// Create pdf instance
 				$pdf = pdf_getInstance($this->format);
 				$default_font_size = pdf_getPDFFontSize($outputlangs); // Must be after pdf_getInstance
 				$pdf->SetAutoPageBreak(1, 0);
 
-				$heightforinfotot = 50 + (4 * $nbpayments); // Height reserved to output the info and total part and payment part
+				// MMI Fix infotot height if multiple situations
+				$heightforinfotot = 50 + (4 * $nbpayments) + (4 * count($TPreviousIncoice2)); // Height reserved to output the info and total part and payment part
 				$heightforfreetext = (isset($conf->global->MAIN_PDF_FREETEXT_HEIGHT) ? $conf->global->MAIN_PDF_FREETEXT_HEIGHT : 5); // Height reserved to output the free text on last page
 				$heightforfooter = $this->marge_basse + (empty($conf->global->MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS) ? 12 : 22); // Height reserved to output the footer (value include bottom margin)
 
@@ -434,9 +443,8 @@ class pdf_sponge extends ModelePDFFactures
 
 				// Added by MMI Mathieu Moulin iProspective
 				// Text complement
-				if (!empty($conf->global->DOCUMENT_SHOW_COMPLEMENT)) {
-					$textComplement = $this->textComplement($object, $outputlangs);
-					$heightfocomplement = $this->heightComplementArea($pdf, $textComplement, $default_font_size);
+				if (!empty($conf->global->DOCUMENT_SHOW_COMPLEMENT) && !empty($textComplement = $this->textComplement($object, $outputlangs))) {
+					$heightforfreetext += $heightfocomplement = $this->heightComplementArea($pdf, $textComplement, $default_font_size);
 					//var_dump($heightfocomplement); die();
 					//$heightforsignature += $heightfocomplement;
 				}
@@ -1503,7 +1511,7 @@ class pdf_sponge extends ModelePDFFactures
 				$pdf->SetFillColor(255, 255, 255);
 				$pdf->SetXY($col1x, $posy);
 				$pdf->MultiCell($col2x - $col1x, $tab2_hl, $outputlangs->transnoentities("PDFSituationTitle", $fac->situation_counter).' '.$outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
-
+				//var_dump($posy);
 				$pdf->SetXY($col2x, $posy);
 
 				$facSign = '';
@@ -1863,7 +1871,6 @@ class pdf_sponge extends ModelePDFFactures
 						$retainedWarrantyToPayOn = $outputlangs->transnoentities("RetainedWarrantyCumulated").(is_object($outputlangsbis) ? ' / '.$outputlangsbis->transnoentities("RetainedWarrantyCumulated") : '');
 						//var_dump($object); die();
 						if (!empty($object->retained_warranty_fk_cond_reglement)) {
-							global $db;
 							$sql = 'SELECT code, libelle FROM '.MAIN_DB_PREFIX.'c_payment_term WHERE rowid='.$object->retained_warranty_fk_cond_reglement;
 							$resql = $this->db->query($sql);
 							if ($resql && ($obj = $this->db->fetch_object($resql)) && $obj->code=='1AN') {
@@ -2553,7 +2560,8 @@ class pdf_sponge extends ModelePDFFactures
 	}
 	protected function heightComplementArea(&$pdf, $text, $default_font_size)
 	{
-		$marg_top = 12;
+		global $conf;
+		$marg_top = 8+(!empty($conf->global->DOCUMENT_COMPLEMENT_TITLE) ?4 :0);
 		$tab_titre = 4;
 		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
 		//var_dump($tab_text);
@@ -2565,7 +2573,7 @@ class pdf_sponge extends ModelePDFFactures
 		$outputlangs->load('mmidocuments@mmidocuments');
 		
 		$default_font_size = pdf_getPDFFontSize($outputlangs);
-		$marg_top = 12;
+		$marg_top = 8+(!empty($conf->global->DOCUMENT_COMPLEMENT_TITLE) ?4 :0);
 		$tab_top = $posy + $marg_top;
 
 		$posx = $this->marge_gauche;
