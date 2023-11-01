@@ -306,13 +306,7 @@ class pdf_cyan extends ModelePDFPropales
 			} else {
 				$objectref = dol_sanitizeFileName($object->ref);
 				$dir = $conf->propal->multidir_output[$object->entity]."/".$objectref;
-				// MMIDocument PDF rename
-				if (!empty($conf->global->MMIDOCUMENT_PDF_RENAME)) {
-					$filename = $object->pdf_filename();
-					$file = $dir."/".$filename.".pdf";
-				}
-				else
-					$file = $dir."/".$objectref.".pdf";
+				$file = $dir."/".$objectref.".pdf";
 			}
 
 			if (!file_exists($dir)) {
