@@ -288,7 +288,7 @@ if (!is_object($hookmanager)) {
 $hookmanager->initHooks(array('document'));
 $parameters = array('ecmfile' => $ecmfile, 'modulepart' => $modulepart, 'original_file' => $original_file,
 	'entity' => $entity, 'refname' => $refname, 'fullpath_original_file' => $fullpath_original_file,
-	'filename' => $filename, 'fullpath_original_file_osencoded' => $fullpath_original_file_osencoded);
+	'filename' => &$filename, 'fullpath_original_file_osencoded' => $fullpath_original_file_osencoded);
 $reshook = $hookmanager->executeHooks('downloadDocument', $parameters); // Note that $action and $object may have been
 if ($reshook < 0) {
 	$errors = $hookmanager->error.(is_array($hookmanager->errors) ? (!empty($hookmanager->error) ? ', ' : '').join($separator, $hookmanager->errors) : '');

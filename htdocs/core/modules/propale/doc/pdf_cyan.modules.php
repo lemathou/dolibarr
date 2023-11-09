@@ -306,13 +306,7 @@ class pdf_cyan extends ModelePDFPropales
 			} else {
 				$objectref = dol_sanitizeFileName($object->ref);
 				$dir = $conf->propal->multidir_output[$object->entity]."/".$objectref;
-				// MMIDocument PDF rename
-				if (!empty($conf->global->MMIDOCUMENT_PDF_RENAME)) {
-					$filename = $object->pdf_filename();
-					$file = $dir."/".$filename.".pdf";
-				}
-				else
-					$file = $dir."/".$objectref.".pdf";
+				$file = $dir."/".$objectref.".pdf";
 			}
 
 			if (!file_exists($dir)) {
@@ -1782,20 +1776,12 @@ class pdf_cyan extends ModelePDFPropales
 
 			// Added by MMI Mathieu Moulin iProspective
 			// If CUSTOMER/SHIPPING contact defined, we use it
-			$useshippingcontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'SHIPPING');
-			if (count($arrayidcontact) > 0) {
-				$useshippingcontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
+			$useshippingcontact = !empty($object->getIdContact('external', 'SHIPPING'));
+			// If Maîtrise d'oeuvre defined, we use it
+			$usemaitrisecontact = !empty($object->getIdContact('external', 'MGMT'));
 			// If CUSTOMER/BILLING contact defined, we use it
-			$usebillingcontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'BILLING');
-			if (count($arrayidcontact) > 0) {
-				$usebillingcontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
-			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && $useshippingcontact)
+			$usebillingcontact = !empty($object->getIdContact('external', 'BILLING'));
+			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && ($useshippingcontact || $usemaitrisecontact))
 				$widthrecbox = 60;
 
 			// Show sender frame
@@ -1833,6 +1819,17 @@ class pdf_cyan extends ModelePDFPropales
 				$arrayidcontact = $object->getIdContact('external', 'SHIPPING');
 				if (count($arrayidcontact) > 0) {
 					$usecontact = true;
+					$recipient_type = 'SHIPPING';
+					$address_type_label = $outputlangs->transnoentities("DeliveryAddress");
+					$result = $object->fetch_contact($arrayidcontact[0]);
+				}
+				// If Maîtrise d'oeuvre defined, we use it
+				$arrayidcontact = $object->getIdContact('external', 'MGMT');
+				$usemaitrisecontact = false;
+				if (count($arrayidcontact) > 0) {
+					$usecontact = true;
+					$recipient_type = 'MGMT';
+					$address_type_label = $outputlangs->transnoentities("ProjectManagementAddress");
 					$result = $object->fetch_contact($arrayidcontact[0]);
 				}
 
@@ -1843,7 +1840,7 @@ class pdf_cyan extends ModelePDFPropales
 					$thirdparty = $object->thirdparty;
 				}
 
-				$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
+				$carac_client_name = $recipient_type != 'MGMT' ?pdfBuildThirdpartyName($thirdparty, $outputlangs) :'';
 
 				$mode =  'target';
 				$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
@@ -1866,7 +1863,7 @@ class pdf_cyan extends ModelePDFPropales
 				$pdf->SetTextColor(0, 0, 0);
 				$pdf->SetFont('', '', $default_font_size - 2);
 				$pdf->SetXY($posx + 2, $posy - 5);
-				$pdf->MultiCell($widthrecbox, 5, $outputlangs->transnoentities("DeliveryAddress"), 0, $ltrdirection);
+				$pdf->MultiCell($widthrecbox, 5, $address_type_label, 0, $ltrdirection);
 				$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
 
 				// Show recipient name
@@ -1945,6 +1942,14 @@ class pdf_cyan extends ModelePDFPropales
 				if (count($arrayidcontact) > 0) {
 					$usecontact = true;
 					$result = $object->fetch_contact($arrayidcontact[0]);
+				}
+				// If BILLING contact defined, we use it
+				if (! $usecontact) {
+					$arrayidcontact = $object->getIdContact('external', 'BILLING');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
 				}
 
 				// Recipient name

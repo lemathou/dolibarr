@@ -308,13 +308,7 @@ class pdf_eratosthene extends ModelePDFCommandes
 			} else {
 				$objectref = dol_sanitizeFileName($object->ref);
 				$dir = $conf->commande->multidir_output[$object->entity]."/".$objectref;
-				// MMIDocument PDF rename
-				if (!empty($conf->global->MMIDOCUMENT_PDF_RENAME)) {
-					$filename = $object->pdf_filename();
-					$file = $dir."/".$filename.".pdf";
-				}
-				else
-					$file = $dir."/".$objectref.".pdf";
+				$file = $dir."/".$objectref.".pdf";
 			}
 
 			if (!file_exists($dir)) {
@@ -1690,22 +1684,13 @@ class pdf_eratosthene extends ModelePDFCommandes
 
 			// Added by MMI Mathieu Moulin iProspective
 			// If CUSTOMER/SHIPPING contact defined, we use it
-			$useshippingcontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'SHIPPING');
-			if (count($arrayidcontact) > 0) {
-				$usecontact = true;
-				$useshippingcontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
+			$useshippingcontact = !empty($object->getIdContact('external', 'SHIPPING'));
+			// If Maîtrise d'oeuvre defined, we use it
+			$usemaitrisecontact = !empty($object->getIdContact('external', 'MGMT'));
 			// If CUSTOMER/BILLING contact defined, we use it
-			$usebillingcontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'BILLING');
-			if (count($arrayidcontact) > 0) {
-				$usebillingcontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
+			$usebillingcontact = !empty($object->getIdContact('external', 'BILLING'));
 			// MMI Hack size
-			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && $useshippingcontact)
+			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && ($useshippingcontact || $usemaitrisecontact))
 				$widthrecbox = 60;
 
 			// Show sender frame
@@ -1743,11 +1728,21 @@ class pdf_eratosthene extends ModelePDFCommandes
 				$arrayidcontact = $object->getIdContact('external', 'SHIPPING');
 				if (count($arrayidcontact) > 0) {
 					$usecontact = true;
+					$recipient_type = 'SHIPPING';
+					$address_type_label = $outputlangs->transnoentities("DeliveryAddress");
+					$result = $object->fetch_contact($arrayidcontact[0]);
+				}
+				// If Maîtrise d'oeuvre defined, we use it
+				$arrayidcontact = $object->getIdContact('external', 'MGMT');
+				if (count($arrayidcontact) > 0) {
+					$usecontact = true;
+					$recipient_type = 'MGMT';
+					$address_type_label = $outputlangs->transnoentities("ProjectManagementAddress");
 					$result = $object->fetch_contact($arrayidcontact[0]);
 				}
 
 				// Recipient name
-				if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+				if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
 					$thirdparty = $object->contact;
 				} else {
 					$thirdparty = $object->thirdparty;
@@ -1776,7 +1771,7 @@ class pdf_eratosthene extends ModelePDFCommandes
 				$pdf->SetTextColor(0, 0, 0);
 				$pdf->SetFont('', '', $default_font_size - 2);
 				$pdf->SetXY($posx + 2, $posy - 5);
-				$pdf->MultiCell($widthrecbox, 5, $outputlangs->transnoentities("DeliveryAddress"), 0, $ltrdirection);
+				$pdf->MultiCell($widthrecbox, 5, $address_type_label, 0, $ltrdirection);
 				$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
 
 				// Show recipient name
@@ -1802,7 +1797,7 @@ class pdf_eratosthene extends ModelePDFCommandes
 				}
 
 				// Recipient name
-				if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+				if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
 					$thirdparty = $object->contact;
 				} else {
 					$thirdparty = $object->thirdparty;
@@ -1855,6 +1850,14 @@ class pdf_eratosthene extends ModelePDFCommandes
 				if (count($arrayidcontact) > 0) {
 					$usecontact = true;
 					$result = $object->fetch_contact($arrayidcontact[0]);
+				}
+				// If BILLING contact defined, we use it
+				if (! $usecontact) {
+					$arrayidcontact = $object->getIdContact('external', 'BILLING');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
 				}
 
 				// Recipient name
