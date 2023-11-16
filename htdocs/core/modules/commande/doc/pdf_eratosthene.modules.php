@@ -1752,7 +1752,7 @@ class pdf_eratosthene extends ModelePDFCommandes
 				$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
 
 				$mode =  'target';
-				$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
+				$carac_client = pdf_build_address($outputlangs, $this->emetteur, $usecontact && empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) ?$object->contact->thirdparty :$object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
 
 				// Show recipient
 				$widthrecbox = !empty($conf->global->MAIN_PDF_USE_ISO_LOCATION) ? 92 : 82;
