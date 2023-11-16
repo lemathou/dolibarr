@@ -150,7 +150,11 @@
 	path = htdocs/custom/mmisecurity
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmisecurity.git
 	branch = 16.0
-
 [submodule "htdocs/custom/subtotal"]
 	path = htdocs/custom/subtotal
 	url = https://gogs.iprospective.fr/iProspective/dolibarr-module-subtotal.git
+	branch = 16.0-mmi
+[submodule "htdocs/custom/discountrules"]
+	path = htdocs/custom/discountrules
+	url = https://gogs.iprospective.fr/iProspective/dolibarr-module-discountrules.git
+	branch = 16.0-mmi
