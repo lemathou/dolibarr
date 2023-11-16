@@ -1742,8 +1742,9 @@ class pdf_eratosthene extends ModelePDFCommandes
 				}
 
 				// Recipient name
-				if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+				if ($usecontact && empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)) {
 					$thirdparty = $object->contact;
+					$thirdparty->fetch_thirdparty();
 				} else {
 					$thirdparty = $object->thirdparty;
 				}

@@ -2337,16 +2337,17 @@ class pdf_sponge extends ModelePDFFactures
 				}
 
 				// Recipient name
-				if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+				if ($usecontact && empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)) {
 					$thirdparty = $object->contact;
+					$thirdparty->fetch_thirdparty();
 				} else {
 					$thirdparty = $object->thirdparty;
 				}
 
-				$carac_client_name = $recipient_type != 'MGMT' ?pdfBuildThirdpartyName($thirdparty, $outputlangs) :'';
+				$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
 
 				$mode =  'target';
-				$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
+				$carac_client = pdf_build_address($outputlangs, $this->emetteur, $usecontact && empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) ?$object->contact->thirdparty :$object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
 
 				// Show recipient
 				$widthrecbox = !empty($conf->global->MAIN_PDF_USE_ISO_LOCATION) ? 92 : 82;
