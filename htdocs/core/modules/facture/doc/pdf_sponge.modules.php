@@ -800,6 +800,11 @@ class pdf_sponge extends ModelePDFFactures
 					// Situation progress
 					if ($this->getColumnStatus('progress')) {
 						$progress = pdf_getlineprogress($object, $i, $outputlangs, $hidedetails);
+						// MMI Hack
+						if (!empty($conf->global->SITUATION_DISPLAY_DIFF_ON_PDF) && $progress != ' ' && $object->lines[$i]->situation_percent>0) {
+							$progress2 = $progress;
+							$progress = $progress.'<br />('.$object->lines[$i]->situation_percent.'%)';
+						}
 						$this->printStdColumnContent($pdf, $curY, 'progress', $progress);
 						$nexY = max($pdf->GetY(), $nexY);
 					}
@@ -821,6 +826,10 @@ class pdf_sponge extends ModelePDFFactures
 					// Total excl tax line (HT)
 					if ($this->getColumnStatus('totalexcltax')) {
 						$total_excl_tax = pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails);
+						// MMI Hack
+						if (!empty($conf->global->SITUATION_DISPLAY_DIFF_ON_PDF) && $total_excl_tax != ' ' && $object->lines[$i]->situation_percent>0) {
+							$total_excl_tax = $total_excl_tax.'<br />('.round($qty*$up_excl_tax*$object->lines[$i]->situation_percent/100, 2).'€)';
+						}
 						$this->printStdColumnContent($pdf, $curY, 'totalexcltax', $total_excl_tax);
 						$nexY = max($pdf->GetY(), $nexY);
 					}
