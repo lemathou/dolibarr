@@ -158,3 +158,12 @@
 	path = htdocs/custom/discountrules
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-discountrules.git
 	branch = 16.0-mmi
+[submodule "htdocs/custom/btp"]
+	path = htdocs/custom/btp
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-btp.git
+        branch = 16.0-mmi
+[submodule "htdocs/custom/nomenclature"]
+	path = htdocs/custom/nomenclature
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-nomenclature.git
+        branch = 16.0-mmi
+
