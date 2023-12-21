@@ -1953,12 +1953,13 @@ if ($action == 'create') {
 		$cols = 2;
 		// Added by MMI Mathieu Moulin iProspective
 		// Extrafields show/hide
-		if ($conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE) {
+		$extrafields_showhide = $conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE && (empty($action) || !in_array($action, ['edit_extras', 'update_extras']));
+		if ($extrafields_showhide) {
 			echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
 			echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
 		}
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
-		if ($conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE) {
+		if ($extrafields_showhide) {
 			echo '</tbody>';
 		}
 
