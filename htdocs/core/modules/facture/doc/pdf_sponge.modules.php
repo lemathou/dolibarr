@@ -829,7 +829,7 @@ class pdf_sponge extends ModelePDFFactures
 					if ($this->getColumnStatus('totalexcltax')) {
 						$total_excl_tax = pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails);
 						// MMI Hack : Hooks does not permit to retrieve infos
-						if ($conf->mmidocuments->enabled && $total_excl_tax != ' ' && $object->lines[$i]->situation_percent>0) {
+						if ($this->situationinvoice && $conf->mmidocuments->enabled && $total_excl_tax != ' ' && $object->lines[$i]->situation_percent>0) {
 							if (!empty($conf->global->SITUATION_DISPLAY_DIFF_ON_PDF)) {
 								$total_excl_tax = $total_excl_tax.'<br />('.number_format(round(str_replace(',', '.', $qty)*str_replace([' ', ','], ['', '.'], $up_excl_tax)*str_replace(',', '.', $object->lines[$i]->situation_percent)/100, 2), 2, ',', ' ').')';
 							}
