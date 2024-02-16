@@ -743,6 +743,33 @@ END;
 				print '</td>';
 				print '</tr>';
 
+				// MMI Hack
+				if (!empty($conf->global->MMIPRODUCT_SUPPLIER_PRICE_REDUCTED_DISPLAY)) {
+					$price = GETPOST('price') ? GETPOST('price') : (isset($object->fourn_price) ? $object->fourn_price : 0);
+					$remise_percent = GETPOSTISSET('remise_percent') ? GETPOST('remise_percent') : (isset($object->fourn_remise_percent) ?$object->fourn_remise_percent : 0);
+					// Supplier priced with rediction
+					print '<tr><td>'.$langs->trans("DiscountPriceQtyMin").'</td>';
+					print '<td><input class="flat" name="discount_price" size="4" value="'.($price*(1-$remise_percent/100)).'" /></td>';
+					print '</tr>';
+					print '<script type="text/javascript">';
+					print '$("input[name=price]").change(function(){
+						var price = $(this).val().replace(",", ".");
+						var remise_percent = $("input[name=remise_percent]").val().replace(",", ".");
+						$("input[name=discount_price]").val(price*(1-remise_percent/100));
+					}).change();;';
+					print '$("input[name=remise_percent]").change(function(){
+						var remise_percent = $(this).val().replace(",", ".");
+						var price = $("input[name=price]").val().replace(",", ".");
+						$("input[name=discount_price]").val(price*(1-remise_percent/100));
+					});';
+					print '$("input[name=discount_price]").change(function(){
+						var discount_price = $(this).val().replace(",", ".");
+						var remise_percent = $("input[name=remise_percent]").val().replace(",", ".");
+						$("input[name=price]").val(discount_price/(1-remise_percent/100));
+					})';
+					print '</script>';
+				}
+
 				// Delivery delay in days
 				print '<tr>';
 				print '<td>'.$langs->trans('NbDaysToDelivery').'</td>';
