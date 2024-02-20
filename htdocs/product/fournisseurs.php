@@ -749,23 +749,31 @@ END;
 					$remise_percent = GETPOSTISSET('remise_percent') ? GETPOST('remise_percent') : (isset($object->fourn_remise_percent) ?$object->fourn_remise_percent : 0);
 					// Supplier priced with rediction
 					print '<tr><td>'.$langs->trans("DiscountPriceQtyMin").'</td>';
-					print '<td><input class="flat" name="discount_price" size="4" value="'.($price*(1-$remise_percent/100)).'" /></td>';
+					print '<td><input class="flat" name="discount_price" size="8" value="'.number_format($price*(1-$remise_percent/100), 5, ',', ' ').'" /></td>';
 					print '</tr>';
 					print '<script type="text/javascript">';
+					print 'function dolinumber(x) {
+						var parts = x.toString().split(".");
+    					parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    					return parts.join(".").replace(".", ",");
+					}';
 					print '$("input[name=price]").change(function(){
-						var price = $(this).val().replace(",", ".");
-						var remise_percent = $("input[name=remise_percent]").val().replace(",", ".");
-						$("input[name=discount_price]").val(price*(1-remise_percent/100));
+						var price = $(this).val().replace(",", ".").replace(" ", "");
+						var remise_percent = $("input[name=remise_percent]").val().replace(",", ".").replace(" ", "");
+						var discount_price = price*(1-remise_percent/100);
+						$("input[name=discount_price]").val(dolinumber(discount_price));
 					}).change();;';
 					print '$("input[name=remise_percent]").change(function(){
-						var remise_percent = $(this).val().replace(",", ".");
-						var price = $("input[name=price]").val().replace(",", ".");
-						$("input[name=discount_price]").val(price*(1-remise_percent/100));
+						var remise_percent = $(this).val().replace(",", ".").replace(" ", "");
+						var price = $("input[name=price]").val().replace(",", ".").replace(" ", "");
+						var discount_price = price*(1-remise_percent/100);
+						$("input[name=discount_price]").val(dolinumber(discount_price));
 					});';
 					print '$("input[name=discount_price]").change(function(){
-						var discount_price = $(this).val().replace(",", ".");
-						var remise_percent = $("input[name=remise_percent]").val().replace(",", ".");
-						$("input[name=price]").val(discount_price/(1-remise_percent/100));
+						var discount_price = $(this).val().replace(",", ".").replace(" ", "");
+						var remise_percent = $("input[name=remise_percent]").val().replace(",", ".").replace(" ", "");
+						var price = discount_price/(1-remise_percent/100);
+						$("input[name=price]").val(dolinumber(price));
 					})';
 					print '</script>';
 				}
