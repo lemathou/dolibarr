@@ -53,7 +53,7 @@
 [submodule "htdocs/custom/mmiproduct"]
 	path = htdocs/custom/mmiproduct
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproduct.git
-	branch = 16.0
+	branch = 18.0
 [submodule "htdocs/custom/mmiproductdluo"]
 	path = htdocs/custom/mmiproductdluo
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproductdluo.git
@@ -133,7 +133,7 @@
 [submodule "htdocs/custom_dolicloud"]
 	path = htdocs/custom_dolicloud
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-modules-dolicloud.git
-	branch = 16.0-mmi
+	branch = 18.0-mmi
 [submodule "htdocs/custom/attachments"]
 	path = htdocs/custom/attachments
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-attachments.git
@@ -145,7 +145,7 @@
 [submodule "htdocs/custom/listincsv"]
 	path = htdocs/custom/listincsv
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-listincsv.git
-	branch = 16.0-mmi
+	branch = 18.0-mmi
 [submodule "htdocs/custom/mmisecurity"]
 	path = htdocs/custom/mmisecurity
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmisecurity.git
@@ -153,11 +153,11 @@
 [submodule "htdocs/custom/subtotal"]
 	path = htdocs/custom/subtotal
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-subtotal.git
-	branch = 16.0-mmi
+	branch = 18.0-mmi
 [submodule "htdocs/custom/discountrules"]
 	path = htdocs/custom/discountrules
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-discountrules.git
-	branch = 16.0-mmi
+	branch = 18.0-mmi
 [submodule "htdocs/custom/btp"]
 	path = htdocs/custom/btp
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-btp.git
