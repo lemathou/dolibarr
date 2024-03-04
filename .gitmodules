@@ -166,4 +166,8 @@
 	path = htdocs/custom/nomenclature
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-nomenclature.git
         branch = 16.0-mmi
+[submodule "htdocs/custom/mmiredmine"]
+        path = htdocs/custom/mmiredmine
+        url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiredmine.git
+        branch = 18.0
 
