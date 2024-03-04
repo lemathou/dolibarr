@@ -339,17 +339,12 @@ class Ldap
 	 * This method seems a duplicate/alias of unbind().
 	 *
 	 * @return	boolean			true or false
-	 * @deprecated ldap_close is an alias of ldap_unbind
+	 * @deprecated ldap_close is an alias of ldap_unbind, so use unbind() instead.
 	 * @see unbind()
 	 */
 	public function close()
 	{
-		$r_type = get_resource_type($this->connection);
-		if ($this->connection && ($r_type === "Unknown" || !@ldap_close($this->connection))) {
-			return false;
-		} else {
-			return true;
-		}
+		return $this->unbind();
 	}
 
 	/**
@@ -401,7 +396,7 @@ class Ldap
 	public function unbind()
 	{
 		$this->result = true;
-		if ($this->connection) {
+		if (is_resource($this->connection) || is_object($this->connection)) {
 			$this->result = @ldap_unbind($this->connection);
 		}
 		if ($this->result) {
@@ -1016,12 +1011,12 @@ class Ldap
 	}
 
 	/**
-	 * 	Returns an array containing a details or list of LDAP record(s)
+	 * 	Returns an array containing a details or list of LDAP record(s).
 	 * 	ldapsearch -LLLx -hlocalhost -Dcn=admin,dc=parinux,dc=org -w password -b "ou=adherents,ou=people,dc=parinux,dc=org" userPassword
 	 *
 	 *	@param	string	$search			 	Value of field to search, '*' for all. Not used if $activefilter is set.
 	 *	@param	string	$userDn			 	DN (Ex: ou=adherents,ou=people,dc=parinux,dc=org)
-	 *	@param	string	$useridentifier 	Name of key field (Ex: uid)
+	 *	@param	string	$useridentifier 	Name of key field (Ex: uid).
 	 *	@param	array	$attributeArray 	Array of fields required. Note this array must also contains field $useridentifier (Ex: sn,userPassword)
 	 *	@param	int		$activefilter		'1' or 'user'=use field this->filter as filter instead of parameter $search, 'group'=use field this->filtergroup as filter, 'member'=use field this->filtermember as filter
 	 *	@param	array	$attributeAsArray 	Array of fields wanted as an array not a string
@@ -1063,7 +1058,7 @@ class Ldap
 			$this->result = @ldap_search($this->connection, $userDn, $filter, $attributeArray);
 		} else {
 			// Return list with fields selected by default
-			dol_syslog(get_class($this)."::getRecords connection=".$this->connection." userDn=".$userDn." filter=".$filter);
+			dol_syslog(get_class($this)."::getRecords connection=".$this->connectedServer.":".$this->serverPort." userDn=".$userDn." filter=".$filter);
 			$this->result = @ldap_search($this->connection, $userDn, $filter);
 		}
 		if (!$this->result) {
@@ -1239,10 +1234,10 @@ class Ldap
 	/**
 	 * 		Load all attribute of a LDAP user
 	 *
-	 * 		@param	User	$user		User to search for. Not used if a filter is provided.
-	 *      @param  string	$filter		Filter for search. Must start with &.
-	 *                       	       	Examples: &(objectClass=inetOrgPerson) &(objectClass=user)(objectCategory=person) &(isMemberOf=cn=Sales,ou=Groups,dc=opencsi,dc=com)
-	 *		@return	int					>0 if OK, <0 if KO
+	 * 		@param	User|string	$user		Not used.
+	 *      @param  string		$filter		Filter for search. Must start with &.
+	 *                       		       	Examples: &(objectClass=inetOrgPerson) &(objectClass=user)(objectCategory=person) &(isMemberOf=cn=Sales,ou=Groups,dc=opencsi,dc=com)
+	 *		@return	int						>0 if OK, <0 if KO
 	 */
 	public function fetch($user, $filter)
 	{

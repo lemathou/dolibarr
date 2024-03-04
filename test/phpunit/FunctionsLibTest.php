@@ -29,6 +29,7 @@ global $conf,$user,$langs,$db;
 //require_once 'PHPUnit/Autoload.php';
 require_once dirname(__FILE__).'/../../htdocs/master.inc.php';
 require_once dirname(__FILE__).'/../../htdocs/core/lib/date.lib.php';
+require_once dirname(__FILE__).'/../../htdocs/product/class/product.class.php';
 
 if (! defined('NOREQUIREUSER')) {
 	define('NOREQUIREUSER', '1');
@@ -79,6 +80,7 @@ class FunctionsLibTest extends PHPUnit\Framework\TestCase
 	protected $savuser;
 	protected $savlangs;
 	protected $savdb;
+	protected $savmysoc;
 
 	/**
 	 * Constructor
@@ -91,11 +93,12 @@ class FunctionsLibTest extends PHPUnit\Framework\TestCase
 		parent::__construct();
 
 		//$this->sharedFixture
-		global $conf,$user,$langs,$db;
+		global $conf,$user,$langs,$db,$mysoc;
 		$this->savconf=$conf;
 		$this->savuser=$user;
 		$this->savlangs=$langs;
 		$this->savdb=$db;
+		$this->savmysoc=$mysoc;
 
 		print __METHOD__." db->type=".$db->type." user->id=".$user->id;
 		//print " - db ".$db->db;
@@ -107,7 +110,7 @@ class FunctionsLibTest extends PHPUnit\Framework\TestCase
 	 *
 	 * @return void
 	 */
-	public static function setUpBeforeClass()
+	public static function setUpBeforeClass(): void
 	{
 		global $conf,$user,$langs,$db;
 		//$db->begin();	// This is to have all actions inside a transaction even if test launched without suite.
@@ -132,7 +135,7 @@ class FunctionsLibTest extends PHPUnit\Framework\TestCase
 	 *
 	 * @return	void
 	 */
-	public static function tearDownAfterClass()
+	public static function tearDownAfterClass(): void
 	{
 		global $conf,$user,$langs,$db;
 		//$db->rollback();
@@ -141,17 +144,18 @@ class FunctionsLibTest extends PHPUnit\Framework\TestCase
 	}
 
 	/**
-	 * Init phpunit tests
+	 * Init phpunit tests. Restore variables before each test.
 	 *
 	 * @return	void
 	 */
-	protected function setUp()
+	protected function setUp(): void
 	{
-		global $conf,$user,$langs,$db;
+		global $conf,$user,$langs,$db,$mysoc;
 		$conf=$this->savconf;
 		$user=$this->savuser;
 		$langs=$this->savlangs;
 		$db=$this->savdb;
+		$mysoc=$this->savmysoc;
 
 		print __METHOD__."\n";
 	}
@@ -161,11 +165,65 @@ class FunctionsLibTest extends PHPUnit\Framework\TestCase
 	 *
 	 * @return	void
 	 */
-	protected function tearDown()
+	protected function tearDown(): void
 	{
 		print __METHOD__."\n";
 	}
 
+
+	/**
+	 * testDolForgeCriteriaCallback
+	 *
+	 * @return boolean
+	 */
+	public function testDolForgeCriteriaCallback()
+	{
+		global $conf, $langs;
+
+		// An attempt for SQL injection
+		$filter='if(now()=sysdate()%2Csleep(6)%2C0)';
+		$sql = forgeSQLFromUniversalSearchCriteria($filter);
+		$this->assertEquals($sql, '1 = 3');
+
+		// A real search string
+		$filter='(((statut:=:1) or (entity:in:__AAA__)) and (abc:<:2.0) and (abc:!=:1.23))';
+		$sql = forgeSQLFromUniversalSearchCriteria($filter);
+		$this->assertEquals($sql, ' AND (((statut = 1 or entity IN (__AAA__)) and abc < 2 and abc <> 1.23))');
+
+		$filter="(t.ref:like:'SO-%') or (t.date_creation:<:'20160101') or (t.date_creation:<:'2016-01-01 12:30:00') or (t.nature:is:NULL)";
+		$sql = forgeSQLFromUniversalSearchCriteria($filter);
+		$this->assertEquals($sql, " AND (t.ref LIKE 'SO-%' or t.date_creation < '20160101' or t.date_creation < 0 or t.nature IS NULL)");
+
+		return true;
+	}
+
+
+	/**
+	 * testDolClone
+	 *
+	 * @return void
+	 */
+	public function testDolClone()
+	{
+		$newproduct1 = new Product($this->savdb);
+
+		print __METHOD__." this->savdb has type ".(is_resource($this->savdb->db) ? get_resource_type($this->savdb->db) : (is_object($this->savdb->db) ? 'object' : 'unknown'))."\n";
+		print __METHOD__." newproduct1->db->db has type ".(is_resource($newproduct1->db->db) ? get_resource_type($newproduct1->db->db) : (is_object($newproduct1->db->db) ? 'object' : 'unknown'))."\n";
+		$this->assertEquals($this->savdb->connected, 1, 'Savdb is connected');
+		$this->assertNotNull($newproduct1->db->db, 'newproduct1->db is not null');
+
+		$newproductcloned1 = dol_clone($newproduct1);
+
+		print __METHOD__." this->savdb has type ".(is_resource($this->savdb->db) ? get_resource_type($this->savdb->db) : (is_object($this->savdb->db) ? 'object' : 'unknown'))."\n";
+		print __METHOD__." newproduct1->db->db has type ".(is_resource($newproduct1->db->db) ? get_resource_type($newproduct1->db->db) : (is_object($newproduct1->db->db) ? 'object' : 'unknown'))."\n";
+		$this->assertEquals($this->savdb->connected, 1, 'Savdb is connected');
+		$this->assertNotNull($newproduct1->db->db, 'newproduct1->db is not null');
+
+		$newproductcloned2 = dol_clone($newproduct1, 2);
+		var_dump($newproductcloned2);
+		//print __METHOD__." newproductcloned1->db must be null\n";
+		//$this->assertNull($newproductcloned1->db, 'newproductcloned1->db is null');
+	}
 
 	/**
 	 * testNum2Alpha
@@ -522,6 +580,9 @@ class FunctionsLibTest extends PHPUnit\Framework\TestCase
 		$input='This is a text with accent &eacute;';
 		$after=dol_textishtml($input);
 		$this->assertTrue($after, 'Test with a &eacute;');
+		$input='<i class="abc">xxx</i>';
+		$after=dol_textishtml($input);
+		$this->assertTrue($after, 'Test with i tag and class;');
 
 		// False
 		$input='xxx < br>';
@@ -1169,7 +1230,6 @@ class FunctionsLibTest extends PHPUnit\Framework\TestCase
 
 		// We do same tests but with option SERVICE_ARE_ECOMMERCE_200238EC on.
 		$conf->global->SERVICE_ARE_ECOMMERCE_200238EC = 1;
-
 
 		// Test RULE 1 (FR-US)
 		$vat=get_default_tva($companyfr, $companyus, 0);

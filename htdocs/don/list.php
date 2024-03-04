@@ -25,14 +25,15 @@
  *  \brief      List of donations
  */
 
+// Load Dolibarr environment
 require '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/don/class/don.class.php';
-if (!empty($conf->project->enabled)) {
+if (isModEnabled('project')) {
 	require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 }
 
 // Load translation files required by the page
-$langs->loadLangs(array("companies", "donations"));
+$langs->loadLangs(array('companies', 'donations'));
 
 $contextpage = GETPOST('contextpage', 'aZ') ?GETPOST('contextpage', 'aZ') : 'sclist';
 
@@ -40,6 +41,7 @@ $limit = GETPOST('limit', 'int') ?GETPOST('limit', 'int') : $conf->liste_limit;
 $sortfield = GETPOST('sortfield', 'aZ09comma');
 $sortorder = GETPOST('sortorder', 'aZ09comma');
 $page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
+$type = GETPOST('type', 'aZ');
 if (empty($page) || $page == -1) {
 	$page = 0;
 }     // If $page is not defined, or '' or -1
@@ -61,7 +63,7 @@ $search_thirdparty = GETPOST('search_thirdparty', 'alpha');
 $search_name = GETPOST('search_name', 'alpha');
 $search_amount = GETPOST('search_amount', 'alpha');
 $optioncss = GETPOST('optioncss', 'alpha');
-
+$moreforfilter = GETPOST('moreforfilter', 'alpha');
 if (!$user->rights->don->lire) {
 	accessforbidden();
 }
@@ -70,7 +72,7 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x'
 	$search_all = "";
 	$search_ref = "";
 	$search_company = "";
-	$search_thirdparty = "";
+	$search_thirdparty  = "";
 	$search_name = "";
 	$search_amount = "";
 	$search_status = '';
@@ -88,6 +90,11 @@ $fieldstosearchall = array(
 	'd.firstname'=>'Firstname',
 );
 
+// Security check
+$result = restrictedArea($user, 'don');
+
+
+
 
 /*
  * View
@@ -95,7 +102,7 @@ $fieldstosearchall = array(
 
 $donationstatic = new Don($db);
 $form = new Form($db);
-if (!empty($conf->project->enabled)) {
+if (isModEnabled('project')) {
 	$projectstatic = new Project($db);
 }
 
@@ -205,7 +212,7 @@ if ($resql) {
 	}
 
 	print '<div class="div-table-responsive">';
-	print '<table class="tagtable liste'.($moreforfilter ? " listwithfilterbefore" : "").'">'."\n";
+	print '<table class="tagtable liste'.(!empty($moreforfilter) ? " listwithfilterbefore" : "").'">'."\n";
 
 	// Filters lines
 	print '<tr class="liste_titre_filter">';
@@ -227,7 +234,7 @@ if ($resql) {
 	print '<td class="liste_titre left">';
 	print '&nbsp;';
 	print '</td>';
-	if (!empty($conf->project->enabled)) {
+	if (isModEnabled('project')) {
 		print '<td class="liste_titre right">';
 		print '&nbsp;';
 		print '</td>';
@@ -240,7 +247,7 @@ if ($resql) {
 		Don::STATUS_PAID=>$langs->trans("DonationStatusPaid"),
 		Don::STATUS_CANCELED=>$langs->trans("Canceled")
 	);
-	print $form->selectarray('search_status', $liststatus, $search_status, -4, 0, 0, '', 0, 0, 0, '', 'maxwidth100');
+	print $form->selectarray('search_status', $liststatus, $search_status, -4, 0, 0, '', 0, 0, 0, '', 'maxwidth100 onrightofpage');
 	print '</td>';
 	print '<td class="liste_titre maxwidthsearch">';
 	$searchpicto = $form->showFilterAndCheckAddButtons(0);
@@ -257,7 +264,7 @@ if ($resql) {
 	}
 	print_liste_field_titre("Name", $_SERVER["PHP_SELF"], "d.lastname", "", $param, "", $sortfield, $sortorder);
 	print_liste_field_titre("Date", $_SERVER["PHP_SELF"], "d.datedon", "", $param, '', $sortfield, $sortorder, 'center ');
-	if (!empty($conf->project->enabled)) {
+	if (isModEnabled('project')) {
 		$langs->load("projects");
 		print_liste_field_titre("Project", $_SERVER["PHP_SELF"], "d.fk_projet", "", $param, "", $sortfield, $sortorder);
 	}
@@ -288,7 +295,7 @@ if ($resql) {
 		}
 		print "<td>".$donationstatic->getFullName($langs)."</td>";
 		print '<td class="center">'.dol_print_date($db->jdate($objp->datedon), 'day').'</td>';
-		if (!empty($conf->project->enabled)) {
+		if (isModEnabled('project')) {
 			print "<td>";
 			if ($objp->pid) {
 				$projectstatic->id = $objp->pid;

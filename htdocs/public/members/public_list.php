@@ -45,11 +45,12 @@ if (is_numeric($entity)) {
 	define("DOLENTITY", $entity);
 }
 
+// Load Dolibarr environment
 require '../../main.inc.php';
 
 // Security check
 if (empty($conf->adherent->enabled)) {
-	accessforbidden('', 0, 0, 1);
+	httponly_accessforbidden('Module Membership not enabled');
 }
 
 
@@ -109,6 +110,10 @@ if (!$sortfield) {
 /*
  * View
  */
+
+if (empty($conf->global->MEMBER_PUBLIC_ENABLED)) {
+	httponly_accessforbidden('Public access of list of members is not enabled');
+}
 
 $form = new Form($db);
 

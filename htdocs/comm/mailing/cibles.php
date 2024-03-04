@@ -24,6 +24,7 @@
  *       \brief      Page to define emailing targets
  */
 
+// Load Dolibarr environment
 require '../../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/modules/mailings/modules_mailings.php';
 require_once DOL_DOCUMENT_ROOT.'/comm/mailing/class/mailing.class.php';
@@ -309,22 +310,15 @@ if ($object->fetch($id) >= 0) {
 	if ($allowaddtarget && $user->rights->mailing->creer) {
 		print load_fiche_titre($langs->trans("ToAddRecipientsChooseHere"), ($user->admin ?info_admin($langs->trans("YouCanAddYourOwnPredefindedListHere"), 1) : ''), 'generic');
 
-		//print '<table class="noborder centpercent">';
-
 		print '<div class="div-table-responsive">';
 		print '<div class="tagtable centpercent liste_titre_bydiv borderbottom" id="tablelines">';
 
-		//print '<tr class="liste_titre">';
 		print '<div class="tagtr liste_titre">';
-		//print '<td class="liste_titre">'.$langs->trans("RecipientSelectionModules").'</td>';
+		print '<div class="tagtd"></div>';
 		print '<div class="tagtd">'.$langs->trans("RecipientSelectionModules").'</div>';
-		//print '<td class="liste_titre" align="center">'.$langs->trans("NbOfUniqueEMails").'</td>';
 		print '<div class="tagtd" align="center">'.$langs->trans("NbOfUniqueEMails").'</div>';
-		//print '<td class="liste_titre" align="left">'.$langs->trans("Filter").'</td>';
 		print '<div class="tagtd left">'.$langs->trans("Filter").'</div>';
-		//print '<td class="liste_titre" align="center">&nbsp;</td>';
 		print '<div class="tagtd">&nbsp;</div>';
-		//print "</tr>\n";
 		print '</div>';	// End tr
 
 		clearstatcache();
@@ -389,12 +383,13 @@ if ($object->fetch($id) >= 0) {
 						print '<div '.$bctag[$var].'>';
 					}
 
-					print '<div class="tagtd">';
+					print '<div class="tagtd paddingleftimp marginleftonly paddingrightimp marginrightonly valignmiddle center">';
 					if (empty($obj->picto)) {
 						$obj->picto = 'generic';
 					}
-					print img_object($langs->trans("EmailingTargetSelector").': '.get_class($obj), $obj->picto, 'class="valignmiddle pictomodule"');
-					print ' ';
+					print img_object($langs->trans("EmailingTargetSelector").': '.get_class($obj), $obj->picto, 'class="valignmiddle width25 size15x"');
+					print '</div>';
+					print '<div class="tagtd valignmiddle">';	//  style="height: 4em"
 					print $obj->getDesc();
 					print '</div>';
 
@@ -404,7 +399,7 @@ if ($object->fetch($id) >= 0) {
 						dol_syslog($e->getMessage(), LOG_ERR);
 					}
 
-					print '<div class="tagtd center">';
+					print '<div class="tagtd center valignmiddle">';
 					if ($nbofrecipient === '' || $nbofrecipient >= 0) {
 						print $nbofrecipient;
 					} else {
@@ -412,7 +407,7 @@ if ($object->fetch($id) >= 0) {
 					}
 					print '</div>';
 
-					print '<div class="tagtd left">';
+					print '<div class="tagtd left valignmiddle">';
 					if ($allowaddtarget) {
 						try {
 							$filter = $obj->formFilter();
@@ -427,7 +422,7 @@ if ($object->fetch($id) >= 0) {
 					}
 					print '</div>';
 
-					print '<div class="tagtd right">';
+					print '<div class="tagtd right valignmiddle">';
 					if ($allowaddtarget) {
 						print '<input type="submit" class="button button-add small reposition" name="button_'.$modulename.'" value="'.$langs->trans("Add").'">';
 					} else {
@@ -515,7 +510,7 @@ if ($object->fetch($id) >= 0) {
 		$num = $db->num_rows($resql);
 
 		$param = "&id=".$object->id;
-		//if (! empty($contextpage) && $contextpage != $_SERVER["PHP_SELF"]) $param.='&contextpage='.urlencode($contextpage);
+		//if (!empty($contextpage) && $contextpage != $_SERVER["PHP_SELF"]) $param.='&contextpage='.urlencode($contextpage);
 		if ($limit > 0 && $limit != $conf->liste_limit) {
 			$param .= '&limit='.urlencode($limit);
 		}
@@ -543,11 +538,11 @@ if ($object->fetch($id) >= 0) {
 		if ($allowaddtarget) {
 			$morehtmlcenter = '<span class="opacitymedium hideonsmartphone">'.$langs->trans("ToClearAllRecipientsClickHere").'</span> <a href="'.$_SERVER["PHP_SELF"].'?clearlist=1&id='.$object->id.'" class="button reposition smallpaddingimp">'.$langs->trans("TargetsReset").'</a>';
 		}
-		$morehtmlcenter .= ' &nbsp; <a class="reposition" href="'.$_SERVER["PHP_SELF"].'?exportcsv=1&id='.$object->id.'">'.$langs->trans("Download").'</a>';
+		$morehtmlcenter .= ' &nbsp; <a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=exportcsv&token='.newToken().'&exportcsv=1&id='.$object->id.'">'.img_picto('', 'download', 'class="pictofixedwidth"').$langs->trans("Download").'</a>';
 
 		$massactionbutton = '';
 
-		print_barre_liste($langs->trans("MailSelectedRecipients"), $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $morehtmlcenter, $num, $nbtotalofrecords, 'generic', 0, '', '', $limit);
+		print_barre_liste($langs->trans("MailSelectedRecipients"), $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $morehtmlcenter, $num, $nbtotalofrecords, 'generic', 0, '', '', $limit, 0, 0, 1);
 
 		print '</form>';
 
@@ -559,6 +554,7 @@ if ($object->fetch($id) >= 0) {
 		print '<input type="hidden" name="page" value="'.$page.'">';
 		print '<input type="hidden" name="id" value="'.$object->id.'">';
 		print '<input type="hidden" name="limit" value="'.$limit.'">';
+		print '<input type="hidden" name="page_y" value="">';
 
 		print '<div class="div-table-responsive">';
 		print '<table class="noborder centpercent">';
@@ -632,10 +628,12 @@ if ($object->fetch($id) >= 0) {
 			include_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 			include_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 			include_once DOL_DOCUMENT_ROOT.'/contact/class/contact.class.php';
+			include_once DOL_DOCUMENT_ROOT.'/eventorganization/class/conferenceorboothattendee.class.php';
 			$objectstaticmember = new Adherent($db);
 			$objectstaticuser = new User($db);
 			$objectstaticcompany = new Societe($db);
 			$objectstaticcontact = new Contact($db);
+			$objectstaticeventorganization = new ConferenceOrBoothAttendee($db);
 
 			while ($i < min($num, $limit)) {
 				$obj = $db->fetch_object($resql);
@@ -644,7 +642,7 @@ if ($object->fetch($id) >= 0) {
 				print '<td class="tdoverflowmax150">'.img_picto('$obj->email', 'email', 'class="paddingright"').dol_escape_htmltag($obj->email).'</td>';
 				print '<td class="tdoverflowmax150" title="'.dol_escape_htmltag($obj->lastname).'">'.dol_escape_htmltag($obj->lastname).'</td>';
 				print '<td class="tdoverflowmax150" title="'.dol_escape_htmltag($obj->firstname).'">'.dol_escape_htmltag($obj->firstname).'</td>';
-				print '<td>'.dol_escape_htmltag($obj->other).'</td>';
+				print '<td><span class="small">'.dol_escape_htmltag($obj->other).'</small></td>';
 				print '<td class="center tdoverflowmax150">';
 				if (empty($obj->source_id) || empty($obj->source_type)) {
 					print empty($obj->source_url) ? '' : $obj->source_url; // For backward compatibility
@@ -661,6 +659,9 @@ if ($object->fetch($id) >= 0) {
 					} elseif ($obj->source_type == 'contact') {
 						$objectstaticcontact->fetch($obj->source_id);
 						print $objectstaticcontact->getNomUrl(1);
+					} elseif ($obj->source_type == 'eventorganizationattendee') {
+						$objectstaticeventorganization->fetch($obj->source_id);
+						print $objectstaticeventorganization->getNomUrl(1);
 					} else {
 						print $obj->source_url;
 					}

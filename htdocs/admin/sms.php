@@ -23,6 +23,7 @@
  *       \brief      Page to setup emails sending
  */
 
+// Load Dolibarr environment
 require '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 
@@ -227,7 +228,7 @@ if ($action == 'edit') {
 
 	// Method
 	print '<tr class="oddeven"><td>'.$langs->trans("MAIN_SMS_SENDMODE").'</td><td>';
-	$text = empty(getDolGlobalString('MAIN_SMS_SENDMODE')) ? '' : $listofmethods[getDolGlobalString('MAIN_SMS_SENDMODE')];
+	$text = getDolGlobalString('MAIN_SMS_SENDMODE') ? $listofmethods[getDolGlobalString('MAIN_SMS_SENDMODE')] : '';
 	if (empty($text)) {
 		$text = $langs->trans("Undefined").' '.img_warning();
 	}

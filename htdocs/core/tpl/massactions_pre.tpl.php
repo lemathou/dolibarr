@@ -62,20 +62,98 @@ if ($massaction == 'preaffecttag' && isModEnabled('category')) {
 	$formquestion = array();
 	if (!empty($categ_types)) {
 		foreach ($categ_types as $categ_type) {
-			$cate_arbo = $form->select_all_categories($categ_type['code'], null, 'parent', null, null, 1);
-			$formquestion[] = array('type' => 'other',
-					'name' => 'affecttag_'.$categ_type['code'],
-					'label' => $langs->trans("Tag").' '.$categ_type['label'],
-					'value' => $form->multiselectarray('contcats_'.$categ_type['code'], $cate_arbo, GETPOST('contcats_'.$categ_type['code'], 'array'), null, null, null, null, '60%'));
-		}
-		$formquestion[] = array('type' => 'other',
-				'name' => 'affecttag_type',
+			$categ_arbo_tmp = $form->select_all_categories($categ_type['code'], null, 'parent', null, null, 2);
+			$formquestion[] = array(
+				'type' => 'other',
+				'name' => 'affecttag_'.$categ_type['code'],
 				'label' => '',
-				'value' => '<input type="hidden" name="affecttag_type"  id="affecttag_type" value="'.implode(",", array_keys($categ_types)).'"/>');
+				'value' => $form->multiselectarray('contcats_'.$categ_type['code'], $categ_arbo_tmp, GETPOST('contcats_'.$categ_type['code'], 'array'), null, null, '', 0, '60%', '', '', $langs->trans("SelectTheTagsToAssign"))
+			);
+		}
+		$formquestion[] = array(
+			'type' => 'other',
+			'name' => 'affecttag_type',
+			'label' => '',
+			'value' => '<input type="hidden" name="affecttag_type"  id="affecttag_type" value="'.implode(",", array_keys($categ_types)).'"/>'
+		);
 		print $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("ConfirmAffectTag"), $langs->trans("ConfirmAffectTagQuestion", count($toselect)), "affecttag", $formquestion, 1, 0, 200, 500, 1);
 	} else {
 		setEventMessage('CategTypeNotFound');
 	}
+}
+
+if ($massaction == 'preupdateprice' && isModEnabled('category')) {
+	$formquestion = array();
+
+	$valuefield = '<div style="display: flex; align-items: center; justify-content: flex-end; padding-right: 150px">';
+	$valuefield .= '<input type="number" name="pricerate" id="pricerate" min="-100" value="0" style="width: 100px; text-align: right; margin-right: 10px" />%';
+	$valuefield .= '</div>';
+
+	$formquestion[] = array(
+				'type' => 'other',
+				'name' => 'pricerate',
+				'label' => $langs->trans("Rate"),
+				'value' => $valuefield
+			);
+
+	print $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("ConfirmUpdatePrice"), $langs->trans("ConfirmUpdatePriceQuestion", count($toselect)), "updateprice", $formquestion, 1, 0, 200, 500, 1);
+}
+
+if ($massaction == 'presetsupervisor') {
+	$formquestion = array();
+
+	$valuefield = '<div style="display: flex; align-items: center; justify-content: flex-end; padding-right: 150px">';
+	$valuefield .= img_picto('', 'user').' ';
+	$valuefield .= $form->select_dolusers('', 'supervisortoset', 1, $arrayofselected, 0, '', 0, $object->entity, 0, 0, '', 0, '', 'widthcentpercentminusx maxwidth300');
+	$valuefield .= '</div>';
+
+	$formquestion[] = array(
+				'type' => 'other',
+				'name' => 'supervisortoset',
+				'label' => $langs->trans("Supervisor"),
+				'value' => $valuefield
+			);
+
+	print $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("ConfirmSetSupervisor"), $langs->trans("ConfirmSetSupervisorQuestion", count($toselect)), "setsupervisor", $formquestion, 1, 0, 200, 500, 1);
+}
+
+if ($massaction == 'preaffectuser') {
+	$formquestion = array();
+
+	$valuefielduser = '<div style="display: flex; align-items: center; justify-content: flex-end; padding-right: 165px; padding-bottom: 6px; gap: 5px">';
+	$valuefielduser .= img_picto('', 'user').' ';
+	$valuefielduser .= $form->select_dolusers('', 'usertoaffect', 1, $arrayofselected, 0, '', 0, $object->entity, 0, 0, '', 0, '', 'widthcentpercentminusx maxwidth300');
+	$valuefielduser .= '</div>';
+
+	$valuefieldprojrole = '<div style="display: flex; align-items: center; justify-content: flex-end; padding-right: 150px; padding-bottom: 6px">';
+	$valuefieldprojrole .= $formcompany->selectTypeContact($object, '', 'projectrole', 'internal', 'position', 0, 'widthcentpercentminusx maxwidth300', 0);
+	$valuefieldprojrole .= '</div>';
+
+	$valuefieldtasksrole = '<div style="display: flex; align-items: center; justify-content: flex-end; padding-right: 150px">';
+	$valuefieldtasksrole .= $formcompany->selectTypeContact($taskstatic, '', 'tasksrole', 'internal', 'position', 0, 'widthcentpercentminusx maxwidth300', 0);
+	$valuefieldtasksrole .= '</div>';
+
+	$formquestion[] = array(
+				'type' => 'other',
+				'name' => 'usertoaffect',
+				'label' => $langs->trans("User"),
+				'value' => $valuefielduser
+			);
+	$formquestion[] = array(
+		'type' => 'other',
+		'name' => 'projectrole',
+		'label' => $langs->trans("ProjectRole"),
+		'value' => $valuefieldprojrole
+	);
+
+	$formquestion[] = array(
+		'type' => 'other',
+		'name' => 'tasksrole',
+		'label' => $langs->trans("TasksRole"),
+		'value' => $valuefieldtasksrole
+	);
+
+	print $form->formconfirm($_SERVER["PHP_SELF"], $langs->trans("ConfirmAffectUser"), $langs->trans("ConfirmAffectUserQuestion", count($toselect)), "affectuser", $formquestion, 1, 0, 200, 500, 1);
 }
 
 if ($massaction == 'presend') {
@@ -200,6 +278,7 @@ if ($massaction == 'presend') {
 	$formmail->param['id'] = join(',', $arrayofselected);
 	// $formmail->param['returnurl']=$_SERVER["PHP_SELF"].'?id='.$object->id;
 	if (!empty($conf->global->MAILING_LIMIT_SENDBYWEB) && count($listofselectedrecipientobjid) > $conf->global->MAILING_LIMIT_SENDBYWEB) {
+		// Note: MAILING_LIMIT_SENDBYWEB may be forced by conf.php file and variable $dolibarr_mailing_limit_sendbyweb
 		$langs->load("errors");
 		print img_warning().' '.$langs->trans('WarningNumberOfRecipientIsRestrictedInMassAction', $conf->global->MAILING_LIMIT_SENDBYWEB);
 		print ' - <a href="javascript: window.history.go(-1)">'.$langs->trans("GoBack").'</a>';
@@ -289,8 +368,9 @@ if ($massaction == 'preapproveleave') {
 
 // Allow Pre-Mass-Action hook (eg for confirmation dialog)
 $parameters = array(
-	'toselect' => $toselect,
-	'uploaddir' => isset($uploaddir) ? $uploaddir : null
+	'toselect' => isset($toselect) ? $toselect : array(),
+	'uploaddir' => isset($uploaddir) ? $uploaddir : null,
+	'massaction' => $massaction
 );
 
 $reshook = $hookmanager->executeHooks('doPreMassActions', $parameters, $object, $action);

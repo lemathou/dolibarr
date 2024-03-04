@@ -46,7 +46,7 @@ foreach ($linkedObjectBlock as $key => $objectlink) {
 	?>
 	<tr class="<?php echo $trclass; ?>">
 		<td><?php echo $langs->trans("SupplierOrder"); ?></td>
-		<td><?php echo $objectlink->getNomUrl(1); ?></td>
+		<td><?php print $objectlink->getNomUrl(1); ?></td>
 		<td class="left"><?php echo $objectlink->ref_supplier; ?></td>
 		<td class="center"><?php echo dol_print_date($objectlink->date, 'day'); ?></td>
 		<td class="right"><?php

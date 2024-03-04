@@ -254,7 +254,7 @@ class DiscountAbsolute
 
 		// Check parameters
 		if (empty($this->description)) {
-			$this->error = 'BadValueForPropertyDescription';
+			$this->error = 'BadValueForPropertyDescriptionOfDiscount';
 			dol_syslog(get_class($this)."::create ".$this->error, LOG_ERR);
 			return -1;
 		}
@@ -419,7 +419,7 @@ class DiscountAbsolute
 	 *	When discount is from a credit note used to reduce payment of an invoice, we link using rowidinvoice
 	 *
 	 *	@param		int		$rowidline		Invoice line id (To use discount into invoice lines)
-	 *	@param		int		$rowidinvoice	Invoice id (To use discount as a credit note to reduc payment of invoice)
+	 *	@param		int		$rowidinvoice	Invoice id (To use discount as a credit note to reduce payment of invoice)
 	 *	@return		int						<0 if KO, >0 if OK
 	 */
 	public function link_to_invoice($rowidline, $rowidinvoice)

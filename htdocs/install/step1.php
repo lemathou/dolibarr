@@ -84,21 +84,33 @@ if (@file_exists($forcedfile)) {
 	// If forced install is enabled, replace the post values. These are empty because form fields are disabled.
 	if ($force_install_noedit) {
 		$main_dir = detect_dolibarr_main_document_root();
-		if (!empty($argv[1])) {
-			$main_dir = $argv[1]; // override when executing the script in command line
+		if (!empty($argv[3])) {
+			$main_dir = $argv[3]; // override when executing the script in command line
 		}
 		if (!empty($force_install_main_data_root)) {
 			$main_data_dir = $force_install_main_data_root;
 		} else {
 			$main_data_dir = detect_dolibarr_main_data_root($main_dir);
 		}
+		if (!empty($argv[4])) {
+			$main_data_dir = $argv[4]; // override when executing the script in command line
+		}
 		$main_url = detect_dolibarr_main_url_root();
+		if (!empty($argv[5])) {
+			$main_url = $argv[5]; // override when executing the script in command line
+		}
 
 		if (!empty($force_install_databaserootlogin)) {
 			$userroot = parse_database_login($force_install_databaserootlogin);
 		}
+		if (!empty($argv[6])) {
+			$userroot = $argv[6]; // override when executing the script in command line
+		}
 		if (!empty($force_install_databaserootpass)) {
 			$passroot = parse_database_pass($force_install_databaserootpass);
+		}
+		if (!empty($argv[7])) {
+			$passroot = $argv[7]; // override when executing the script in command line
 		}
 	}
 	if ($force_install_noedit == 2) {
@@ -825,7 +837,7 @@ function write_conf_file($conffile)
 	global $dolibarr_main_distrib;
 	global $db_host, $db_port, $db_name, $db_user, $db_pass, $db_type, $db_character_set, $db_collation;
 	global $conffile, $conffiletoshow, $conffiletoshowshort;
-	global $force_dolibarr_lib_ADODB_PATH, $force_dolibarr_lib_NUSOAP_PATH;
+	global $force_dolibarr_lib_NUSOAP_PATH;
 	global $force_dolibarr_lib_TCPDF_PATH, $force_dolibarr_lib_FPDI_PATH;
 	global $force_dolibarr_lib_GEOIP_PATH;
 	global $force_dolibarr_lib_ODTPHP_PATH, $force_dolibarr_lib_ODTPHP_PATHTOPCLZIP;
@@ -943,11 +955,6 @@ function write_conf_file($conffile)
 			fputs($fp, '//'); $force_dolibarr_lib_TCPDI_PATH = '';
 		}
 		fputs($fp, '$dolibarr_lib_TCPDI_PATH=\''.$force_dolibarr_lib_TCPDI_PATH.'\';');
-		fputs($fp, "\n");
-		if (empty($force_dolibarr_lib_ADODB_PATH)) {
-			fputs($fp, '//'); $force_dolibarr_lib_ADODB_PATH = '';
-		}
-		fputs($fp, '$dolibarr_lib_ADODB_PATH=\''.$force_dolibarr_lib_ADODB_PATH.'\';');
 		fputs($fp, "\n");
 		if (empty($force_dolibarr_lib_GEOIP_PATH)) {
 			fputs($fp, '//'); $force_dolibarr_lib_GEOIP_PATH = '';

@@ -741,6 +741,9 @@ ALTER TABLE llx_expedition ADD COLUMN billed smallint    DEFAULT 0;
 
 ALTER TABLE llx_loan_schedule ADD UNIQUE INDEX uk_loan_schedule_ref (fk_loan, datep);
 
+-- We need when upgrade 15 to 16 with Dolibarr v17+ for upgrade2 function migrate_user_photospath2()
+ALTER TABLE llx_user CHANGE COLUMN note note_private text;
+
 ALTER TABLE llx_overwrite_trans DROP INDEX uk_overwrite_trans;
 ALTER TABLE llx_overwrite_trans ADD UNIQUE INDEX uk_overwrite_trans(lang, transkey, entity);
 

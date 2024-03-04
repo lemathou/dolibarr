@@ -625,6 +625,8 @@ class Notify
 							$mimefilename_list[] = $ref.".pdf";
 						}
 
+						$labeltouse = !empty($labeltouse) ? $labeltouse : '';
+
 						$parameters = array('notifcode'=>$notifcode, 'sendto'=>$sendto, 'replyto'=>$replyto, 'file'=>$filename_list, 'mimefile'=>$mimetype_list, 'filename'=>$mimefilename_list, 'outputlangs'=>$outputlangs, 'labeltouse'=>$labeltouse);
 						if (!isset($action)) {
 							$action = '';
@@ -632,6 +634,11 @@ class Notify
 
 						$reshook = $hookmanager->executeHooks('formatNotificationMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
 						if (empty($reshook)) {
+							if (!empty($hookmanager->resArray['files'])) {
+								$filename_list = $hookmanager->resArray['files']['file'];
+								$mimetype_list = $hookmanager->resArray['files']['mimefile'];
+								$mimefilename_list = $hookmanager->resArray['files']['filename'];
+							}
 							if (!empty($hookmanager->resArray['subject'])) {
 								$subject .= $hookmanager->resArray['subject'];
 							}
@@ -875,6 +882,11 @@ class Notify
 					$parameters = array('notifcode'=>$notifcode, 'sendto'=>$sendto, 'replyto'=>$replyto, 'file'=>$filename_list, 'mimefile'=>$mimetype_list, 'filename'=>$mimefilename_list);
 					$reshook = $hookmanager->executeHooks('formatNotificationMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
 					if (empty($reshook)) {
+						if (!empty($hookmanager->resArray['files'])) {
+							$filename_list = $hookmanager->resArray['files']['file'];
+							$mimetype_list = $hookmanager->resArray['files']['mimefile'];
+							$mimefilename_list = $hookmanager->resArray['files']['filename'];
+						}
 						if (!empty($hookmanager->resArray['subject'])) {
 							$subject .= $hookmanager->resArray['subject'];
 						}

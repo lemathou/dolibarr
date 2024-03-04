@@ -26,6 +26,7 @@
  *  \brief      Page to list stocks at a given date
  */
 
+// Load Dolibarr environment
 require '../../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
@@ -300,10 +301,10 @@ if ($search_nom) {
 	$sql .= " AND p.label LIKE '%".$db->escape($search_nom)."%' ";
 }
 if ($fk_warehouse > 0) {
-	$sql .= ' GROUP BY p.rowid, p.ref, p.label, p.description, p.price, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
+	$sql .= ' GROUP BY p.rowid, p.ref, p.label, p.description, p.price, p.pmp, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
 	$sql .= ' p.tms, p.duration, p.tobuy, p.stock';
 } else {
-	$sql .= ' GROUP BY p.rowid, p.ref, p.label, p.description, p.price, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
+	$sql .= ' GROUP BY p.rowid, p.ref, p.label, p.description, p.price, p.pmp, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
 	$sql .= ' p.tms, p.duration, p.tobuy, p.stock';
 }
 
@@ -381,10 +382,14 @@ print img_picto('', 'product', 'class="pictofiwedwidth"').' ';
 print '</span> ';
 print $form->select_produits($productid, 'productid', '', 0, 0, -1, 2, '', 0, array(), 0, $langs->trans('Product'), 0, 'maxwidth300', 0, '', null, 1);
 
-print ' <span class="clearbothonsmartphone marginleftonly paddingleftonly marginrightonly paddingrightonly">&nbsp;</span> ';
-print img_picto('', 'stock', 'class="pictofiwedwidth"');
-print '</span> ';
-print $formproduct->selectWarehouses((GETPOSTISSET('fk_warehouse') ? $fk_warehouse : 'ifonenodefault'), 'fk_warehouse', '', 1, 0, 0, $langs->trans('Warehouse'), 0, 0, null, '', null, 1, false, 'e.ref');
+if ($mode != 'future') {
+	// A virtual stock in future has no sense on a per warehouse view, so no filter on warehouse is available for stock at date in future
+	print ' <span class="clearbothonsmartphone marginleftonly paddingleftonly marginrightonly paddingrightonly">&nbsp;</span> ';
+	print img_picto('', 'stock', 'class="pictofiwedwidth"');
+	print '</span> ';
+	print $formproduct->selectWarehouses((GETPOSTISSET('fk_warehouse') ? $fk_warehouse : 'ifonenodefault'), 'fk_warehouse', '', 1, 0, 0, $langs->trans('Warehouse'), 0, 0, null, '', null, 1, false, 'e.ref');
+}
+
 print '</div>';
 
 $parameters = array();
@@ -508,7 +513,7 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 		$prod->fetch($objp->rowid);
 
 		// Multilangs
-		/*if (!empty($conf->global->MAIN_MULTILANGS))
+		/*if (getDolGlobalInt('MAIN_MULTILANGS'))
 		{
 			$sql = 'SELECT label,description';
 			$sql .= ' FROM '.MAIN_DB_PREFIX.'product_lang';
@@ -541,13 +546,9 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 		}
 
 		if ($mode == 'future') {
-			$prod->load_stock('warehouseopen, warehouseinternal', 0); // This call also ->load_virtual_stock()
-
-			//$result = $prod->load_stats_reception(0, '4');
-			//print $prod->stats_commande_fournisseur['qty'].'<br>'."\n";
-			//print $prod->stats_reception['qty'];
-
-			$stock = '<span class="opacitymedium">'.$langs->trans("FeatureNotYetAvailable").'</span>';
+			$prod->load_stock('warehouseopen, warehouseinternal', 0, $dateendofday);
+			$stock = $prod->stock_theorique;
+			$prod->load_stock('warehouseopen, warehouseinternal', 0);
 			$virtualstock = $prod->stock_theorique;
 		} else {
 			if ($fk_warehouse > 0) {
@@ -594,7 +595,7 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 			} else {
 				print '';
 			}
-			$totalbuyingprice += $objp->estimatedvalue;
+			$totalbuyingprice += $stock * $objp->pmp;
 			print '</td>';
 
 			// Selling value

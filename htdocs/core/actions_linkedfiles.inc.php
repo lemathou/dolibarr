@@ -41,8 +41,8 @@ if ((GETPOST('sendit', 'alpha')
 	|| ($action == 'confirm_deletefile' && $confirm == 'yes')
 	|| ($action == 'confirm_updateline' && GETPOST('save', 'alpha') && GETPOST('link', 'alpha'))
 	|| ($action == 'renamefile' && GETPOST('renamefilesave', 'alpha'))) && empty($permissiontoadd)) {
-	dol_syslog('The file actions_linkedfiles.inc.php was included but paramater $permissiontoadd as not set before.');
-	print 'The file actions_linkedfiles.inc.php was included but paramater $permissiontoadd as not set before.';
+	dol_syslog('The file actions_linkedfiles.inc.php was included but parameter $permissiontoadd was not set before.');
+	print 'The file actions_linkedfiles.inc.php was included but parameter $permissiontoadd was not set before.';
 	die;
 }
 
@@ -79,7 +79,7 @@ if (GETPOST('sendit', 'alpha') && !empty($conf->global->MAIN_UPLOAD_DOC) && !emp
 			}
 			$allowoverwrite = (GETPOST('overwritefile', 'int') ? 1 : 0);
 
-			if (!empty($upload_dirold) && !empty($conf->global->PRODUCT_USE_OLD_PATH_FOR_PHOTO)) {
+			if (!empty($upload_dirold) && getDolGlobalInt('PRODUCT_USE_OLD_PATH_FOR_PHOTO')) {
 				$result = dol_add_file_process($upload_dirold, $allowoverwrite, 1, 'userfile', GETPOST('savingdocmask', 'alpha'), null, '', $generatethumbs, $object);
 			} elseif (!empty($upload_dir)) {
 				$result = dol_add_file_process($upload_dir, $allowoverwrite, 1, 'userfile', GETPOST('savingdocmask', 'alpha'), null, '', $generatethumbs, $object);
@@ -92,7 +92,27 @@ if (GETPOST('sendit', 'alpha') && !empty($conf->global->MAIN_UPLOAD_DOC) && !emp
 		if (substr($link, 0, 7) != 'http://' && substr($link, 0, 8) != 'https://' && substr($link, 0, 7) != 'file://' && substr($link, 0, 7) != 'davs://') {
 			$link = 'http://'.$link;
 		}
-		dol_add_file_process($upload_dir, 0, 1, 'userfile', null, $link, '', 0);
+
+		// Parse $newUrl
+		$newUrlArray = parse_url($link);
+
+		// Check URL is external
+		if (!getDolGlobalString('MAIN_ALLOW_SVG_FILES_AS_EXTERNAL_LINKS')) {
+			if (!empty($newUrlArray['path']) && preg_match('/\.svg/i', $newUrlArray['path'])) {
+				$error++;
+				$langs->load("errors");
+				setEventMessages($langs->trans('ErrorSVGFilesNotAllowedAsLinksWithout', 'MAIN_ALLOW_SVG_FILES_AS_EXTERNAL_LINKS'), null, 'errors');
+			}
+		}
+		// Alow external links to svg ?
+		if (!getDolGlobalString('MAIN_ALLOW_LOCAL_LINKS_AS_EXTERNAL_LINKS')) {
+			// Test $newUrlAray['host'] to check link is external
+			// TODO
+		}
+
+		if (!$error) {
+			dol_add_file_process($upload_dir, 0, 1, 'userfile', null, $link, '', 0);
+		}
 	}
 }
 
@@ -160,7 +180,7 @@ if ($action == 'confirm_deletefile' && $confirm == 'yes' && !empty($permissionto
 	}
 
 	if (is_object($object) && $object->id > 0) {
-		if ($backtopage) {
+		if (!empty($backtopage)) {
 			header('Location: '.$backtopage);
 			exit;
 		} else {

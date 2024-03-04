@@ -41,6 +41,10 @@ if (empty($objectclass) || empty($uploaddir)) {
 	dol_print_error(null, 'include of actions_massactions.inc.php is done but var $objectclass or $uploaddir was not defined');
 	exit;
 }
+if (empty($massaction)) {
+	$massaction = '';
+}
+$error = 0;
 
 // For backward compatibility
 if (!empty($permtoread) && empty($permissiontoread)) {
@@ -53,14 +57,13 @@ if (!empty($permtodelete) && empty($permissiontodelete)) {
 	$permissiontodelete = $permtodelete;
 }
 
-
 // Mass actions. Controls on number of lines checked.
 $maxformassaction = (empty($conf->global->MAIN_LIMIT_FOR_MASS_ACTIONS) ? 1000 : $conf->global->MAIN_LIMIT_FOR_MASS_ACTIONS);
-if (!empty($massaction) && is_array($toselect) && count($toselect) < 1) {
+if ($massaction && is_array($toselect) && count($toselect) < 1) {
 	$error++;
 	setEventMessages($langs->trans("NoRecordSelected"), null, "warnings");
 }
-if (!$error && is_array($toselect) && count($toselect) > $maxformassaction) {
+if (!$error && isset($toselect) && is_array($toselect) && count($toselect) > $maxformassaction) {
 	setEventMessages($langs->trans('TooManyRecordForMassAction', $maxformassaction), null, 'errors');
 	$error++;
 }
@@ -85,9 +88,10 @@ if (!$error && $massaction == 'confirm_presend') {
 	$oneemailperrecipient = (GETPOST('oneemailperrecipient', 'int') ? 1 : 0);
 
 	if (!$error) {
-		$thirdparty = new Societe($db);
-
 		$objecttmp = new $objectclass($db);
+
+		// Define object $thirdparty (Societe or User, Adherent, ConferenceOrBoothAttendee...)
+		$thirdparty = new Societe($db);
 		if ($objecttmp->element == 'expensereport') {
 			$thirdparty = new User($db);
 		}
@@ -97,28 +101,33 @@ if (!$error && $massaction == 'confirm_presend') {
 		if ($objecttmp->element == 'holiday') {
 			$thirdparty = new User($db);
 		}
+		if ($objecttmp->element == 'conferenceorboothattendee') {
+			$thirdparty = new ConferenceOrBoothAttendee($db);
+		}
 
 		foreach ($toselect as $toselectid) {
 			$objecttmp = new $objectclass($db); // we must create new instance because instance is saved into $listofobjectref array for future use
 			$result = $objecttmp->fetch($toselectid);
 			if ($result > 0) {
 				$listofobjectid[$toselectid] = $toselectid;
-
-				$thirdpartyid = ($objecttmp->fk_soc ? $objecttmp->fk_soc : $objecttmp->socid);
+				$tmpobjectid = ($objecttmp->fk_soc ? $objecttmp->fk_soc : $objecttmp->socid);
 				if ($objecttmp->element == 'societe') {
-					$thirdpartyid = $objecttmp->id;
+					$tmpobjectid = $objecttmp->id;
 				}
 				if ($objecttmp->element == 'expensereport') {
-					$thirdpartyid = $objecttmp->fk_user_author;
+					$tmpobjectid = $objecttmp->fk_user_author;
 				}
 				if ($objecttmp->element == 'partnership' && getDolGlobalString('PARTNERSHIP_IS_MANAGED_FOR') == 'member') {
-					$thirdpartyid = $objecttmp->fk_member;
+					$tmpobjectid = $objecttmp->fk_member;
 				}
 				if ($objecttmp->element == 'holiday') {
-					$thirdpartyid = $objecttmp->fk_user;
+					$tmpobjectid = $objecttmp->fk_user;
 				}
-				if (empty($thirdpartyid)) {
-					$thirdpartyid = 0;
+				if ($objecttmp->element == 'conferenceorboothattendee') {
+					$tmpobjectid = $objecttmp->id;
+				}
+				if (empty($tmpobjectid)) {
+					$tmpobjectid = 0;
 				}
 
 				if ($objectclass == 'Facture') {
@@ -139,8 +148,8 @@ if (!$error && $massaction == 'confirm_presend') {
 					}
 				}
 
-				$listofobjectthirdparties[$thirdpartyid] = $thirdpartyid;
-				$listofobjectref[$thirdpartyid][$toselectid] = $objecttmp;
+				$listofobjectthirdparties[$tmpobjectid] = $tmpobjectid;
+				$listofobjectref[$tmpobjectid][$toselectid] = $objecttmp;
 			}
 		}
 	}
@@ -172,7 +181,7 @@ if (!$error && $massaction == 'confirm_presend') {
 		$massaction = 'presend';
 	}
 
-	// Loop on each recipient/thirdparty
+	// Loop on each recipient (may be a thirdparty but also a user, a conferenceorboothattendee, ...)
 	if (!$error) {
 		foreach ($listofobjectthirdparties as $thirdpartyid) {
 			$result = $thirdparty->fetch($thirdpartyid);
@@ -184,7 +193,7 @@ if (!$error && $massaction == 'confirm_presend') {
 			$sendto = '';
 			$sendtocc = '';
 			$sendtobcc = '';
-			$sendtoid = array();
+			//$sendtoid = array();
 
 			// Define $sendto
 			$tmparray = array();
@@ -199,7 +208,7 @@ if (!$error && $massaction == 'confirm_presend') {
 						$tmparray[] = $thirdparty->name.' <'.$thirdparty->email.'>';
 					} elseif ($val && method_exists($thirdparty, 'contact_get_property')) {		// Id of contact
 						$tmparray[] = $thirdparty->contact_get_property((int) $val, 'email');
-						$sendtoid[] = $val;
+						//$sendtoid[] = $val;
 					}
 				}
 			}
@@ -299,6 +308,8 @@ if (!$error && $massaction == 'confirm_presend') {
 						if (count($emails_to_sends) > 0) {
 							$sendto = implode(',', $emails_to_sends);
 						}
+					} elseif ($objectobj->element == 'conferenceorboothattendee') {
+						$sendto = $objectobj->email;
 					} else {
 						$objectobj->fetch_thirdparty();
 						$sendto = $objectobj->thirdparty->email;
@@ -464,7 +475,7 @@ if (!$error && $massaction == 'confirm_presend') {
 				//var_dump($oneemailperrecipient); var_dump($listofqualifiedobj); var_dump($listofqualifiedref);
 				foreach ($looparray as $objectid => $objecttmp) {		// $objecttmp is a real object or an empty object if we choose to send one email per thirdparty instead of one per object
 					// Make substitution in email content
-					if (!empty($conf->project->enabled) && method_exists($objecttmp, 'fetch_projet') && is_null($objecttmp->project)) {
+					if (isModEnabled('project') && method_exists($objecttmp, 'fetch_projet') && is_null($objecttmp->project)) {
 						$objecttmp->fetch_projet();
 					}
 					$substitutionarray = getCommonSubstitutionArray($langs, 0, null, $objecttmp);
@@ -553,9 +564,13 @@ if (!$error && $massaction == 'confirm_presend') {
 						$sendcontext = 'standard';
 					}
 
+					// Set tmp user directory (used to convert images embedded as img src=data:image)
+					$vardir = $conf->user->dir_output."/".$user->id;
+					$upload_dir_tmp = $vardir.'/temp'; // TODO Add $keytoavoidconflict in upload_dir path
+
 					// Send mail (substitutionarray must be done just before this)
 					require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
-					$mailfile = new CMailFile($subjectreplaced, $sendto, $from, $messagereplaced, $filepath, $mimetype, $filename, $sendtocc, $sendtobcc, $deliveryreceipt, -1, '', '', $trackid, '', $sendcontext);
+					$mailfile = new CMailFile($subjectreplaced, $sendto, $from, $messagereplaced, $filepath, $mimetype, $filename, $sendtocc, $sendtobcc, $deliveryreceipt, -1, '', '', $trackid, '', $sendcontext, '', $upload_dir_tmp);
 					if ($mailfile->error) {
 						$resaction .= '<div class="error">'.$mailfile->error.'</div>';
 					} else {
@@ -597,6 +612,9 @@ if (!$error && $massaction == 'confirm_presend') {
 								$objectobj2->actionmsg2		= $actionmsg2; // Short text
 								$objectobj2->fk_element		= $objid2;
 								$objectobj2->elementtype	= $objectobj2->element;
+								if (!empty($conf->global->MAIN_MAIL_REPLACE_EVENT_TITLE_BY_EMAIL_SUBJECT)) {
+									$objectobj2->actionmsg2		= $subjectreplaced; // Short text
+								}
 
 								$triggername = strtoupper(get_class($objectobj2)).'_SENTBYMAIL';
 								if ($triggername == 'SOCIETE_SENTBYMAIL') {
@@ -622,6 +640,9 @@ if (!$error && $massaction == 'confirm_presend') {
 								}
 								if ($triggername == 'SUPPLIERPROPOSAL_SENTBYMAIL') {
 									$triggername = 'PROPOSAL_SUPPLIER_SENTBYMAIL';
+								}
+								if ($triggername == 'PROJET_SENTBYMAIL') {
+									$triggername = 'PROJECT_SENTBYMAIL';
 								}
 
 								if (!empty($triggername)) {
@@ -682,7 +703,6 @@ if (!$error && $massaction == 'cancelorders') {
 	$db->begin();
 
 	$nbok = 0;
-
 
 	$orders = GETPOST('toselect', 'array');
 	foreach ($orders as $id_order) {
@@ -771,10 +791,10 @@ if (!$error && $massaction == "builddoc" && $permissiontoread && !GETPOST('butto
 	// Define output language (Here it is not used because we do only merging existing PDF)
 	$outputlangs = $langs;
 	$newlang = '';
-	if ($conf->global->MAIN_MULTILANGS && empty($newlang) && GETPOST('lang_id', 'aZ09')) {
+	if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && GETPOST('lang_id', 'aZ09')) {
 		$newlang = GETPOST('lang_id', 'aZ09');
 	}
-	//elseif ($conf->global->MAIN_MULTILANGS && empty($newlang) && is_object($objecttmp->thirdparty)) {		// On massaction, we can have several values for $objecttmp->thirdparty
+	//elseif (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && is_object($objecttmp->thirdparty)) {		// On massaction, we can have several values for $objecttmp->thirdparty
 	//	$newlang = $objecttmp->thirdparty->default_lang;
 	//}
 	if (!empty($newlang)) {
@@ -846,7 +866,7 @@ if (!$error && $massaction == "builddoc" && $permissiontoread && !GETPOST('butto
 		}
 		$pdf->SetFont(pdf_getPDFFont($outputlangs));
 
-		if (!empty($conf->global->MAIN_DISABLE_PDF_COMPRESSION)) {
+		if (getDolGlobalString('MAIN_DISABLE_PDF_COMPRESSION')) {
 			$pdf->SetCompression(false);
 		}
 
@@ -920,12 +940,12 @@ if ($action == 'remove_file') {
 if (!$error && $massaction == 'validate' && $permissiontoadd) {
 	$objecttmp = new $objectclass($db);
 
-	if (($objecttmp->element == 'facture' || $objecttmp->element == 'invoice') && !empty($conf->stock->enabled) && !empty($conf->global->STOCK_CALCULATE_ON_BILL)) {
+	if (($objecttmp->element == 'facture' || $objecttmp->element == 'invoice') && isModEnabled('stock') && !empty($conf->global->STOCK_CALCULATE_ON_BILL)) {
 		$langs->load("errors");
 		setEventMessages($langs->trans('ErrorMassValidationNotAllowedWhenStockIncreaseOnAction'), null, 'errors');
 		$error++;
 	}
-	if ($objecttmp->element == 'invoice_supplier' && !empty($conf->stock->enabled) && !empty($conf->global->STOCK_CALCULATE_ON_SUPPLIER_BILL)) {
+	if ($objecttmp->element == 'invoice_supplier' && isModEnabled('stock') && !empty($conf->global->STOCK_CALCULATE_ON_SUPPLIER_BILL)) {
 		$langs->load("errors");
 		setEventMessages($langs->trans('ErrorMassValidationNotAllowedWhenStockIncreaseOnAction'), null, 'errors');
 		$error++;
@@ -957,7 +977,14 @@ if (!$error && $massaction == 'validate' && $permissiontoadd) {
 		foreach ($toselect as $toselectid) {
 			$result = $objecttmp->fetch($toselectid);
 			if ($result > 0) {
-				$result = $objecttmp->validate($user);
+				if (method_exists($objecttmp, 'validate')) {
+					$result = $objecttmp->validate($user);
+				} elseif (method_exists($objecttmp, 'setValid')) {
+					$result = $objecttmp->setValid($user);
+				} else {
+					$objecttmp->error = 'No method validate or setValid on this object';
+					$result = -1;
+				}
 				if ($result == 0) {
 					$langs->load("errors");
 					setEventMessages($langs->trans("ErrorObjectMustHaveStatusDraftToBeValidated", $objecttmp->ref), null, 'errors');
@@ -973,11 +1000,16 @@ if (!$error && $massaction == 'validate' && $permissiontoadd) {
 					if (empty($conf->global->MAIN_DISABLE_PDF_AUTOUPDATE)) {
 						$outputlangs = $langs;
 						$newlang = '';
-						if ($conf->global->MAIN_MULTILANGS && empty($newlang) && GETPOST('lang_id', 'aZ09')) {
+						if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && GETPOST('lang_id', 'aZ09')) {
 							$newlang = GETPOST('lang_id', 'aZ09');
 						}
-						if ($conf->global->MAIN_MULTILANGS && empty($newlang)) {
-							$newlang = $objecttmp->thirdparty->default_lang;
+						if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && property_exists($objecttmp, 'thirdparty')) {
+							if ((property_exists($objecttmp, 'socid') || property_exists($objecttmp, 'fk_soc')) && empty($objecttmp->thirdparty)) {
+								$objecttmp->fetch_thirdparty();
+							}
+							if (!empty($objecttmp->thirdparty)) {
+								$newlang = $objecttmp->thirdparty->default_lang;
+							}
 						}
 						if (!empty($newlang)) {
 							$outputlangs = new Translate("", $conf);
@@ -1126,13 +1158,14 @@ if (!$error && $massaction == 'generate_doc' && $permissiontoread) {
 		if ($result > 0) {
 			$outputlangs = $langs;
 			$newlang = '';
-			if ($conf->global->MAIN_MULTILANGS && empty($newlang) && GETPOST('lang_id', 'aZ09')) {
+
+			if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && GETPOST('lang_id', 'aZ09')) {
 				$newlang = GETPOST('lang_id', 'aZ09');
 			}
-			if ($conf->global->MAIN_MULTILANGS && empty($newlang) && isset($objecttmp->thirdparty->default_lang)) {
+			if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && isset($objecttmp->thirdparty->default_lang)) {
 				$newlang = $objecttmp->thirdparty->default_lang; // for proposal, order, invoice, ...
 			}
-			if ($conf->global->MAIN_MULTILANGS && empty($newlang) && isset($objecttmp->default_lang)) {
+			if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang) && isset($objecttmp->default_lang)) {
 				$newlang = $objecttmp->default_lang; // for thirdparty
 			}
 			if ($conf->global->MAIN_MULTILANGS && empty($newlang) && empty($objecttmp->thirdparty)) { //load lang from thirdparty
@@ -1231,6 +1264,143 @@ if (!$error && ($action == 'affecttag' && $confirm == 'yes') && $permissiontoadd
 				}
 			}
 		}
+	}
+
+	if (!$error) {
+		if ($nbok > 1) {
+			setEventMessages($langs->trans("RecordsModified", $nbok), null);
+		} else {
+			setEventMessages($langs->trans("RecordsModified", $nbok), null);
+		}
+		$db->commit();
+		$toselect=array();
+	} else {
+		$db->rollback();
+	}
+}
+
+if (!$error && ($action == 'updateprice' && $confirm == 'yes') && $permissiontoadd) {
+	$db->begin();
+	if (GETPOSTISSET('pricerate')) {
+		$pricepercentage=GETPOST('pricerate', 'int');
+		if ($pricepercentage == 0) {
+			setEventMessages($langs->trans("RecordsModified", 0), null);
+		} else {
+			foreach ($toselect as $toselectid) {
+				$result = $object->fetch($toselectid);
+				//var_dump($contcats);exit;
+				if ($result > 0) {
+					if ($obj->price_base_type == 'TTC') {
+						$newprice = $object->price_ttc * (100 + $pricepercentage) / 100;
+						$minprice = $object->price_min_ttc;
+					} else {
+						$newprice = $object->price * (100 + $pricepercentage) / 100;
+						$minprice = $object->price_min;
+					}
+					$res = $object->updatePrice($newprice, $obj->price_base_type, $user, $object->tva_tx, $minprice, 0, $object->tva_npr, 0, 0, array(), $object->default_vat_code);
+					if ($res > 0) {
+						$nbok++;
+					} else {
+						setEventMessages($object->error, $object->errors, 'errors');
+					}
+				} else {
+					setEventMessages($object->error, $object->errors, 'errors');
+					$error++;
+					break;
+				}
+			}
+		}
+	}
+
+	if (!$error) {
+		if ($nbok > 0) {
+			setEventMessages($langs->trans("RecordsModified", $nbok), null);
+		}
+		$db->commit();
+		$toselect=array();
+	} else {
+		$db->rollback();
+	}
+}
+
+if (!$error && ($action == 'setsupervisor' && $confirm == 'yes') && $permissiontoadd) {
+	$db->begin();
+	$supervisortoset=GETPOST('supervisortoset');
+	if (!empty($supervisortoset)) {
+		foreach ($toselect as $toselectid) {
+			$result = $object->fetch($toselectid);
+			//var_dump($contcats);exit;
+			if ($result > 0) {
+				$object->fk_user = $supervisortoset;
+				$res = $object->update($user);
+				if ($res > 0) {
+					$nbok++;
+				} else {
+					setEventMessages($object->error, $object->errors, 'errors');
+				}
+			} else {
+				setEventMessages($object->error, $object->errors, 'errors');
+				$error++;
+				break;
+			}
+		}
+	} else {
+		setEventMessage('UserNotFound', 'errors');
+		$error++;
+	}
+
+	if (!$error) {
+		if ($nbok > 1) {
+			setEventMessages($langs->trans("RecordsModified", $nbok), null);
+		} else {
+			setEventMessages($langs->trans("RecordsModified", $nbok), null);
+		}
+		$db->commit();
+		$toselect=array();
+	} else {
+		$db->rollback();
+	}
+}
+
+if (!$error && ($action == 'affectuser' && $confirm == 'yes') && $permissiontoadd) {
+	$db->begin();
+
+	$usertoaffect=GETPOST('usertoaffect');
+	$projectrole=GETPOST('projectrole');
+	$tasksrole=GETPOST('tasksrole');
+	if (!empty($usertoaffect)) {
+		foreach ($toselect as $toselectid) {
+			$result = $object->fetch($toselectid);
+			//var_dump($contcats);exit;
+			if ($result > 0) {
+				$res = $object->add_contact($usertoaffect, $projectrole, 'internal');
+				if ($res >= 0) {
+					$taskstatic = new Task($db);
+					$task_array = $taskstatic->getTasksArray(0, 0, $object->id, 0, 0);
+
+					foreach ($task_array as $task) {
+						$tasksToAffect = new Task($db);
+						$result = $tasksToAffect->fetch($task->id);
+						if ($result > 0) {
+							$res = $tasksToAffect->add_contact($usertoaffect, $tasksrole, 'internal');
+							if ($res < 0) {
+								setEventMessages($tasksToAffect->error, $tasksToAffect->errors, 'errors');
+							}
+						}
+					}
+					$nbok++;
+				} else {
+					setEventMessages($object->error, $object->errors, 'errors');
+				}
+			} else {
+				setEventMessages($object->error, $object->errors, 'errors');
+				$error++;
+				break;
+			}
+		}
+	} else {
+		setEventMessage('UserNotFound', 'errors');
+		$error++;
 	}
 
 	if (!$error) {
@@ -1521,7 +1691,58 @@ if (!$error && ($massaction == 'approveleave' || ($action == 'approveleave' && $
 	}
 }
 
-$parameters['toselect'] = $toselect;
+if (!$error && ($massaction == 'increaseholiday' || ($action == 'increaseholiday' && $confirm == 'yes')) && $permissiontoapprove) {
+	$db->begin();
+	$objecttmp = new $objectclass($db);
+	$nbok = 0;
+	$typeholiday = GETPOST('typeholiday', 'alpha');
+	$nbdaysholidays = GETPOST('nbdaysholidays', 'double');
+
+	if ($nbdaysholidays <= 0) {
+		setEventMessages($langs->trans("WrongAmount"), "", 'errors');
+		$error++;
+	}
+
+	if (!$error) {
+		foreach ($toselect as $toselectid) {
+			$balancecpuser = $objecttmp->getCPforUser($toselectid, $typeholiday);
+			if (!empty($balancecpuser)) {
+				$newnbdaysholidays = $nbdaysholidays + $balancecpuser;
+			} else {
+				$newnbdaysholidays = $nbdaysholidays;
+			}
+			$result = $holiday->addLogCP($user->id, $toselectid, $langs->transnoentitiesnoconv('ManualUpdate'), $newnbdaysholidays, $typeholiday);
+			if ($result <= 0) {
+				setEventMessages($holiday->error, $holiday->errors, 'errors');
+				$error++;
+				break;
+			}
+
+			$objecttmp->updateSoldeCP($toselectid, $newnbdaysholidays, $typeholiday);
+			if ($result > 0) {
+				$nbok++;
+			} else {
+				setEventMessages("", $langs->trans("ErrorUpdatingUsersCP"), 'errors');
+				$error++;
+				break;
+			}
+		}
+	}
+
+	if (!$error) {
+		if ($nbok > 1) {
+			setEventMessages($langs->trans("HolidayRecordsIncreased", $nbok), null, 'mesgs');
+		} elseif ($nbok == 1) {
+			setEventMessages($langs->trans("HolidayRecordIncreased"), null, 'mesgs');
+		}
+		$db->commit();
+		$toselect=array();
+	} else {
+		$db->rollback();
+	}
+}
+
+$parameters['toselect'] = (empty($toselect) ? array() : $toselect);
 $parameters['uploaddir'] = $uploaddir;
 $parameters['massaction'] = $massaction;
 $parameters['diroutputmassaction'] = isset($diroutputmassaction) ? $diroutputmassaction : null;

@@ -272,7 +272,7 @@ class Documents extends DolibarrApi
 		if ($modulepart == 'societe' || $modulepart == 'thirdparty') {
 			require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 
-			if (!DolibarrApiAccess::$user->rights->societe->lire) {
+			if (!DolibarrApiAccess::$user->hasRight('societe', 'lire')) {
 				throw new RestException(401);
 			}
 
@@ -502,6 +502,17 @@ class Documents extends DolibarrApi
 			// $upload_dir = $conf->ecm->dir_output;
 			// $type = 'all';
 			// $recursive = 0;
+		} elseif ($modulepart == 'projet' || $modulepart == 'project') {
+			$modulepart = 'project';
+			require_once DOL_DOCUMENT_ROOT . '/projet/class/project.class.php';
+
+			$object = new Project($this->db);
+			$result = $object->fetch($id, $ref);
+			if (!$result) {
+				throw new RestException(404, 'Project not found');
+			}
+
+			$upload_dir = $conf->projet->dir_output . "/" . get_exdir(0, 0, 0, 1, $object, 'project');
 		} else {
 			throw new RestException(500, 'Modulepart '.$modulepart.' not implemented yet.');
 		}
@@ -628,7 +639,7 @@ class Documents extends DolibarrApi
 
 					require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.commande.class.php';
 					$object = new CommandeFournisseur($this->db);
-			} elseif ($modulepart == 'project') {
+			} elseif ($modulepart == 'projet' || $modulepart == 'project') {
 				require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 				$object = new Project($this->db);
 			} elseif ($modulepart == 'task' || $modulepart == 'project_task') {
@@ -751,7 +762,7 @@ class Documents extends DolibarrApi
 			throw new RestException(500, "Failed to open file '".$destfiletmp."' for write");
 		}
 
-		$result = dol_move($destfiletmp, $destfile, 0, $overwriteifexists, 1);
+		$result = dol_move($destfiletmp, $destfile, 0, $overwriteifexists, 1, 1);
 		if (!$result) {
 			throw new RestException(500, "Failed to move file into '".$destfile."'");
 		}

@@ -22,6 +22,7 @@
  *       \brief      List of all contacts of a project
  */
 
+// Load Dolibarr environment
 require '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 require_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
@@ -34,7 +35,7 @@ if (isModEnabled('categorie')) {
 
 // Load translation files required by the page
 $langsLoad=array('projects', 'companies');
-if (!empty($conf->eventorganization->enabled)) {
+if (isModEnabled('eventorganization')) {
 	$langsLoad[]='eventorganization';
 }
 
@@ -244,6 +245,10 @@ if (($action == 'deleteline' || $action == 'deletecontact') && $user->rights->pr
  * View
  */
 
+$form = new Form($db);
+$contactstatic = new Contact($db);
+$userstatic = new User($db);
+
 $title = $langs->trans('ProjectContact').' - '.$object->ref.' '.$object->name;
 if (!empty($conf->global->MAIN_HTML_TITLE) && preg_match('/projectnameonly/', $conf->global->MAIN_HTML_TITLE) && $object->name) {
 	$title = $object->ref.' '.$object->name.' - '.$langs->trans('ProjectContact');
@@ -253,18 +258,12 @@ $help_url = 'EN:Module_Projects|FR:Module_Projets|ES:M&oacute;dulo_Proyectos|DE:
 
 llxHeader('', $title, $help_url);
 
-$form = new Form($db);
-$contactstatic = new Contact($db);
-$userstatic = new User($db);
 
-
-/* *************************************************************************** */
-/*                                                                             */
-/* Edition and view mode                                                       */
-/*                                                                             */
-/* *************************************************************************** */
 
 if ($id > 0 || !empty($ref)) {
+	/*
+	 * View
+	 */
 	if (!empty($conf->global->PROJECT_ALLOW_COMMENT_ON_PROJECT) && method_exists($object, 'fetchComments') && empty($object->comments)) {
 		$object->fetchComments();
 	}
@@ -297,10 +296,11 @@ if ($id > 0 || !empty($ref)) {
 
 	$morehtmlref = '<div class="refidno">';
 	// Title
-	$morehtmlref .= $object->title;
+	$morehtmlref .= dol_escape_htmltag($object->title);
+	$morehtmlref .= '<br>';
 	// Thirdparty
 	if (!empty($object->thirdparty->id) && $object->thirdparty->id > 0) {
-		$morehtmlref .= '<br>'.$langs->trans('ThirdParty').' : '.$object->thirdparty->getNomUrl(1, 'project');
+		$morehtmlref .= $object->thirdparty->getNomUrl(1, 'project');
 	}
 	$morehtmlref .= '</div>';
 
@@ -320,7 +320,7 @@ if ($id > 0 || !empty($ref)) {
 	print '<table class="border tableforfield centpercent">';
 
 	// Usage
-	if (!empty($conf->global->PROJECT_USE_OPPORTUNITIES) || empty($conf->global->PROJECT_HIDE_TASKS) || !empty($conf->eventorganization->enabled)) {
+	if (!empty($conf->global->PROJECT_USE_OPPORTUNITIES) || empty($conf->global->PROJECT_HIDE_TASKS) || isModEnabled('eventorganization')) {
 		print '<tr><td class="tdtop">';
 		print $langs->trans("Usage");
 		print '</td>';
@@ -343,7 +343,7 @@ if ($id > 0 || !empty($ref)) {
 			print $form->textwithpicto($langs->trans("BillTime"), $htmltext);
 			print '<br>';
 		}
-		if (!empty($conf->eventorganization->enabled)) {
+		if (isModEnabled('eventorganization')) {
 			print '<input type="checkbox" disabled name="usage_organize_event"'.(GETPOSTISSET('usage_organize_event') ? (GETPOST('usage_organize_event', 'alpha') != '' ? ' checked="checked"' : '') : ($object->usage_organize_event ? ' checked="checked"' : '')).'"> ';
 			$htmltext = $langs->trans("EventOrganizationDescriptionLong");
 			print $form->textwithpicto($langs->trans("ManageOrganizeEvent"), $htmltext);
@@ -362,26 +362,25 @@ if ($id > 0 || !empty($ref)) {
 	}
 	print '</td></tr>';
 
-	if (!empty($conf->global->PROJECT_USE_OPPORTUNITIES) && $object->opp_status) {
+	if (!empty($conf->global->PROJECT_USE_OPPORTUNITIES) && !empty($object->usage_opportunity)) {
 		// Opportunity status
 		print '<tr><td>'.$langs->trans("OpportunityStatus").'</td><td>';
 		$code = dol_getIdFromCode($db, $object->opp_status, 'c_lead_status', 'rowid', 'code');
 		if ($code) {
 			print $langs->trans("OppStatus".$code);
 		}
-		print '</td></tr>';
 
 		// Opportunity percent
-		print '<tr><td>'.$langs->trans("OpportunityProbability").'</td><td>';
+		print ' <span title="'.$langs->trans("OpportunityProbability").'"> / ';
 		if (strcmp($object->opp_percent, '')) {
-			print price($object->opp_percent, '', $langs, 1, 0).' %';
+			print price($object->opp_percent, 0, $langs, 1, 0).' %';
 		}
-		print '</td></tr>';
+		print '</span></td></tr>';
 
 		// Opportunity Amount
 		print '<tr><td>'.$langs->trans("OpportunityAmount").'</td><td>';
 		if (strcmp($object->opp_amount, '')) {
-			print '<span class="amount">'.price($object->opp_amount, '', $langs, 0, 0, 0, $conf->currency).'</span>';
+			print '<span class="amount">'.price($object->opp_amount, 0, $langs, 1, 0, -1, $conf->currency).'</span>';
 			if (strcmp($object->opp_percent, '')) {
 				print ' &nbsp; &nbsp; &nbsp; <span title="'.dol_escape_htmltag($langs->trans('OpportunityWeightedAmount')).'"><span class="opacitymedium">'.$langs->trans("Weighted").'</span>: <span class="amount">'.price($object->opp_amount * $object->opp_percent / 100, 0, $langs, 1, 0, -1, $conf->currency).'</span></span>';
 			}
@@ -389,22 +388,22 @@ if ($id > 0 || !empty($ref)) {
 		print '</td></tr>';
 	}
 
-	// Date start - end
-	print '<tr><td>'.$langs->trans("DateStart").' - '.$langs->trans("DateEnd").'</td><td>';
-	$start = dol_print_date($object->date_start, 'day');
-	print ($start ? $start : '?');
-	$end = dol_print_date($object->date_end, 'day');
-	print ' - ';
-	print ($end ? $end : '?');
-	if ($object->hasDelay()) {
-		print img_warning("Late");
+	// Budget
+	print '<tr><td>'.$langs->trans("Budget").'</td><td>';
+	if (!is_null($object->budget_amount) && strcmp($object->budget_amount, '')) {
+		print '<span class="amount">'.price($object->budget_amount, 0, $langs, 1, 0, 0, $conf->currency).'</span>';
 	}
 	print '</td></tr>';
 
-	// Budget
-	print '<tr><td>'.$langs->trans("Budget").'</td><td>';
-	if (strcmp($object->budget_amount, '')) {
-		print '<span class="amount">'.price($object->budget_amount, '', $langs, 0, 0, 0, $conf->currency).'</span>';
+	// Date start - end project
+	print '<tr><td>'.$langs->trans("Dates").'</td><td>';
+	$start = dol_print_date($object->date_start, 'day');
+	print ($start ? $start : '?');
+	$end = dol_print_date($object->date_end, 'day');
+	print ' <span class="opacitymedium">-</span> ';
+	print ($end ? $end : '?');
+	if ($object->hasDelay()) {
+		print img_warning("Late");
 	}
 	print '</td></tr>';
 
@@ -422,7 +421,7 @@ if ($id > 0 || !empty($ref)) {
 
 	// Description
 	print '<td class="titlefield tdtop">'.$langs->trans("Description").'</td><td>';
-	print nl2br($object->description);
+	print dol_htmlentitiesbr($object->description);
 	print '</td></tr>';
 
 	// Categories
