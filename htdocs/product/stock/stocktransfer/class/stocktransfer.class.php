@@ -57,11 +57,19 @@ class StockTransfer extends CommonObject
 	 */
 	public $isextrafieldmanaged = 1;
 
+
 	/**
-	* @var string Customer ref
-	* @deprecated
-	* @see $ref_customer
-	*/
+	 * @var array    List of child tables. To know object to delete on cascade.
+	 *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
+	 *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
+	 */
+	protected $childtablesoncascade = array('stocktransfer_stocktransferline');
+
+	/**
+	 * @var string Customer ref
+	 * @deprecated
+	 * @see $ref_customer
+	 */
 	public $ref_client;
 
 	/**
@@ -160,42 +168,6 @@ class StockTransfer extends CommonObject
 	public $model_pdf;
 	public $status;
 	// END MODULEBUILDER PROPERTIES
-
-
-	// If this object has a subtable with lines
-
-	/**
-	 * @var int    Name of subtable line
-	 */
-	public $table_element_line = 'stocktransfer_stocktransferline';
-
-	/**
-	 * @var int    Field with ID of parent key if this object has a parent
-	 */
-	public $fk_element = 'fk_stocktransfer';
-
-	/**
-	 * @var int    Name of subtable class that manage subtable lines
-	 */
-	//public $class_element_line = 'StockTransferline';
-
-	/**
-	 * @var array	List of child tables. To test if we can delete object.
-	 */
-	//protected $childtables = array();
-
-	/**
-	 * @var array    List of child tables. To know object to delete on cascade.
-	 *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
-	 *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
-	 */
-	protected $childtablesoncascade = array('stocktransfer_stocktransferline');
-
-	/**
-	 * @var StockTransferLine[]     Array of subtable lines
-	 */
-	//public $lines = array();
-
 
 
 	/**
@@ -609,7 +581,15 @@ class StockTransfer extends CommonObject
 				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'stocktransfer/".$this->db->escape($this->newref)."'";
 				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'stocktransfer/".$this->db->escape($this->ref)."' and entity = ".((int) $conf->entity);
 				$resql = $this->db->query($sql);
-				if (!$resql) { $error++; $this->error = $this->db->lasterror(); }
+				if (!$resql) {
+					$error++; $this->error = $this->db->lasterror();
+				}
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filepath = 'stocktransfer/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filepath = 'stocktransfer/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+				$resql = $this->db->query($sql);
+				if (!$resql) {
+					$error++; $this->error = $this->db->lasterror();
+				}
 
 				// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
 				$oldref = dol_sanitizeFileName($this->ref);

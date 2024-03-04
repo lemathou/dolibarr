@@ -45,6 +45,9 @@ $action = GETPOST('action', 'aZ09');
 if ($user->socid) {
 	$socid = $user->socid;
 }
+// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
+$hookmanager->initHooks(array('ordercontact', 'globalcard'));
+
 $result = restrictedArea($user, 'commande', $id, '');
 
 $usercancreate  =  $user->hasRight("commande", "creer");
@@ -56,7 +59,7 @@ $object = new Commande($db);
  * Ajout d'un nouveau contact
  */
 
-if ($action == 'addcontact' && $user->rights->commande->creer) {
+if ($action == 'addcontact' && $user->hasRight('commande', 'creer')) {
 	$result = $object->fetch($id);
 
 	if ($result > 0 && $id > 0) {
@@ -76,14 +79,14 @@ if ($action == 'addcontact' && $user->rights->commande->creer) {
 			setEventMessages($object->error, $object->errors, 'errors');
 		}
 	}
-} elseif ($action == 'swapstatut' && $user->rights->commande->creer) {
+} elseif ($action == 'swapstatut' && $user->hasRight('commande', 'creer')) {
 	// bascule du statut d'un contact
 	if ($object->fetch($id)) {
 		$result = $object->swapContactStatus(GETPOST('ligne', 'int'));
 	} else {
 		dol_print_error($db);
 	}
-} elseif ($action == 'deletecontact' && $user->rights->commande->creer) {
+} elseif ($action == 'deletecontact' && $user->hasRight('commande', 'creer')) {
 	// Efface un contact
 	$object->fetch($id);
 	$result = $object->delete_contact(GETPOST("lineid", 'int'));

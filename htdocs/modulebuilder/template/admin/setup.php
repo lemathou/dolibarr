@@ -160,7 +160,7 @@ $item->helpText = $langs->transnoentities('AnHelpMessage');
 //$item->fieldOutputOverride = false; // set this var to override field output
 
 
-$setupnotempty =+ count($formSetup->items);
+$setupnotempty += count($formSetup->items);
 
 
 $dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
@@ -316,13 +316,10 @@ if ($action == 'edit') {
 $moduledir = 'mymodule';
 $myTmpObjects = array();
 // TODO Scan list of objects
-$myTmpObjects['myobject'] = array('label'=>'MyObject', 'includerefgeneration'=>0, 'includedocgeneration'=>0);
+$myTmpObjects['myobject'] = array('label'=>'MyObject', 'includerefgeneration'=>0, 'includedocgeneration'=>0, 'class'=>'MyObject');
 
 
 foreach ($myTmpObjects as $myTmpObjectKey => $myTmpObjectArray) {
-	if ($myTmpObjectKey != $type) {
-		continue;
-	}
 	if ($myTmpObjectArray['includerefgeneration']) {
 		/*
 		 * Orders Numbering model
@@ -395,7 +392,8 @@ foreach ($myTmpObjects as $myTmpObjectKey => $myTmpObjectArray) {
 								}
 								print '</td>';
 
-								$mytmpinstance = new $myTmpObjectKey($db);
+								$nameofclass = $myTmpObjectArray['class'];
+								$mytmpinstance = new $nameofclass($db);
 								$mytmpinstance->initAsSpecimen();
 
 								// Info

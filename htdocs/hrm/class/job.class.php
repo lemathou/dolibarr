@@ -116,6 +116,7 @@ class Job extends CommonObject
 	);
 	public $rowid;
 	public $ref;
+	public $label;
 	public $description;
 	public $date_creation;
 	public $tms;
@@ -539,7 +540,7 @@ class Job extends CommonObject
 
 			if (!$error && !$notrigger) {
 				// Call trigger
-				$result = $this->call_trigger('JOB_VALIDATE', $user);
+				$result = $this->call_trigger('HRM_JOB_VALIDATE', $user);
 				if ($result < 0) {
 					$error++;
 				}
@@ -555,6 +556,12 @@ class Job extends CommonObject
 				// Now we rename also files into index
 				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'job/".$this->db->escape($this->newref)."'";
 				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'job/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+				$resql = $this->db->query($sql);
+				if (!$resql) {
+					$error++; $this->error = $this->db->lasterror();
+				}
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filepath = 'job/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filepath = 'job/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
 				$resql = $this->db->query($sql);
 				if (!$resql) {
 					$error++; $this->error = $this->db->lasterror();
@@ -727,7 +734,7 @@ class Job extends CommonObject
 
 		$result = '';
 
-		$label = img_picto('', $this->picto).' <u>'.$langs->trans("Job").'</u>';
+		$label = img_picto('', $this->picto).' <u>'.$langs->trans("JobProfile").'</u>';
 		if (isset($this->status)) {
 			$label .= ' '.$this->getLibStatut(5);
 		}
@@ -844,6 +851,9 @@ class Job extends CommonObject
 	public function LibStatut($status, $mode = 0)
 	{
 		// phpcs:enable
+		return '';		// There is no status on job profile for the moment
+
+		/*
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("hrm");
@@ -862,6 +872,7 @@ class Job extends CommonObject
 		}
 
 		return dolGetStatus($this->labelStatus[$status], $this->labelStatusShort[$status], '', $statusType, $mode);
+		*/
 	}
 
 	/**
@@ -1053,6 +1064,41 @@ class Job extends CommonObject
 		$this->db->commit();
 
 		return $error;
+	}
+
+	/**
+	 *	Return clicable link of object (with eventually picto)
+	 *
+	 *	@param      string	    $option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
+	 *  @param		array		$arraydata				Array of data
+	 *  @return		string								HTML Code for Kanban thumb.
+	 */
+	public function getKanbanView($option = '', $arraydata = null)
+	{
+		global $selected, $langs;
+
+		$selected = (empty($arraydata['selected']) ? 0 : $arraydata['selected']);
+
+		$return = '<div class="box-flex-item box-flex-grow-zero">';
+		$return .= '<div class="info-box info-box-sm">';
+		$return .= '<span class="info-box-icon bg-infobox-action">';
+		$return .= img_picto('', $this->picto);
+		$return .= '</span>';
+		$return .= '<div class="info-box-content">';
+		$return .= '<span class="info-box-ref inline-block tdoverflowmax150 valignmiddle">'.(method_exists($this, 'getNomUrl') ? $this->getNomUrl(0) : $this->ref).'</span>';
+		$return .= '<input id="cb'.$this->id.'" class="flat checkforselect fright" type="checkbox" name="toselect[]" value="'.$this->id.'"'.($selected ? ' checked="checked"' : '').'>';
+		/*if (property_exists($this, 'deplacement')) {
+			$return .= '<br><span class="opacitymedium">'.$langs->trans("Type").'</span>';
+			$return .= ' : <span class="info-box-label ">'.$this->fields['deplacement']['arrayofkeyval'][$this->deplacement].'</span>';
+		}*/
+		if (property_exists($this, 'description') && !(empty($this->description))) {
+			//$return .= '<br><span class="info-box-label opacitymedium">'.$langs->trans("Description").'</span> : ';
+			$return .= '<br><span class="info-box-label ">'.(strlen($this->description) > 30 ? dol_substr($this->description, 0, 25).'...' : $this->description).'</span>';
+		}
+		$return .= '</div>';
+		$return .= '</div>';
+		$return .= '</div>';
+		return $return;
 	}
 }
 

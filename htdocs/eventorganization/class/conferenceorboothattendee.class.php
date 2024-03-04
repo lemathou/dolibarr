@@ -104,18 +104,18 @@ class ConferenceOrBoothAttendee extends CommonObject
 		'rowid' => array('type'=>'integer', 'label'=>'TechnicalID', 'enabled'=>'1', 'position'=>1, 'notnull'=>1, 'visible'=>0, 'noteditable'=>'1', 'index'=>1, 'css'=>'left', 'comment'=>"Id"),
 		'ref' => array('type'=>'varchar(128)', 'label'=>'Ref', 'enabled'=>'1', 'position'=>10, 'notnull'=>1, 'visible'=>2, 'index'=>1, 'comment'=>"Reference of object"),
 		//'fk_actioncomm' => array('type'=>'integer:ActionComm:comm/action/class/actioncomm.class.php:1', 'label'=>'ConferenceOrBooth', 'enabled'=>'1', 'position'=>15, 'notnull'=>0, 'visible'=>0, 'index'=>1, 'picto'=>'agenda'),
-		'fk_project' => array('type'=>'integer:Project:projet/class/project.class.php:1', 'label'=>'Project', 'enabled'=>"isModEnabled('project')", 'position'=>20, 'notnull'=>1, 'visible'=>0, 'index'=>1, 'picto'=>'project', 'css'=>'tdoverflowmax150 maxwidth500'),
-		'email' => array('type'=>'mail', 'label'=>'EmailAttendee', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'autofocusoncreate'=>1, 'searchall'=>1),
-		'firstname' => array('type'=>'varchar(100)', 'label'=>'Firstname', 'enabled'=>'1', 'position'=>31, 'notnull'=>0, 'visible'=>1, 'index'=>1, 'searchall'=>1),
-		'lastname' => array('type'=>'varchar(100)', 'label'=>'Lastname', 'enabled'=>'1', 'position'=>32, 'notnull'=>0, 'visible'=>1, 'index'=>1, 'searchall'=>1),
-		'fk_soc' => array('type'=>'integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))', 'label'=>'ThirdParty', 'enabled'=>'$conf->societe->enabled', 'position'=>40, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'help'=>"OrganizationEventLinkToThirdParty", 'picto'=>'company', 'css'=>'tdoverflowmax150 maxwidth500'),
+		'fk_project' => array('type'=>'integer:Project:projet/class/project.class.php:1', 'label'=>'Project', 'enabled'=>"isModEnabled('project')", 'position'=>20, 'notnull'=>1, 'visible'=>0, 'index'=>1, 'picto'=>'project', 'css'=>'maxwidth500 widthcentpercentminusxx', 'csslist'=>'tdoverflowmax150'),
+		'email' => array('type'=>'mail', 'label'=>'EmailAttendee', 'enabled'=>'1', 'position'=>30, 'notnull'=>1, 'visible'=>1, 'index'=>1, 'autofocusoncreate'=>1, 'searchall'=>1, 'csslist'=>'tdoverflowmax150'),
+		'firstname' => array('type'=>'varchar(100)', 'label'=>'Firstname', 'enabled'=>'1', 'position'=>31, 'notnull'=>0, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'csslist'=>'tdoverflowmax125'),
+		'lastname' => array('type'=>'varchar(100)', 'label'=>'Lastname', 'enabled'=>'1', 'position'=>32, 'notnull'=>0, 'visible'=>1, 'index'=>1, 'searchall'=>1, 'csslist'=>'tdoverflowmax125'),
+		'fk_soc' => array('type'=>'integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))', 'label'=>'ThirdParty', 'enabled'=>'isModEnabled("societe")', 'position'=>40, 'notnull'=>-1, 'visible'=>1, 'index'=>1, 'help'=>"OrganizationEventLinkToThirdParty", 'picto'=>'company', 'css'=>'maxwidth500 widthcentpercentminusxx', 'csslist'=>'tdoverflowmax150'),
 		'email_company' => array('type'=>'mail', 'label'=>'EmailCompany', 'enabled'=>'1', 'position'=>41, 'notnull'=>0, 'visible'=>-2, 'searchall'=>1),
 		'date_subscription' => array('type'=>'datetime', 'label'=>'DateOfRegistration', 'enabled'=>'1', 'position'=>56, 'notnull'=>1, 'visible'=>1, 'showoncombobox'=>'1',),
-		'fk_invoice' => array('type'=>'integer:Facture:compta/facture/class/facture.class.php', 'label'=>'Invoice', 'enabled'=>'$conf->facture->enabled', 'position'=>57, 'notnull'=>0, 'visible'=>-1, 'index'=>0, 'picto'=>'bill', 'css'=>'tdoverflowmax150 maxwidth500'),
-		'amount' => array('type'=>'price', 'label'=>'AmountPaid', 'enabled'=>'1', 'position'=>57, 'notnull'=>0, 'visible'=>1, 'default'=>'null', 'isameasure'=>'1', 'help'=>"AmountOfSubscriptionPaid",),
+		'fk_invoice' => array('type'=>'integer:Facture:compta/facture/class/facture.class.php', 'label'=>'Invoice', 'enabled'=>'isModEnabled("facture")', 'position'=>57, 'notnull'=>0, 'visible'=>1, 'index'=>0, 'picto'=>'bill', 'css'=>'maxwidth500 widthcentpercentminusxx', 'csslist'=>'tdoverflowmax150'),
+		'amount' => array('type'=>'price', 'label'=>'AmountPaid', 'enabled'=>'1', 'position'=>57, 'notnull'=>0, 'visible'=>1, 'default'=>'null', 'isameasure'=>'1', 'help'=>"AmountOfRegistrationPaid",),
 		'note_public' => array('type'=>'html', 'label'=>'NotePublic', 'enabled'=>'1', 'position'=>61, 'notnull'=>0, 'visible'=>3,),
 		'note_private' => array('type'=>'html', 'label'=>'NotePrivate', 'enabled'=>'1', 'position'=>62, 'notnull'=>0, 'visible'=>3,),
-		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2,),
+		'date_creation' => array('type'=>'datetime', 'label'=>'DateCreation', 'enabled'=>'1', 'position'=>500, 'notnull'=>1, 'visible'=>-2, 'css'=>'nowraponall'),
 		'tms' => array('type'=>'timestamp', 'label'=>'DateModification', 'enabled'=>'1', 'position'=>501, 'notnull'=>0, 'visible'=>-2,),
 		'fk_user_creat' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserAuthor', 'enabled'=>'1', 'position'=>510, 'notnull'=>-1, 'visible'=>-2),
 		'fk_user_modif' => array('type'=>'integer:User:user/class/user.class.php', 'label'=>'UserModif', 'enabled'=>'1', 'position'=>511, 'notnull'=>-1, 'visible'=>-2,),
@@ -604,6 +604,12 @@ class ConferenceOrBoothAttendee extends CommonObject
 				// Now we rename also files into index
 				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'conferenceorboothattendee/".$this->db->escape($this->newref)."'";
 				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'conferenceorboothattendee/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+				$resql = $this->db->query($sql);
+				if (!$resql) {
+					$error++; $this->error = $this->db->lasterror();
+				}
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filepath = 'conferenceorboothattendee/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filepath = 'conferenceorboothattendee/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
 				$resql = $this->db->query($sql);
 				if (!$resql) {
 					$error++; $this->error = $this->db->lasterror();
@@ -1102,18 +1108,18 @@ class ConferenceOrBoothAttendee extends CommonObject
 	/**
 	 * Function used to replace a thirdparty id with another one.
 	 *
-	 * @param DoliDB $db Database handler
-	 * @param int $origin_id Old thirdparty id
-	 * @param int $dest_id New thirdparty id
-	 * @return bool
+	 * @param 	DoliDB 	$dbs 		Database handler, because function is static we name it $dbs not $db to avoid breaking coding test
+	 * @param 	int 	$origin_id 	Old thirdparty id
+	 * @param 	int 	$dest_id 	New thirdparty id
+	 * @return 	bool
 	 */
-	public static function replaceThirdparty(DoliDB $db, $origin_id, $dest_id)
+	public static function replaceThirdparty(DoliDB $dbs, $origin_id, $dest_id)
 	{
 		$tables = array(
 			'eventorganization_conferenceorboothattendee'
 		);
 
-		return CommonObject::commonReplaceThirdparty($db, $origin_id, $dest_id, $tables);
+		return CommonObject::commonReplaceThirdparty($dbs, $origin_id, $dest_id, $tables);
 	}
 }
 

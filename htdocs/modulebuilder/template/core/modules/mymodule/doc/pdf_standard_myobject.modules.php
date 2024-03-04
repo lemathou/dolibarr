@@ -197,8 +197,7 @@ class pdf_standard_myobject extends ModelePDFMyObject
 		$realpatharray = array();
 		$this->atleastonephoto = false;
 		/*
-		if (getDolGlobalString('MAIN_GENERATE_MYOBJECT_WITH_PICTURE'))
-		{
+		if (getDolGlobalInt('MAIN_GENERATE_MYOBJECT_WITH_PICTURE'))) {
 			$objphoto = new Product($this->db);
 
 			for ($i = 0; $i < $nblines; $i++)
@@ -270,10 +269,6 @@ class pdf_standard_myobject extends ModelePDFMyObject
 
 			if (file_exists($dir)) {
 				// Add pdfgeneration hook
-				if (!is_object($hookmanager)) {
-					include_once DOL_DOCUMENT_ROOT.'/core/class/hookmanager.class.php';
-					$hookmanager = new HookManager($this->db);
-				}
 				$hookmanager->initHooks(array('pdfgeneration'));
 				$parameters = array('file'=>$file, 'object'=>$object, 'outputlangs'=>$outputlangs);
 				global $action;
@@ -288,8 +283,8 @@ class pdf_standard_myobject extends ModelePDFMyObject
 				$pdf->SetAutoPageBreak(1, 0);
 
 				$heightforinfotot = 50; // Height reserved to output the info and total part and payment part
-				$heightforfreetext = (getDolGlobalInt('MAIN_PDF_FREETEXT_HEIGHT') ? getDolGlobalInt('MAIN_PDF_FREETEXT_HEIGHT') : 5); // Height reserved to output the free text on last page
-				$heightforfooter = $this->marge_basse + ((getDolGlobalString('MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS')=='') ? 12 : 22); // Height reserved to output the footer (value include bottom margin)
+				$heightforfreetext = getDolGlobalInt('MAIN_PDF_FREETEXT_HEIGHT', 5); // Height reserved to output the free text on last page
+				$heightforfooter = $this->marge_basse + (getDolGlobalInt('MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS') ? 12 : 22); // Height reserved to output the footer (value include bottom margin)
 
 				if (class_exists('TCPDF')) {
 					$pdf->setPrintHeader(false);
@@ -676,10 +671,18 @@ class pdf_standard_myobject extends ModelePDFMyObject
 
 					// retrieve global local tax
 					if ($localtax1_type && $localtax1ligne != 0) {
-						$this->localtax1[$localtax1_type][$localtax1_rate] += $localtax1ligne;
+						if (empty($this->localtax1[$localtax1_type][$localtax1_rate])) {
+							$this->localtax1[$localtax1_type][$localtax1_rate] = $localtax1ligne;
+						} else {
+							$this->localtax1[$localtax1_type][$localtax1_rate] += $localtax1ligne;
+						}
 					}
 					if ($localtax2_type && $localtax2ligne != 0) {
-						$this->localtax2[$localtax2_type][$localtax2_rate] += $localtax2ligne;
+						if (empty($this->localtax2[$localtax2_type][$localtax2_rate])) {
+							$this->localtax2[$localtax2_type][$localtax2_rate] = $localtax2ligne;
+						} else {
+							$this->localtax2[$localtax2_type][$localtax2_rate] += $localtax2ligne;
+						}
 					}
 
 					if (($object->lines[$i]->info_bits & 0x01) == 0x01) {
@@ -757,7 +760,7 @@ class pdf_standard_myobject extends ModelePDFMyObject
 
 				// Display payment area
 				/*
-				if (($deja_regle || $amount_credit_notes_included || $amount_deposits_included) && (getDolGlobalString('INVOICE_NO_PAYMENT_DETAILS')==''))
+				if (($deja_regle || $amount_credit_notes_included || $amount_deposits_included) && !getDolGlobalInt('INVOICE_NO_PAYMENT_DETAILS')))
 				{
 					$posy = $this->drawPaymentsTable($pdf, $object, $posy, $outputlangs);
 				}
@@ -783,13 +786,11 @@ class pdf_standard_myobject extends ModelePDFMyObject
 					$this->errors = $hookmanager->errors;
 				}
 
-				if (getDolGlobalString('MAIN_UMASK')) {
-					@chmod($file, octdec(getDolGlobalString('MAIN_UMASK')));
-				}
+				dolChmod($file);
 
-					$this->result = array('fullpath'=>$file);
+				$this->result = array('fullpath'=>$file);
 
-					return 1; // No error
+				return 1; // No error
 			} else {
 				$this->error = $langs->transnoentities("ErrorCanNotCreateDir", $dir);
 				return 0;
@@ -848,13 +849,14 @@ class pdf_standard_myobject extends ModelePDFMyObject
 
 		if (empty($hidetop)) {
 			$titre = $outputlangs->transnoentities("AmountInCurrency", $outputlangs->transnoentitiesnoconv("Currency".$currency));
-			if (getDolGlobalString('PDF_USE_ALSO_LANGUAGE_CODE') && is_object($outputlangsbis)) {
+			if (getDolGlobalInt('PDF_USE_ALSO_LANGUAGE_CODE') && is_object($outputlangsbis)) {
 				$titre .= ' - '.$outputlangsbis->transnoentities("AmountInCurrency", $outputlangsbis->transnoentitiesnoconv("Currency".$currency));
 			}
 
 			$pdf->SetXY($this->page_largeur - $this->marge_droite - ($pdf->GetStringWidth($titre) + 3), $tab_top - 4);
 			$pdf->MultiCell(($pdf->GetStringWidth($titre) + 3), 2, $titre);
 
+			//$conf->global->MAIN_PDF_TITLE_BACKGROUND_COLOR='230,230,230';
 			if (getDolGlobalString('MAIN_PDF_TITLE_BACKGROUND_COLOR')) {
 				$pdf->Rect($this->marge_gauche, $tab_top, $this->page_largeur - $this->marge_droite - $this->marge_gauche, $this->tabTitleHeight, 'F', null, explode(',', getDolGlobalString('MAIN_PDF_TITLE_BACKGROUND_COLOR')));
 			}
@@ -883,7 +885,7 @@ class pdf_standard_myobject extends ModelePDFMyObject
 	 *  @param  int	    	$showaddress    0=no, 1=yes
 	 *  @param  Translate	$outputlangs	Object lang for output
 	 *  @param  Translate	$outputlangsbis	Object lang for output bis
-	 *  @return	void
+	 *  @return	float|int
 	 */
 	protected function _pagehead(&$pdf, $object, $showaddress, $outputlangs, $outputlangsbis = null)
 	{
@@ -912,7 +914,7 @@ class pdf_standard_myobject extends ModelePDFMyObject
 		$pdf->SetXY($this->marge_gauche, $posy);
 
 		// Logo
-		if (getDolGlobalString('PDF_DISABLE_MYCOMPANY_LOGO')) {
+		if (!getDolGlobalInt('PDF_DISABLE_MYCOMPANY_LOGO')) {
 			if ($this->emetteur->logo) {
 				$logodir = $conf->mycompany->dir_output;
 				if (!empty($conf->mycompany->multidir_output[$object->entity])) {
@@ -942,7 +944,7 @@ class pdf_standard_myobject extends ModelePDFMyObject
 		$pdf->SetXY($posx, $posy);
 		$pdf->SetTextColor(0, 0, 60);
 		$title = $outputlangs->transnoentities("PdfTitle");
-		if (getDolGlobalString('PDF_USE_ALSO_LANGUAGE_CODE') && is_object($outputlangsbis)) {
+		if (getDolGlobalInt('MAIN_ODT_AS_PDF') && is_object($outputlangsbis)) {
 			$title .= ' - ';
 			$title .= $outputlangsbis->transnoentities("PdfTitle");
 		}
@@ -996,7 +998,7 @@ class pdf_standard_myobject extends ModelePDFMyObject
 		$pdf->SetTextColor(0, 0, 60);
 
 		$title = $outputlangs->transnoentities("Date");
-		if (getDolGlobalString('PDF_USE_ALSO_LANGUAGE_CODE') && is_object($outputlangsbis)) {
+		if (getDolGlobalInt('PDF_USE_ALSO_LANGUAGE_CODE') && is_object($outputlangsbis)) {
 			$title .= ' - '.$outputlangsbis->transnoentities("Date");
 		}
 		$pdf->MultiCell($w, 3, $title." : ".dol_print_date($object->date, "day", false, $outputlangs), '', 'R');
@@ -1150,7 +1152,7 @@ class pdf_standard_myobject extends ModelePDFMyObject
 	 *  @param	int			   $hidedetails		Do not show line details
 	 *  @param	int			   $hidedesc		Do not show desc
 	 *  @param	int			   $hideref			Do not show ref
-	 *  @return	null
+	 *  @return	void
 	 */
 	public function defineColumnField($object, $outputlangs, $hidedetails = 0, $hidedesc = 0, $hideref = 0)
 	{
@@ -1220,7 +1222,7 @@ class pdf_standard_myobject extends ModelePDFMyObject
 			'border-left' => false, // remove left line separator
 		);
 
-		if (getDolGlobalInt('MAIN_GENERATE_DOCUEMENTS_WITH_PICTURE') && !empty($this->atleastonephoto)) {
+		if (getDolGlobalInt('MAIN_GENERATE_INVOICES_WITH_PICTURE') && !empty($this->atleastonephoto)) {
 			$this->cols['photo']['status'] = true;
 		}
 

@@ -563,7 +563,7 @@ class Evaluation extends CommonObject
 
 			if (!$error && !$notrigger) {
 				// Call trigger
-				$result = $this->call_trigger('EVALUATION_VALIDATE', $user);
+				$result = $this->call_trigger('HRM_EVALUATION_VALIDATE', $user);
 				if ($result < 0) {
 					$error++;
 				}
@@ -579,6 +579,12 @@ class Evaluation extends CommonObject
 				// Now we rename also files into index
 				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'evaluation/".$this->db->escape($this->newref)."'";
 				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'evaluation/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+				$resql = $this->db->query($sql);
+				if (!$resql) {
+					$error++; $this->error = $this->db->lasterror();
+				}
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filepath = 'evaluation/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filepath = 'evaluation/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
 				$resql = $this->db->query($sql);
 				if (!$resql) {
 					$error++; $this->error = $this->db->lasterror();
@@ -665,9 +671,7 @@ class Evaluation extends CommonObject
 			return 0;
 		}
 
-
-
-		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'EVALUATION_UNVALIDATE');
+		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'HRM_EVALUATION_UNVALIDATE');
 	}
 
 	/**
@@ -684,9 +688,7 @@ class Evaluation extends CommonObject
 			return 0;
 		}
 
-
-
-		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'EVALUATION_CANCEL');
+		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'HRM_EVALUATION_CANCEL');
 	}
 
 	/**
@@ -703,9 +705,7 @@ class Evaluation extends CommonObject
 			return 0;
 		}
 
-
-
-		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'EVALUATION_REOPEN');
+		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'HRM_EVALUATION_REOPEN');
 	}
 
 	/**
@@ -853,7 +853,7 @@ class Evaluation extends CommonObject
 			$this->labelStatus[self::STATUS_CLOSED] = $langs->transnoentitiesnoconv('Closed');
 			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
 			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Validated');
-			$this->labelStatus[self::STATUS_CLOSED] = $langs->transnoentitiesnoconv('Closed');
+			$this->labelStatusShort[self::STATUS_CLOSED] = $langs->transnoentitiesnoconv('Closed');
 		}
 
 		$statusType = 'status'.$status;
@@ -1054,5 +1054,41 @@ class Evaluation extends CommonObject
 		$this->db->commit();
 
 		return $error;
+	}
+
+	/**
+	 *	Return clicable link of object (with eventually picto)
+	 *
+	 *	@param      string	    $option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
+	 *  @param		array		$arraydata				Array of data
+	 *  @return		string								HTML Code for Kanban thumb.
+	 */
+	public function getKanbanView($option = '', $arraydata = null)
+	{
+		global $selected, $langs;
+
+		$selected = (empty($arraydata['selected']) ? 0 : $arraydata['selected']);
+
+		$return = '<div class="box-flex-item box-flex-grow-zero">';
+		$return .= '<div class="info-box info-box-sm">';
+		$return .= '<span class="info-box-icon bg-infobox-action">';
+		$return .= img_picto('', $this->picto);
+		$return .= '</span>';
+		$return .= '<div class="info-box-content">';
+		$return .= '<span class="info-box-ref inline-block tdoverflowmax150 valignmiddle">'.(method_exists($this, 'getNomUrl') ? $this->getNomUrl(1) : $this->ref).'</span>';
+		$return .= '<input class="fright" id="cb'.$this->id.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$this->id.'"'.($selected ? ' checked="checked"' : '').'>';
+		if (!empty($arraydata['user'])) {
+			$return .= '<br><span class="info-box-label ">'.$arraydata['user'].'</span>';
+		}
+		if (!empty($arraydata['job'])) {
+			$return .= '<br><span class="info-box-label ">'.$arraydata['job'].'</span>';
+		}
+		if (method_exists($this, 'getLibStatut')) {
+			$return .= '<br><div class="info-box-status margintoponly">'.$this->getLibStatut(3).'</div>';
+		}
+		$return .= '</div>';
+		$return .= '</div>';
+		$return .= '</div>';
+		return $return;
 	}
 }

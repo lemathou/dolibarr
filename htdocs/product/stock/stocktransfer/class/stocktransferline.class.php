@@ -117,42 +117,6 @@ class StockTransferLine extends CommonObjectLine
 	// END MODULEBUILDER PROPERTIES
 
 
-	// If this object has a subtable with lines
-
-	/**
-	 * @var int    Name of subtable line
-	 */
-	//public $table_element_line = 'stocktransfer_stocktransferlineline';
-
-	/**
-	 * @var int    Field with ID of parent key if this object has a parent
-	 */
-	//public $fk_element = 'fk_stocktransferline';
-
-	/**
-	 * @var int    Name of subtable class that manage subtable lines
-	 */
-	//public $class_element_line = 'StockTransferLineline';
-
-	/**
-	 * @var array	List of child tables. To test if we can delete object.
-	 */
-	//protected $childtables = array();
-
-	/**
-	 * @var array    List of child tables. To know object to delete on cascade.
-	 *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
-	 *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
-	 */
-	//protected $childtablesoncascade = array('stocktransfer_stocktransferlinedet');
-
-	/**
-	 * @var StockTransferLineLine[]     Array of subtable lines
-	 */
-	//public $lines = array();
-
-
-
 	/**
 	 * Constructor
 	 *
@@ -615,7 +579,15 @@ class StockTransferLine extends CommonObjectLine
 				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'stocktransferline/".$this->db->escape($this->newref)."'";
 				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'stocktransferline/".$this->db->escape($this->ref)."' and entity = ".((int) $conf->entity);
 				$resql = $this->db->query($sql);
-				if (!$resql) { $error++; $this->error = $this->db->lasterror(); }
+				if (!$resql) {
+					$error++; $this->error = $this->db->lasterror();
+				}
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filepath = 'stocktransferline/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filepath = 'stocktransferline/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+				$resql = $this->db->query($sql);
+				if (!$resql) {
+					$error++; $this->error = $this->db->lasterror();
+				}
 
 				// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
 				$oldref = dol_sanitizeFileName($this->ref);

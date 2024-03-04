@@ -74,13 +74,24 @@ $manifest->name = constant('DOL_APPLICATION_TITLE');
 if (!empty($conf->global->MAIN_APPLICATION_TITLE)) {
 	$manifest->name = $conf->global->MAIN_APPLICATION_TITLE;
 }
+$manifest->short_name = $manifest->name;
 
 
-$manifest->theme_color = !empty($conf->global->MAIN_MANIFEST_APPLI_THEME_COLOR) ? $conf->global->MAIN_MANIFEST_APPLI_THEME_COLOR : '#F05F40';
-$manifest->background_color = !empty($conf->global->MAIN_MANIFEST_APPLI_BG_COLOR) ? $conf->global->MAIN_MANIFEST_APPLI_BG_COLOR : "#ffffff";
+$manifest->theme_color = getDolGlobalString('MAIN_MANIFEST_APPLI_THEME_COLOR', getDolGlobalString('THEME_ELDY_TOPMENU_BACK1', '#F05F40'));
+if (!preg_match('/#[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]$/', $manifest->theme_color)) {
+	include_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
+	$manifest->theme_color = '#'.colorArrayToHex(colorStringToArray($manifest->theme_color));
+}
+$manifest->background_color = getDolGlobalString('MAIN_MANIFEST_APPLI_BG_COLOR', "#ffffff");
+if (!preg_match('/#[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]$/', $manifest->background_color)) {
+	include_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
+	$manifest->background_color = '#'.colorArrayToHex(colorStringToArray($manifest->background_color));
+}
 $manifest->display = "standalone";
 $manifest->splash_pages = null;
 $manifest->icons = array();
+$manifest->start_url = constant('DOL_MAIN_URL_ROOT');
+$manifest->id = constant('DOL_MAIN_URL_ROOT');
 
 if (!empty($conf->global->MAIN_MANIFEST_APPLI_LOGO_URL)) {
 	$icon = new stdClass();

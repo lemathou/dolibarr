@@ -125,7 +125,7 @@ if (empty($reshook)) {
 		}
 	}
 
-	$triggermodname = 'hrm_EVALUATION_MODIFY'; // Name of trigger action code to execute when we modify record
+	$triggermodname = 'HRM_EVALUATION_MODIFY'; // Name of trigger action code to execute when we modify record
 
 	// Actions cancel, add, update, update_extras, confirm_validate, confirm_delete, confirm_deleteline, confirm_clone, confirm_close, confirm_setdraft, confirm_reopen
 	include DOL_DOCUMENT_ROOT.'/core/actions_addupdatedelete.inc.php';
@@ -150,7 +150,7 @@ if (empty($reshook)) {
 	}
 
 	// Actions to send emails
-	$triggersendname = 'hrm_EVALUATION_SENTBYMAIL';
+	$triggersendname = 'HRM_EVALUATION_SENTBYMAIL';
 	$autocopy = 'MAIN_MAIL_AUTOCOPY_EVALUATION_TO';
 	$trackid = 'evaluation'.$object->id;
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
@@ -472,9 +472,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			print '<table id="tablelines" class="noborder noshadow" width="100%">';
 		}
 
-		//if (!empty($object->lines)) {
-			$object->printObjectLines($action, $mysoc, null, GETPOST('lineid', 'int'), 1);
-		//}
+
+		$object->printObjectLines($action, $mysoc, null, GETPOST('lineid', 'int'), 1);
+
+		if (empty($object->lines)) {
+			print '<tr><td colspan="4"><span class="opacitymedium">'.img_warning().' '.$langs->trans("TheJobProfileHasNoSkillsDefinedFixBefore").'</td></tr>';
+		}
 
 		// Form to add new line
 		/*

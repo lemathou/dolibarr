@@ -65,12 +65,6 @@ class pdf_soleil extends ModelePDFFicheinter
 	public $type;
 
 	/**
-	 * @var array Minimum version of PHP required by module.
-	 * e.g.: PHP ≥ 7.0 = array(7, 0)
-	 */
-	public $phpmin = array(7, 0);
-
-	/**
 	 * Dolibarr version of the loaded document
 	 * @var string
 	 */
@@ -407,9 +401,9 @@ class pdf_soleil extends ModelePDFFicheinter
 						while ($pagenb < $pageposafter) {
 							$pdf->setPage($pagenb);
 							if ($pagenb == 1) {
-								$this->_tableau($pdf, $tab_top, $this->page_hauteur - $tab_top - $heightforfooter, 0, $outputlangs, 0, 1);
+								$this->_tableau($pdf, $tab_top, $this->page_hauteur - $tab_top - $heightforfooter, 0, $outputlangs, 0, 1, $object);
 							} else {
-								$this->_tableau($pdf, $tab_top_newpage, $this->page_hauteur - $tab_top_newpage - $heightforfooter, 0, $outputlangs, 1, 1);
+								$this->_tableau($pdf, $tab_top_newpage, $this->page_hauteur - $tab_top_newpage - $heightforfooter, 0, $outputlangs, 1, 1, $object);
 							}
 							$this->_pagefoot($pdf, $object, $outputlangs, 1);
 							$pagenb++;
@@ -424,9 +418,9 @@ class pdf_soleil extends ModelePDFFicheinter
 						}
 						if (isset($object->lines[$i + 1]->pagebreak) && $object->lines[$i + 1]->pagebreak) {
 							if ($pagenb == 1) {
-								$this->_tableau($pdf, $tab_top, $this->page_hauteur - $tab_top - $heightforfooter, 0, $outputlangs, 0, 1);
+								$this->_tableau($pdf, $tab_top, $this->page_hauteur - $tab_top - $heightforfooter, 0, $outputlangs, 0, 1, $object);
 							} else {
-								$this->_tableau($pdf, $tab_top_newpage, $this->page_hauteur - $tab_top_newpage - $heightforfooter, 0, $outputlangs, 1, 1);
+								$this->_tableau($pdf, $tab_top_newpage, $this->page_hauteur - $tab_top_newpage - $heightforfooter, 0, $outputlangs, 1, 1, $object);
 							}
 							$this->_pagefoot($pdf, $object, $outputlangs, 1);
 							// New page
@@ -444,10 +438,10 @@ class pdf_soleil extends ModelePDFFicheinter
 
 				// Show square
 				if ($pagenb == 1) {
-					$this->_tableau($pdf, $tab_top, $this->page_hauteur - $tab_top - $heightforinfotot - $heightforfreetext - $heightforfooter, 0, $outputlangs, 0, 0);
+					$this->_tableau($pdf, $tab_top, $this->page_hauteur - $tab_top - $heightforinfotot - $heightforfreetext - $heightforfooter, 0, $outputlangs, 0, 0, $object);
 					$bottomlasttab = $this->page_hauteur - $heightforinfotot - $heightforfreetext - $heightforfooter + 1;
 				} else {
-					$this->_tableau($pdf, $tab_top_newpage, $this->page_hauteur - $tab_top_newpage - $heightforinfotot - $heightforfreetext - $heightforfooter, 0, $outputlangs, 1, 0);
+					$this->_tableau($pdf, $tab_top_newpage, $this->page_hauteur - $tab_top_newpage - $heightforinfotot - $heightforfreetext - $heightforfooter, 0, $outputlangs, 1, 0, $object);
 					$bottomlasttab = $this->page_hauteur - $heightforinfotot - $heightforfreetext - $heightforfooter + 1;
 				}
 
@@ -469,9 +463,7 @@ class pdf_soleil extends ModelePDFFicheinter
 					$this->errors = $hookmanager->errors;
 				}
 
-				if (!empty($conf->global->MAIN_UMASK)) {
-					@chmod($file, octdec($conf->global->MAIN_UMASK));
-				}
+				dolChmod($file);
 
 				$this->result = array('fullpath'=>$file);
 
@@ -497,9 +489,10 @@ class pdf_soleil extends ModelePDFFicheinter
 	 *   @param		Translate	$outputlangs	Langs object
 	 *   @param		int			$hidetop		Hide top bar of array
 	 *   @param		int			$hidebottom		Hide bottom bar of array
+	 *   @param		Fichinter	$object			FichInter Object
 	 *   @return	void
 	 */
-	protected function _tableau(&$pdf, $tab_top, $tab_height, $nexY, $outputlangs, $hidetop = 0, $hidebottom = 0)
+	protected function _tableau(&$pdf, $tab_top, $tab_height, $nexY, $outputlangs, $hidetop = 0, $hidebottom = 0, FichInter $object = null)
 	{
 		global $conf;
 
@@ -535,11 +528,20 @@ class pdf_soleil extends ModelePDFFicheinter
 		$this->printRect($pdf, $this->marge_gauche, $tab_top, $this->page_largeur - $this->marge_gauche - $this->marge_droite, $tab_height + 1, 0, 0); // Rect takes a length in 3rd parameter and 4th parameter
 
 		if (empty($hidebottom)) {
+			$employee_name = '';
+			if (!empty($object)) {
+				$arrayidcontact = $object->getIdContact('internal', 'INTERVENING');
+				if (count($arrayidcontact) > 0) {
+					$object->fetch_user($arrayidcontact[0]);
+					$employee_name = $object->user->getFullName($outputlangs);
+				}
+			}
+
 			$pdf->SetXY(20, 230);
 			$pdf->MultiCell(80, 5, $outputlangs->transnoentities("NameAndSignatureOfInternalContact"), 0, 'L', 0);
 
 			$pdf->SetXY(20, 235);
-			$pdf->MultiCell(80, 25, '', 1);
+			$pdf->MultiCell(80, 25, $employee_name, 1, 'L');
 
 			$pdf->SetXY(110, 230);
 			$pdf->MultiCell(80, 5, $outputlangs->transnoentities("NameAndSignatureOfExternalContact"), 0, 'L', 0);
@@ -634,11 +636,18 @@ class pdf_soleil extends ModelePDFFicheinter
 		if ($showaddress) {
 			// Sender properties
 			$carac_emetteur = '';
-			// Add internal contact of proposal if defined
+			// Add internal contact of object if defined
 			$arrayidcontact = $object->getIdContact('internal', 'INTERREPFOLL');
 			if (count($arrayidcontact) > 0) {
 				$object->fetch_user($arrayidcontact[0]);
-				$carac_emetteur .= ($carac_emetteur ? "\n" : '').$outputlangs->transnoentities("Name").": ".$outputlangs->convToOutputCharset($object->user->getFullName($outputlangs))."\n";
+				$labelbeforecontactname = ($outputlangs->transnoentities("FromContactName") != 'FromContactName' ? $outputlangs->transnoentities("FromContactName") : $outputlangs->transnoentities("Name"));
+				$carac_emetteur .= ($carac_emetteur ? "\n" : '').$labelbeforecontactname.": ".$outputlangs->convToOutputCharset($object->user->getFullName($outputlangs));
+				$carac_emetteur .= (getDolGlobalInt('PDF_SHOW_PHONE_AFTER_USER_CONTACT') || getDolGlobalInt('PDF_SHOW_EMAIL_AFTER_USER_CONTACT')) ? ' (' : '';
+				$carac_emetteur .= (getDolGlobalInt('PDF_SHOW_PHONE_AFTER_USER_CONTACT') && !empty($object->user->office_phone)) ? $object->user->office_phone : '';
+				$carac_emetteur .= (getDolGlobalInt('PDF_SHOW_PHONE_AFTER_USER_CONTACT') && getDolGlobalInt('PDF_SHOW_EMAIL_AFTER_USER_CONTACT')) ? ', ' : '';
+				$carac_emetteur .= (getDolGlobalInt('PDF_SHOW_EMAIL_AFTER_USER_CONTACT') && !empty($object->user->email)) ? $object->user->email : '';
+				$carac_emetteur .= (getDolGlobalInt('PDF_SHOW_PHONE_AFTER_USER_CONTACT') || getDolGlobalInt('PDF_SHOW_EMAIL_AFTER_USER_CONTACT')) ? ')' : '';
+				$carac_emetteur .= "\n";
 			}
 
 			$carac_emetteur .= pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, '', 0, 'source', $object);

@@ -163,7 +163,6 @@ class Evaluationline extends CommonObject
 	// public $lines = array();
 
 
-
 	/**
 	 * Constructor
 	 *
@@ -543,7 +542,7 @@ class Evaluationline extends CommonObject
 
 			if (!$error && !$notrigger) {
 				// Call trigger
-				$result = $this->call_trigger('EVALUATIONLINE_VALIDATE', $user);
+				$result = $this->call_trigger('HRM_EVALUATIONLINE_VALIDATE', $user);
 				if ($result < 0) {
 					$error++;
 				}
@@ -563,6 +562,12 @@ class Evaluationline extends CommonObject
 				if (!$resql) {
 					$error++;
 					$this->error = $this->db->lasterror();
+				}
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filepath = 'evaluationline/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filepath = 'evaluationline/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+				$resql = $this->db->query($sql);
+				if (!$resql) {
+					$error++; $this->error = $this->db->lasterror();
 				}
 
 				// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
@@ -888,7 +893,7 @@ class Evaluationline extends CommonObject
 	{
 		$this->lines = array();
 
-		$objectline = new EvaluationLine($this->db);
+		$objectline = new Evaluationline($this->db);
 		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql'=>'fk_evaluationdet = '.$this->id));
 
 		if (is_numeric($result)) {

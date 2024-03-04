@@ -59,13 +59,14 @@ $signature = GETPOST('signaturebase64');
 $ref = GETPOST('ref', 'aZ09');
 $mode = GETPOST('mode', 'aZ09');	// 'proposal', ...
 $SECUREKEY = GETPOST("securekey"); // Secure key
+$online_sign_name = GETPOST("onlinesignname") ? GETPOST("onlinesignname") : '';
 
 $error = 0;
 $response = "";
 
 $type = $mode;
 
-// Check securitykey
+// Security check
 $securekeyseed = '';
 if ($type == 'proposal') {
 	$securekeyseed = getDolGlobalString('PROPOSAL_ONLINE_SIGNATURE_SECURITY_TOKEN');
@@ -103,6 +104,10 @@ if ($action == "importSignature") {
 
 			$upload_dir = !empty($conf->propal->multidir_output[$object->entity])?$conf->propal->multidir_output[$object->entity]:$conf->propal->dir_output;
 			$upload_dir .= '/'.dol_sanitizeFileName($object->ref).'/';
+
+			$default_font_size = pdf_getPDFFontSize($langs);	// Must be after pdf_getInstance
+			$default_font = pdf_getPDFFont($langs);	// Must be after pdf_getInstance
+			$langs->loadLangs(array("main", "companies"));
 
 			$date = dol_print_date(dol_now(), "%Y%m%d%H%M%S");
 			$filename = "signatures/".$date."_signature.png";
@@ -167,7 +172,14 @@ if ($action == "importSignature") {
 						$yforimgstart = (empty($s['h']) ? 240 : $s['h'] - 60);
 						$wforimg = $s['w'] - 20 - $xforimgstart;
 
+						$pdf->SetXY($xforimgstart, $yforimgstart + round($wforimg / 4) - 4);
+						$pdf->SetFont($default_font, '', $default_font_size - 1);
+						$pdf->MultiCell($wforimg, 4, $langs->trans("DateSigning").': '.dol_print_date(dol_now(), "daytext", false, $langs, true), 0, 'L');
+						$pdf->SetXY($xforimgstart, $yforimgstart + round($wforimg / 4));
+						$pdf->MultiCell($wforimg, 4, $langs->trans("Lastname").': '.$online_sign_name, 0, 'L');
+
 						$pdf->Image($upload_dir.$filename, $xforimgstart, $yforimgstart, $wforimg, round($wforimg / 4));
+
 						//$pdf->Close();
 						$pdf->Output($newpdffilename, "F");
 
@@ -187,7 +199,6 @@ if ($action == "importSignature") {
 				$db->begin();
 
 				$online_sign_ip = getUserRemoteIP();
-				$online_sign_name = '';		// TODO Ask name on form to sign
 
 				$sql  = "UPDATE ".MAIN_DB_PREFIX."propal";
 				$sql .= " SET fk_statut = ".((int) $object::STATUS_SIGNED).", note_private = '".$db->escape($object->note_private)."',";
@@ -330,6 +341,11 @@ if ($action == "importSignature") {
 			$object = new Fichinter($db);
 			$object->fetch(0, $ref);
 
+			$langs->loadLangs(array("main", "companies"));
+
+			$default_font_size = pdf_getPDFFontSize($langs);	// Must be after pdf_getInstance
+			$default_font = pdf_getPDFFont($langs);	// Must be
+
 			$upload_dir = !empty($conf->ficheinter->multidir_output[$object->entity])?$conf->ficheinter->multidir_output[$object->entity]:$conf->ficheinter->dir_output;
 			$upload_dir .= '/'.dol_sanitizeFileName($object->ref).'/';
 			$date = dol_print_date(dol_now(), "%Y%m%d%H%M%S");
@@ -389,10 +405,21 @@ if ($action == "importSignature") {
 						}
 
 						// A signature image file is 720 x 180 (ratio 1/4) but we use only the size into PDF
+
+
+
 						// TODO Get position of box from PDF template
 						$xforimgstart = 105;
 						$yforimgstart = (empty($s['h']) ? 250 : $s['h'] - 57);
 						$wforimg = $s['w']/1 - ($xforimgstart + 16);
+
+						$pdf->SetXY(111, 235 +25);
+						$pdf->SetFont($default_font, '', $default_font_size - 1);
+						$pdf->MultiCell($wforimg, 4, $langs->trans("DateSigning").': '.dol_print_date(dol_now(), "daytext", false, $langs, true), 0, 'L');
+						$pdf->SetXY(111, $pdf->GetY());
+						$pdf->MultiCell($wforimg, 4, $langs->trans("Lastname").': '.$online_sign_name, 0, 'L');
+
+
 						$pdf->Image($upload_dir.$filename, $xforimgstart, $yforimgstart, $wforimg, round($wforimg / 4));
 						//$pdf->Close();
 						$pdf->Output($newpdffilename, "F");

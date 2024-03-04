@@ -401,7 +401,7 @@ class Skill extends CommonObject
 	/**
 	 * Load object lines in memory from the database
 	 *
-	 * @return array         <0 if KO, array of skill level found
+	 * @return array|int         <0 if KO, array of skill level found
 	 */
 	public function fetchLines()
 	{
@@ -417,6 +417,7 @@ class Skill extends CommonObject
 			$this->error = $skilldet->error;
 			return $this->lines;
 		}
+		return [];
 	}
 
 
@@ -552,7 +553,7 @@ class Skill extends CommonObject
 	 */
 	public function validate($user, $notrigger = 0)
 	{
-		global $conf, $langs;
+		global $conf;
 
 		require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 
@@ -607,7 +608,7 @@ class Skill extends CommonObject
 
 			if (!$error && !$notrigger) {
 				// Call trigger
-				$result = $this->call_trigger('SKILL_VALIDATE', $user);
+				$result = $this->call_trigger('HRM_SKILL_VALIDATE', $user);
 				if ($result < 0) {
 					$error++;
 				}
@@ -623,6 +624,12 @@ class Skill extends CommonObject
 				// Now we rename also files into index
 				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'skill/".$this->db->escape($this->newref)."'";
 				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'skill/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+				$resql = $this->db->query($sql);
+				if (!$resql) {
+					$error++; $this->error = $this->db->lasterror();
+				}
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filepath = 'skill/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filepath = 'skill/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
 				$resql = $this->db->query($sql);
 				if (!$resql) {
 					$error++; $this->error = $this->db->lasterror();
@@ -886,6 +893,10 @@ class Skill extends CommonObject
 	 */
 	public function LibStatut($status, $mode = 0)
 	{
+		if (empty($status)) {
+			$status = 0;
+		}
+
 		// phpcs:enable
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
@@ -1112,5 +1123,40 @@ class Skill extends CommonObject
 			case 9 : $result = $langs->trans("TypeKnowledge"); break; //"Savoir"
 		}
 		return $result;
+	}
+
+	/**
+	 *	Return clicable link of object (with eventually picto)
+	 *
+	 *	@param      string	    $option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
+	 *  @param		array		$arraydata				Array of data
+	 *  @return		string								HTML Code for Kanban thumb.
+	 */
+	public function getKanbanView($option = '', $arraydata = null)
+	{
+		global $selected, $langs;
+
+		$selected = (empty($arraydata['selected']) ? 0 : $arraydata['selected']);
+
+		$return = '<div class="box-flex-item box-flex-grow-zero">';
+		$return .= '<div class="info-box info-box-sm">';
+		$return .= '<span class="info-box-icon bg-infobox-action">';
+		$return .= img_picto('', $this->picto);
+		$return .= '</span>';
+		$return .= '<div class="info-box-content">';
+		$return .= '<span class="info-box-ref inline-block tdoverflowmax150 valignmiddle">'.(method_exists($this, 'getNomUrl') ? $this->getNomUrl() : $this->ref).'</span>';
+		$return .= '<input id="cb'.$this->id.'" class="flat checkforselect fright" type="checkbox" name="toselect[]" value="'.$this->id.'"'.($selected ? ' checked="checked"' : '').'>';
+		if (property_exists($this, 'skill_type')) {
+			$return .= '<br><span class="opacitymedium">'.$langs->trans("Type").'</span>';
+			$return .= ' : <span class="info-box-label ">'.$this->fields['skill_type']['arrayofkeyval'][$this->skill_type].'</span>';
+		}
+		if (property_exists($this, 'description')) {
+			$return .= '<br><span class="info-box-label opacitymedium">'.$langs->trans("Description").'</span> : ';
+			$return .= '<br><span class="info-box-label ">'.(strlen($this->description) > 30 ? dol_substr($this->description, 0, 25).'...' : $this->description).'</span>';
+		}
+		$return .= '</div>';
+		$return .= '</div>';
+		$return .= '</div>';
+		return $return;
 	}
 }

@@ -1,6 +1,6 @@
 <?php
 /* Copyright (C) 2013-2014  Olivier Geffroy      <jeff@jeffinfo.com>
- * Copyright (C) 2013-2021  Alexandre Spangaro   <aspangaro@open-dsi.fr>
+ * Copyright (C) 2013-2024  Alexandre Spangaro   <aspangaro@easya.solutions>
  * Copyright (C) 2013-2021  Florian Henry        <florian.henry@open-concept.pro>
  * Copyright (C) 2014       Juanjo Menent        <jmenent@2byte.es>
  * Copyright (C) 2015       Ari Elbaz (elarifr)  <github@accedinfo.com>
@@ -169,7 +169,7 @@ class AccountingAccount extends CommonObject
 		global $conf;
 
 		$this->db = $db;
-		$this->next_prev_filter = "fk_pcg_version IN (SELECT pcg_version FROM ".MAIN_DB_PREFIX."accounting_system WHERE rowid = ".((int) $conf->global->CHARTOFACCOUNTS).")"; // Used to add a filter in Form::showrefnav method
+		$this->next_prev_filter = "fk_pcg_version IN (SELECT pcg_version FROM ".MAIN_DB_PREFIX."accounting_system WHERE rowid = ".((int) getDolGlobalInt('CHARTOFACCOUNTS')).")"; // Used to add a filter in Form::showrefnav method
 	}
 
 	/**
@@ -198,7 +198,7 @@ class AccountingAccount extends CommonObject
 				$sql .= " AND a.entity = ".$conf->entity;
 			}
 			if (!empty($limittocurrentchart)) {
-				$sql .= ' AND a.fk_pcg_version IN (SELECT pcg_version FROM '.MAIN_DB_PREFIX.'accounting_system WHERE rowid = '.((int) $conf->global->CHARTOFACCOUNTS).')';
+				$sql .= ' AND a.fk_pcg_version IN (SELECT pcg_version FROM '.MAIN_DB_PREFIX.'accounting_system WHERE rowid = '.((int) getDolGlobalInt('CHARTOFACCOUNTS')).')';
 			}
 			if (!empty($limittoachartaccount)) {
 				$sql .= " AND a.fk_pcg_version = '".$this->db->escape($limittoachartaccount)."'";
@@ -214,8 +214,10 @@ class AccountingAccount extends CommonObject
 					$this->id = $obj->rowid;
 					$this->rowid = $obj->rowid;
 					$this->ref = $obj->account_number;
-					$this->datec = $obj->datec;
-					$this->tms = $obj->tms;
+					$this->datec = $this->db->jdate($obj->datec);
+					$this->date_creation = $this->db->jdate($obj->datec);
+					$this->date_modification = $this->db->jdate($obj->tms);
+					//$this->tms = $this->datem;
 					$this->fk_pcg_version = $obj->fk_pcg_version;
 					$this->pcg_type = $obj->pcg_type;
 					$this->account_number = $obj->account_number;
@@ -399,6 +401,7 @@ class AccountingAccount extends CommonObject
 	{
 		global $langs;
 
+		// TODO Looks a stupid check
 		$sql = "(SELECT fk_code_ventilation FROM ".MAIN_DB_PREFIX."facturedet";
 		$sql .= " WHERE fk_code_ventilation=".((int) $this->id).")";
 		$sql .= "UNION";
@@ -587,7 +590,7 @@ class AccountingAccount extends CommonObject
 	 */
 	public function info($id)
 	{
-		$sql = 'SELECT a.rowid, a.datec, a.fk_user_author, a.fk_user_modif, a.tms';
+		$sql = 'SELECT a.rowid, a.datec, a.fk_user_author, a.fk_user_modif, a.tms as date_modification';
 		$sql .= ' FROM ' . MAIN_DB_PREFIX . 'accounting_account as a';
 		$sql .= ' WHERE a.rowid = ' . ((int) $id);
 
@@ -602,7 +605,7 @@ class AccountingAccount extends CommonObject
 				$this->user_creation_id = $obj->fk_user_author;
 				$this->user_modification_id = $obj->fk_user_modif;
 				$this->date_creation = $this->db->jdate($obj->datec);
-				$this->date_modification = $this->db->jdate($obj->tms);
+				$this->date_modification = $this->db->jdate($obj->date_modification);
 			}
 			$this->db->free($resql);
 		} else {
@@ -684,10 +687,10 @@ class AccountingAccount extends CommonObject
 	}
 
 	/**
-	 *  Retourne le libelle du statut d'un user (actif, inactif)
+	 *  Return the label of the status
 	 *
-	 * @param int $mode 0=libelle long, 1=libelle court, 2=Picto + Libelle court, 3=Picto, 4=Picto + Libelle long, 5=Libelle court + Picto
-	 * @return string              Label of status
+	 *  @param  int		$mode          0=long label, 1=short label, 2=Picto + short label, 3=Picto, 4=Picto + long label, 5=Short label + Picto, 6=Long label + Picto
+	 *  @return	string 			       Label of status
 	 */
 	public function getLibStatut($mode = 0)
 	{
@@ -696,11 +699,11 @@ class AccountingAccount extends CommonObject
 
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 	/**
-	 *  Renvoi le libelle d'un statut donne
+	 *  Return the label of a given status
 	 *
-	 * @param int $status Id status
-	 * @param int $mode 0=libelle long, 1=libelle court, 2=Picto + Libelle court, 3=Picto, 4=Picto + Libelle long, 5=Libelle court + Picto
-	 * @return string              Label of status
+	 *  @param	int		$status        Id status
+	 *  @param  int		$mode          0=long label, 1=short label, 2=Picto + short label, 3=Picto, 4=Picto + long label, 5=Short label + Picto, 6=Long label + Picto
+	 *  @return string 			       Label of status
 	 */
 	public function LibStatut($status, $mode = 0)
 	{
@@ -862,8 +865,12 @@ class AccountingAccount extends CommonObject
 
 			// Level 3 (define $code_t): Search suggested account for this thirdparty (similar code exists in page index.php to make automatic binding)
 			if (!empty($conf->global->ACCOUNTANCY_USE_PRODUCT_ACCOUNT_ON_THIRDPARTY)) {
-				if (!empty($buyer->code_compta_product)) {
+				if ($type == 'customer' && !empty($buyer->code_compta_product)) {
 					$code_t = $buyer->code_compta_product;
+					$suggestedid = $accountingAccount['thirdparty'];
+					$suggestedaccountingaccountfor = 'thirdparty';
+				} elseif ($type == 'supplier' && !empty($seller->code_compta_product)) {
+					$code_t = $seller->code_compta_product;
 					$suggestedid = $accountingAccount['thirdparty'];
 					$suggestedaccountingaccountfor = 'thirdparty';
 				}

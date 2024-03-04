@@ -64,7 +64,7 @@ if (!isModEnabled('accounting')) {
 if ($user->socid > 0) {
 	accessforbidden();
 }
-if (empty($user->rights->accounting->mouvements->lire)) {
+if (!$user->hasRight('accounting', 'mouvements', 'lire')) {
 	accessforbidden();
 }
 
@@ -414,7 +414,7 @@ if ($action == 'writebookkeeping' && !$error) {
 			$error++;
 			$errorforline++;
 			$errorforinvoice[$key] = 'amountsnotbalanced';
-			setEventMessages('Try to insert a non balanced transaction in book for '.$val["ref"].'. Canceled. Surely a bug.', null, 'errors');
+			setEventMessages('We tried to insert a non balanced transaction in book for '.$val["ref"].'. Canceled. Surely a bug.', null, 'errors');
 		}
 
 		if (!$errorforline) {
@@ -503,6 +503,7 @@ if ($action == 'exportcsv' && !$error) {		// ISO and not UTF8 !
 				print "\n";
 			}
 		}
+
 		// VAT
 		foreach ($tabtva[$key] as $k => $mt) {
 			if ($mt) {
@@ -752,7 +753,8 @@ if (empty($action) || $action == 'view') {
 	}
 
 	if (!$i) {
-		print '<tr class="oddeven"><td colspan="7"><span class="opacitymedium">'.$langs->trans("NoRecordFound").'</span></td></tr>';
+		$colspan = 7;
+		print '<tr class="oddeven"><td colspan="'.$colspan.'"><span class="opacitymedium">'.$langs->trans("NoRecordFound").'</span></td></tr>';
 	}
 
 	print "</table>";

@@ -157,7 +157,7 @@ if ($action == 'updateMask') {
 		setEventMessages($langs->trans("Error"), null, 'errors');
 	}
 } elseif ($action == "allowonlinesign") {
-	if (!dolibarr_set_const($db, "CONTRACT_ALLOW_ONLINESIGN", $value, 0, 'int', $conf->entity)) {
+	if (!dolibarr_set_const($db, "CONTRACT_ALLOW_ONLINESIGN", $value, 'int', 0, '', $conf->entity)) {
 		$error++;
 	}
 } elseif (preg_match('/set_(.*)/', $action, $reg)) {
@@ -410,7 +410,7 @@ foreach ($dirmodels as $reldir) {
 
 								// Defaut
 								print '<td class="center">';
-								if ($conf->global->CONTRACT_ADDON_PDF == $name) {
+								if (getDolGlobalString('CONTRACT_ADDON_PDF') == $name) {
 									print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=unsetdoc&token='.newToken().'&value='.urlencode($name).'&scan_dir='.urlencode($module->scandir).'&label='.urlencode($module->name).'&type=order_supplier" alt="'.$langs->trans("Disable").'">'.img_picto($langs->trans("Enabled"), 'on').'</a>';
 								} else {
 									print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?action=setdoc&token='.newToken().'&value='.urlencode($name).'&scan_dir='.urlencode($module->scandir).'&label='.urlencode($module->name).'" alt="'.$langs->trans("Default").'">'.img_picto($langs->trans("Disabled"), 'off').'</a>';

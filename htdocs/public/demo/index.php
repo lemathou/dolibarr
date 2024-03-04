@@ -134,7 +134,6 @@ $filename = array();
 $modules = array();
 $orders = array();
 $categ = array();
-$dirmod = array();
 $i = 0; // is a sequencer of modules found
 $j = 0; // j is module number. Automatically affected if module number not defined.
 
@@ -174,7 +173,6 @@ foreach ($modulesdir as $dir) {
 							$filename[$i] = $modName;
 							$orders[$i]  = $objMod->family."_".$j; // Tri par famille puis numero module
 							//print "x".$modName." ".$orders[$i]."\n<br>";
-							$dirmod[$i] = $dirroot;
 							$j++;
 							$i++;
 						}
@@ -434,7 +432,7 @@ print '<br>';
 
 // TODO Replace this with a hook
 // Google Adsense (need Google module)
-if (!empty($conf->google->enabled) && !empty($conf->global->MAIN_GOOGLE_AD_CLIENT) && !empty($conf->global->MAIN_GOOGLE_AD_SLOT)) {
+if (isModEnabled('google') && !empty($conf->global->MAIN_GOOGLE_AD_CLIENT) && !empty($conf->global->MAIN_GOOGLE_AD_SLOT)) {
 	if (empty($conf->dol_use_jmobile)) {
 		print '<div align="center">'."\n";
 		print '<script><!--'."\n";

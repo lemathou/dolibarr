@@ -150,7 +150,6 @@ $linkback = '<a href="'.DOL_URL_ROOT.'/admin/modules.php?restore_lastsearch_valu
 print load_fiche_titre($langs->trans("AgendaSetup"), $linkback, 'title_setup');
 
 
-
 $head = agenda_prepare_head();
 
 print dol_get_fiche_head($head, 'reminders', $langs->trans("Agenda"), -1, 'action');
@@ -234,6 +233,9 @@ if (!isModEnabled('cron')) {
 			} else {
 				print '<a href="'.$_SERVER['PHP_SELF'].'?action=del_AGENDA_REMINDER_EMAIL&token='.newToken().'">'.img_picto($langs->trans('Enabled'), 'switch_on').'</a>';
 			}
+		} else {
+			$langs->load("cron");
+			print '<span class="opacitymedium warning">'.$langs->trans("JobNotFound", $langs->transnoentitiesnoconv("sendEmailsReminder")).'</span>';
 		}
 	}
 }

@@ -122,6 +122,9 @@ class Login
 
 		include_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';
 		$login = checkLoginPassEntity($login, $password, $entity, $authmode, 'api');		// Check credentials.
+		if ($login === '--bad-login-validity--') {
+			$login = '';
+		}
 		if (empty($login)) {
 			throw new RestException(403, 'Access denied');
 		}
@@ -160,6 +163,10 @@ class Login
 			}
 		} else {
 			$token = $tmpuser->api_key;
+		}
+
+		if (!ascii_check($token)) {
+			throw new RestException(500, 'Error the token for this user has not an hexa format. Try first to reset it.');
 		}
 
 		//return token

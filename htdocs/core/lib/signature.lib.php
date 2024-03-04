@@ -103,7 +103,7 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		if ($mode == 1) {
 			$out .= "hash('".$securekeyseed."' + '".$type."' + proposal_ref)";
 		} else {
-			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? $obj->entity : ''), '0');
+			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : $obj->entity) : ''), '0');
 		}
 		/*
 		if ($mode == 1) {
@@ -142,7 +142,7 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		if ($mode == 1) {
 			$out .= "hash('".$securekeyseed."' + '".$type."' + contract_ref)";
 		} else {
-			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? $obj->entity : ''), '0');
+			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : (int) $obj->entity) : ''), '0');
 		}
 	} elseif ($type == 'fichinter') {
 		$securekeyseed = isset($conf->global->FICHINTER_ONLINE_SIGNATURE_SECURITY_TOKEN) ? $conf->global->FICHINTER_ONLINE_SIGNATURE_SECURITY_TOKEN : '';
@@ -157,13 +157,13 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		if ($mode == 1) {
 			$out .= "hash('".$securekeyseed."' + '".$type."' + fichinter_ref)";
 		} else {
-			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? $obj->entity : ''), '0');
+			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : (int) $obj->entity) : ''), '0');
 		}
 	}
 
 	// For multicompany
 	if (!empty($out) && isModEnabled('multicompany')) {
-		$out .= "&entity=".((int) $obj->entity); // Check the entity because we may have the same reference in several entities
+		$out .= "&entity=".(empty($obj->entity) ? '' : (int) $obj->entity); // Check the entity because we may have the same reference in several entities
 	}
 
 	return $out;

@@ -60,7 +60,12 @@ if ($action == 'setnote_public' && !empty($permissionnote) && !GETPOST('cancel',
 			$hidedesc = (GETPOST('hidedesc', 'int') ? GETPOST('hidedesc', 'int') : (!empty($conf->global->MAIN_GENERATE_DOCUMENTS_HIDE_DESC) ? 1 : 0));
 			$hideref = (GETPOST('hideref', 'int') ? GETPOST('hideref', 'int') : (!empty($conf->global->MAIN_GENERATE_DOCUMENTS_HIDE_REF) ? 1 : 0));
 
-			$result = $object->generateDocument($model, $outputlangs, $hidedetails, $hidedesc, $hideref);
+			//see #21072: Update a public note with a "document model not found" is not really a problem : the PDF is not created/updated
+			//but the note is saved, so just add a notification will be enought
+			$resultGenDoc = $object->generateDocument($model, $outputlangs, $hidedetails, $hidedesc, $hideref);
+			if ($resultGenDoc < 0) {
+				setEventMessages($object->error, $object->errors, 'warnings');
+			}
 
 			if ($result < 0) {
 				dol_print_error($db, $result);
@@ -76,7 +81,7 @@ if ($action == 'setnote_public' && !empty($permissionnote) && !GETPOST('cancel',
 		if (empty($object->id)) {
 			$object->fetch($id); // Fetch may not be already done
 		}
-		$result = $object->update_note(dol_html_entity_decode(GETPOST('note_private', 'restricthtml'), ENT_QUOTES | ENT_HTML5), '_private');
+		$result = $object->update_note(dol_html_entity_decode(GETPOST('note_private', 'restricthtml'), ENT_QUOTES | ENT_HTML5, 'UTF-8', 1), '_private');
 		if ($result < 0) {
 			setEventMessages($object->error, $object->errors, 'errors');
 		}
