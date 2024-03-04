@@ -72,7 +72,7 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x'
 	$search_all = "";
 	$search_ref = "";
 	$search_company = "";
-	$search_thirdparty  = "";
+	$search_thirdparty = "";
 	$search_name = "";
 	$search_amount = "";
 	$search_status = '';

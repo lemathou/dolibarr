@@ -318,20 +318,22 @@ if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST)) {
 		 }
 	}*/
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
-	$sqlforcount = preg_replace('/^SELECT[a-zA-Z0-9\._\s\(\),=<>\:\-\']+\sFROM/Ui', 'SELECT COUNT(*) as nbtotalofrecords FROM', $sql);
-	$resql = $db->query($sqlforcount);
+	$sqlforcount = preg_replace('/^'.preg_quote($sqlfields, '/').'/', 'SELECT COUNT(*) as nbtotalofrecords', $sql);
+	$sqlforcount = preg_replace('/GROUP BY .*$/', '', $sqlforcount);
 
-	if (!$resql) {
-		dol_print_error($db);
-	} else {
+	$resql = $db->query($sqlforcount);
+	if ($resql) {
 		$objforcount = $db->fetch_object($resql);
 		$nbtotalofrecords = $objforcount->nbtotalofrecords;
-		if (($page * $limit) > $nbtotalofrecords) {	// if total of record found is smaller than page * limit, goto and load page 0
-			$page = 0;
-			$offset = 0;
-		}
-		$db->free($resql);
+	} else {
+		dol_print_error($db);
 	}
+
+	if (($page * $limit) > $nbtotalofrecords) {	// if total of record found is smaller than page * limit, goto and load page 0
+		$page = 0;
+		$offset = 0;
+	}
+	$db->free($resql);
 }
 
 // Complete request and execute it with limit
