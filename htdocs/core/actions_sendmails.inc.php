@@ -279,7 +279,11 @@ if (($action == 'send' || $action == 'relance') && !GETPOST('addfile') && !GETPO
 			if ($fromtype === 'robot') {
 				$from = dol_string_nospecial($conf->global->MAIN_MAIL_EMAIL_FROM, ' ', array(",")).' <'.$conf->global->MAIN_MAIL_EMAIL_FROM.'>';
 			} elseif ($fromtype === 'user') {
-				$from = dol_string_nospecial($user->getFullName($langs), ' ', array(",")).' <'.$user->email.'>';
+				// MMI Hack : Email sender name
+				if (!empty($conf->mmicrm->enabled) && !empty($conf->global->MMICRM_USER_MAILFROM_NAME) && !empty($user->array_options['options_email_sender_name']))
+					$from = dol_string_nospecial($user->array_options['options_email_sender_name'], ' ', array(",")).' <'.$user->email.'>';
+				else
+					$from = dol_string_nospecial($user->getFullName($langs), ' ', array(",")).' <'.$user->email.'>';
 			} elseif ($fromtype === 'company') {
 				$from = dol_string_nospecial($conf->global->MAIN_INFO_SOCIETE_NOM, ' ', array(",")).' <'.$conf->global->MAIN_INFO_SOCIETE_MAIL.'>';
 			} elseif (preg_match('/user_aliases_(\d+)/', $fromtype, $reg)) {
