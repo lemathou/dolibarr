@@ -1794,7 +1794,6 @@ if (!empty($arrayfields['c.fk_statut']['checked'])) {
 		-3=>$langs->trans("StatusOrderValidatedShort").'+'.$langs->trans("StatusOrderSentShort").'+'.$langs->trans("StatusOrderDelivered"),
 		-2=>$langs->trans("StatusOrderValidatedShort").'+'.$langs->trans("StatusOrderSentShort"),
 		Commande::STATUS_CANCELED=>$langs->trans("StatusOrderCanceledShort")
->>>>>>> 18.0
 	);
 	print $form->selectarray('search_status', $liststatus, $search_status, -5, 0, 0, '', 0, 0, 0, '', 'search_status width100 onrightofpage', 1);
 	print '</td>';
