@@ -53,7 +53,7 @@
 [submodule "htdocs/custom/mmiproduct"]
 	path = htdocs/custom/mmiproduct
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproduct.git
-	branch = 18.0
+	branch = 19.0
 [submodule "htdocs/custom/mmiproductdluo"]
 	path = htdocs/custom/mmiproductdluo
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproductdluo.git
