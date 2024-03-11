@@ -265,11 +265,11 @@ function getOnlinePaymentUrl($mode, $type, $ref = '', $amount = 0, $freetag = 'y
 
 	if ($type == 'free') {
 		$out = $urltouse.'/public/payment/newpayment.php?amount='.($mode ? '<span style="color: #666666">' : '').$amount.($mode ? '</span>' : '').'&tag='.($mode ? '<span style="color: #666666">' : '').$freetag.($mode ? '</span>' : '');
-		if (!empty($conf->global->PAYMENT_SECURITY_TOKEN)) {
-			if (empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+		if (getDolGlobalString('PAYMENT_SECURITY_TOKEN')) {
+			if (!getDolGlobalString('PAYMENT_SECURITY_TOKEN_UNIQUE')) {
 				$out .= '&securekey='.urlencode($conf->global->PAYMENT_SECURITY_TOKEN);
 			} else {
-				$out .= '&securekey='.urlencode(dol_hash($conf->global->PAYMENT_SECURITY_TOKEN, 2));
+				$out .= '&securekey='.urlencode(dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN'), 2));
 			}
 		}
 		//if ($mode) $out.='&noidempotency=1';
@@ -306,16 +306,16 @@ function getOnlinePaymentUrl($mode, $type, $ref = '', $amount = 0, $freetag = 'y
 			$out .= urlencode($ref);
 		}
 		$out .= ($mode ? '</span>' : '');
-		if (!empty($conf->global->PAYMENT_SECURITY_TOKEN)) {
-			if (empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+		if (getDolGlobalString('PAYMENT_SECURITY_TOKEN')) {
+			if (!getDolGlobalString('PAYMENT_SECURITY_TOKEN_UNIQUE')) {
 				$out .= '&securekey='.urlencode($conf->global->PAYMENT_SECURITY_TOKEN);
 			} else {
 				$out .= '&securekey='.($mode ? '<span style="color: #666666">' : '');
 				if ($mode == 1) {
-					$out .= "hash('".$conf->global->PAYMENT_SECURITY_TOKEN."' + '".$type."' + order_ref)";
+					$out .= "hash('" . getDolGlobalString('PAYMENT_SECURITY_TOKEN')."' + '".$type."' + order_ref)";
 				}
 				if ($mode == 0) {
-					$out .= dol_hash($conf->global->PAYMENT_SECURITY_TOKEN.$type.$ref, 2);
+					$out .= dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN') . $type.$ref, 2);
 				}
 				$out .= ($mode ? '</span>' : '');
 			}
@@ -329,16 +329,16 @@ function getOnlinePaymentUrl($mode, $type, $ref = '', $amount = 0, $freetag = 'y
 			$out .= urlencode($ref);
 		}
 		$out .= ($mode ? '</span>' : '');
-		if (!empty($conf->global->PAYMENT_SECURITY_TOKEN)) {
-			if (empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+		if (getDolGlobalString('PAYMENT_SECURITY_TOKEN')) {
+			if (!getDolGlobalString('PAYMENT_SECURITY_TOKEN_UNIQUE')) {
 				$out .= '&securekey='.urlencode($conf->global->PAYMENT_SECURITY_TOKEN);
 			} else {
 				$out .= '&securekey='.($mode ? '<span style="color: #666666">' : '');
 				if ($mode == 1) {
-					$out .= "hash('".$conf->global->PAYMENT_SECURITY_TOKEN."' + '".$type."' + invoice_ref)";
+					$out .= "hash('" . getDolGlobalString('PAYMENT_SECURITY_TOKEN')."' + '".$type."' + invoice_ref)";
 				}
 				if ($mode == 0) {
-					$out .= dol_hash($conf->global->PAYMENT_SECURITY_TOKEN.$type.$ref, 2);
+					$out .= dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN') . $type.$ref, 2);
 				}
 				$out .= ($mode ? '</span>' : '');
 			}
@@ -352,16 +352,16 @@ function getOnlinePaymentUrl($mode, $type, $ref = '', $amount = 0, $freetag = 'y
 			$out .= urlencode($ref);
 		}
 		$out .= ($mode ? '</span>' : '');
-		if (!empty($conf->global->PAYMENT_SECURITY_TOKEN)) {
-			if (empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+		if (getDolGlobalString('PAYMENT_SECURITY_TOKEN')) {
+			if (!getDolGlobalString('PAYMENT_SECURITY_TOKEN_UNIQUE')) {
 				$out .= '&securekey='.urlencode($conf->global->PAYMENT_SECURITY_TOKEN);
 			} else {
 				$out .= '&securekey='.($mode ? '<span style="color: #666666">' : '');
 				if ($mode == 1) {
-					$out .= "hash('".$conf->global->PAYMENT_SECURITY_TOKEN."' + '".$type."' + contractline_ref)";
+					$out .= "hash('" . getDolGlobalString('PAYMENT_SECURITY_TOKEN')."' + '".$type."' + contractline_ref)";
 				}
 				if ($mode == 0) {
-					$out .= dol_hash($conf->global->PAYMENT_SECURITY_TOKEN.$type.$ref, 2);
+					$out .= dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN') . $type.$ref, 2);
 				}
 				$out .= ($mode ? '</span>' : '');
 			}
@@ -378,16 +378,16 @@ function getOnlinePaymentUrl($mode, $type, $ref = '', $amount = 0, $freetag = 'y
 			$out .= urlencode($ref);
 		}
 		$out .= ($mode ? '</span>' : '');
-		if (!empty($conf->global->PAYMENT_SECURITY_TOKEN)) {
-			if (empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+		if (getDolGlobalString('PAYMENT_SECURITY_TOKEN')) {
+			if (!getDolGlobalString('PAYMENT_SECURITY_TOKEN_UNIQUE')) {
 				$out .= '&securekey='.urlencode($conf->global->PAYMENT_SECURITY_TOKEN);
 			} else {
 				$out .= '&securekey='.($mode ? '<span style="color: #666666">' : '');
 				if ($mode == 1) {
-					$out .= "hash('".$conf->global->PAYMENT_SECURITY_TOKEN."' + '".$newtype."' + member_ref)";
+					$out .= "hash('" . getDolGlobalString('PAYMENT_SECURITY_TOKEN')."' + '".$newtype."' + member_ref)";
 				}
 				if ($mode == 0) {
-					$out .= dol_hash($conf->global->PAYMENT_SECURITY_TOKEN.$newtype.$ref, 2);
+					$out .= dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN') . $newtype.$ref, 2);
 				}
 				$out .= ($mode ? '</span>' : '');
 			}
@@ -401,16 +401,16 @@ function getOnlinePaymentUrl($mode, $type, $ref = '', $amount = 0, $freetag = 'y
 			$out .= urlencode($ref);
 		}
 		$out .= ($mode ? '</span>' : '');
-		if (!empty($conf->global->PAYMENT_SECURITY_TOKEN)) {
-			if (empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+		if (getDolGlobalString('PAYMENT_SECURITY_TOKEN')) {
+			if (!getDolGlobalString('PAYMENT_SECURITY_TOKEN_UNIQUE')) {
 				$out .= '&securekey='.urlencode($conf->global->PAYMENT_SECURITY_TOKEN);
 			} else {
 				$out .= '&securekey='.($mode ? '<span style="color: #666666">' : '');
 				if ($mode == 1) {
-					$out .= "hash('".$conf->global->PAYMENT_SECURITY_TOKEN."' + '".$type."' + donation_ref)";
+					$out .= "hash('" . getDolGlobalString('PAYMENT_SECURITY_TOKEN')."' + '".$type."' + donation_ref)";
 				}
 				if ($mode == 0) {
-					$out .= dol_hash($conf->global->PAYMENT_SECURITY_TOKEN.$type.$ref, 2);
+					$out .= dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN') . $type.$ref, 2);
 				}
 				$out .= ($mode ? '</span>' : '');
 			}
@@ -424,16 +424,16 @@ function getOnlinePaymentUrl($mode, $type, $ref = '', $amount = 0, $freetag = 'y
 			$out .= urlencode($ref);
 		}
 		$out .= ($mode ? '</span>' : '');
-		if (!empty($conf->global->PAYMENT_SECURITY_TOKEN)) {
-			if (empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+		if (getDolGlobalString('PAYMENT_SECURITY_TOKEN')) {
+			if (!getDolGlobalString('PAYMENT_SECURITY_TOKEN_UNIQUE')) {
 				$out .= '&securekey='.urlencode($conf->global->PAYMENT_SECURITY_TOKEN);
 			} else {
 				$out .= '&securekey='.($mode ? '<span style="color: #666666">' : '');
 				if ($mode == 1) {
-					$out .= "hash('".$conf->global->PAYMENT_SECURITY_TOKEN."' + '".$type."' + invoice_ref)";
+					$out .= "hash('" . getDolGlobalString('PAYMENT_SECURITY_TOKEN')."' + '".$type."' + invoice_ref)";
 				}
 				if ($mode == 0) {
-					$out .= dol_hash($conf->global->PAYMENT_SECURITY_TOKEN.$type.$ref, 2);
+					$out .= dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN') . $type.$ref, 2);
 				}
 				$out .= ($mode ? '</span>' : '');
 			}

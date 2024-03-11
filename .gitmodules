@@ -1,7 +1,7 @@
 [submodule "htdocs/custom/mmicommon"]
 	path = htdocs/custom/mmicommon
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicommon.git
-	branch = 16.0
+	branch = 19.0
 [submodule "htdocs/custom/mmicompta"]
 	path = htdocs/custom/mmicompta
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicompta.git
@@ -49,7 +49,7 @@
 [submodule "htdocs/custom/mmiprestasync"]
 	path = htdocs/custom/mmiprestasync
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiprestasync.git
-	branch = 16.0
+	branch = 19.0
 [submodule "htdocs/custom/mmiproduct"]
 	path = htdocs/custom/mmiproduct
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproduct.git
@@ -73,7 +73,7 @@
 [submodule "htdocs/custom/mmiworkflow"]
 	path = htdocs/custom/mmiworkflow
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiworkflow.git
-	branch = 16.0
+	branch = 19.0
 [submodule "htdocs/custom/mmishipping"]
 	path = htdocs/custom/mmishipping
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmishipping.git
