@@ -97,7 +97,7 @@
 [submodule "htdocs/custom/dropdownmenu"]
 	path = htdocs/custom/dropdownmenu
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-dropdownmenu.git
-	branch = 16.0-mmi
+	branch = 19.0-mmi
 [submodule "htdocs/custom/externalaccess"]
 	path = htdocs/custom/externalaccess
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-externalaccess.git
