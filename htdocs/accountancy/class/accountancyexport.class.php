@@ -868,19 +868,19 @@ class AccountancyExport
 				// Feature : Option to use Account account as label (in case of multiples customers with same accounts)
 				// Fix : remove accents using dol_string_unaccent()
 				if (!empty($conf->global->MMI_COMPTA_EXPORT_LABEL_AS_ACCOUNT))
-					$Tab['lib_compte'] = str_pad(self::trunc(dol_string_unaccent($line->subledger_account), 8), 30);
+					$tab['lib_compte'] = str_pad(self::trunc(dol_string_unaccent($line->subledger_account), 8), 30);
 				else
-					$Tab['lib_compte'] = str_pad(self::trunc(dol_string_unaccent($line->subledger_label), 30), 30);
+					$tab['lib_compte'] = str_pad(self::trunc(dol_string_unaccent($line->subledger_label), 30), 30);
 
 				if ($line->doc_type == 'customer_invoice') {
 					if (!empty($conf->global->MMI_COMPTA_EXPORT_LIBALPHA_USE_1STLETTER)) {
-						if (substr($Tab['num_compte'], 0, 7)=='0CLIENT')
-							$Tab['lib_alpha'] = strtoupper(str_pad('C'.substr($line->subledger_account, 7, 1), 7));
+						if (substr($tab['num_compte'], 0, 7)=='0CLIENT')
+							$tab['lib_alpha'] = strtoupper(str_pad('C'.substr($line->subledger_account, 7, 1), 7));
 						else
-							$Tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($line->subledger_label), 6), 7));
+							$tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($line->subledger_label), 6), 7));
 					}
 					else
-						$Tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($line->subledger_label), 6), 6));
+						$tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($line->subledger_label), 6), 6));
 					$tab['filler'] = str_repeat(' ', 52);
 					$tab['coll_compte'] = str_pad(self::trunc($conf->global->ACCOUNTING_ACCOUNT_CUSTOMER, 8), 8);
 				} elseif ($line->doc_type == 'supplier_invoice') {
@@ -1045,9 +1045,9 @@ class AccountancyExport
 			$tab['end_line'] = $end_line;
 
 			if ($exportFile) {
-				fwrite($exportFile, str_replace('…', '.', implode($Tab))); // MMI Fix : Quadra does not like …
+				fwrite($exportFile, str_replace('…', '.', implode($tab))); // MMI Fix : Quadra does not like …
 			} else {
-				print str_replace('…', '.', implode($Tab)); // MMI Fix : Quadra does not like …
+				print str_replace('…', '.', implode($tab)); // MMI Fix : Quadra does not like …
 			}
 		}
 
