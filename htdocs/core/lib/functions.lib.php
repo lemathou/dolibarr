@@ -12019,7 +12019,7 @@ function getElementProperties($element_type)
 		$classpath = 'opensurvey/class';
 		$module = 'opensurvey';
 		$subelement = 'opensurveysondage';
-	} elseif ($element_type == 'order_supplier') {
+	} elseif ($element_type == 'order_supplier' || $element_type == 'commande_fournisseur') {
 		$classpath = 'fourn/class';
 		$module = 'fournisseur';
 		$classfile = 'fournisseur.commande';
