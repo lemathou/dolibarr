@@ -470,8 +470,22 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 			$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->convToOutputCharset(dol_format_address($sourcecompany, $withCountry, "\n", $outputlangs))."\n";
 
 			if (!getDolGlobalString('MAIN_PDF_DISABLESOURCEDETAILS')) {
+				// MMI Hack : Conseiller
+				if (true || !empty($conf->global->MMIDOCUMENTS_PDF_COMMERCIAL)) {
+					//var_dump($sourcecompany, $targetcompany, $targetcontact, $usecontact);
+					global $user;
+					$commerciaux = $targetcompany->getSalesRepresentatives($user);
+					if(is_array($commerciaux))
+						$commercial = $commerciaux[0];
+					//var_dump($commercial);
+					if (!empty($commercial))
+						$stringaddress .= ($stringaddress ? "\n" : '').'Conseiller: '.$outputlangs->convToOutputCharset($commercial['firstname'].' '.$commercial['lastname']);
+				}
 				// Phone
-				if ($sourcecompany->phone) {
+				if (!empty($commercial) && !empty($commercial['office_phone'])) {
+					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("PhoneShort").": ".$outputlangs->convToOutputCharset($commercial['office_phone']);
+				}
+				elseif ($sourcecompany->phone) {
 					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("PhoneShort").": ".$outputlangs->convToOutputCharset($sourcecompany->phone);
 				}
 				// Fax
@@ -479,7 +493,10 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 					$stringaddress .= ($stringaddress ? ($sourcecompany->phone ? " - " : "\n") : '').$outputlangs->transnoentities("Fax").": ".$outputlangs->convToOutputCharset($sourcecompany->fax);
 				}
 				// EMail
-				if ($sourcecompany->email) {
+				if (!empty($commercial) && !empty($commercial['email'])) {
+					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("Email").": ".$outputlangs->convToOutputCharset($commercial['email']);
+				}
+				elseif ($sourcecompany->email) {
 					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("Email").": ".$outputlangs->convToOutputCharset($sourcecompany->email);
 				}
 				// Web
@@ -1490,7 +1507,8 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 	global $db, $conf, $langs;
 
 	$idprod = (!empty($object->lines[$i]->fk_product) ? $object->lines[$i]->fk_product : false);
-	$label = (!empty(trim(strip_tags($object->lines[$i]->label))) ? $object->lines[$i]->label : (!empty($object->lines[$i]->product_label) ? $object->lines[$i]->product_label : ''));
+	// MMI Hack : Trim & Strip tags to be sure
+	$label = (!empty(trim(strip_tags($object->lines[$i]->label))) ? '<b>'.$object->lines[$i]->label.'</b>' : (!empty($object->lines[$i]->product_label) ? '<b>'.$object->lines[$i]->product_label.'</b>' : ''));
 	$product_barcode = (!empty($object->lines[$i]->product_barcode) ? $object->lines[$i]->product_barcode : "");
 	$desc = (!empty($object->lines[$i]->desc) ? $object->lines[$i]->desc : (!empty($object->lines[$i]->description) ? $object->lines[$i]->description : ''));
 	$ref_supplier = (!empty($object->lines[$i]->ref_supplier) ? $object->lines[$i]->ref_supplier : (!empty($object->lines[$i]->ref_fourn) ? $object->lines[$i]->ref_fourn : '')); // TODO Not yet saved for supplier invoices, only supplier orders
