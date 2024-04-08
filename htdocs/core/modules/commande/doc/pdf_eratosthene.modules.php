@@ -1697,7 +1697,8 @@ class pdf_eratosthene extends ModelePDFCommandes
 					}
 
 					// Recipient name
-					if ($usecontact && getDolGlobalInt('MAIN_USE_COMPANY_NAME_OF_CONTACT')) {
+                                        if ($usecontact && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || getDolGlobalString('MAIN_USE_COMPANY_NAME_OF_CONTACT'))) {
+//                                        if ($usecontact && getDolGlobalInt('MAIN_USE_COMPANY_NAME_OF_CONTACT')) {
 						$thirdparty = $object->contact;
 						$thirdparty->fetch_thirdparty();
 					} else {
@@ -1714,6 +1715,7 @@ class pdf_eratosthene extends ModelePDFCommandes
 					if ($this->page_largeur < 210) {
 						$widthrecbox = 84; // To work with US executive format
 					}
+					$widthrecbox = 60; // Forcage
 					$posy = getDolGlobalInt('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
 					$posy += $top_shift;
 					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
@@ -1751,8 +1753,10 @@ class pdf_eratosthene extends ModelePDFCommandes
 					}
 
 					// Recipient name
-					if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+                                        if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+//					if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
 						$thirdparty = $object->contact;
+						$thirdparty->fetch_thirdparty();
 					} else {
 						$thirdparty = $object->thirdparty;
 					}
@@ -1772,10 +1776,10 @@ class pdf_eratosthene extends ModelePDFCommandes
 					$posy = !empty($conf->global->MAIN_PDF_USE_ISO_LOCATION) ? 40 : 42;
 					$posy += $top_shift;
 					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
+					$posx -= $widthrecbox + 5;
 					if (!empty($conf->global->MAIN_INVERT_SENDER_RECIPIENT)) {
 						$posx = $this->marge_gauche;
 					}
-					$posx -= $widthrecbox +5;
 
 					// Show recipient frame
 					$pdf->SetTextColor(0, 0, 0);

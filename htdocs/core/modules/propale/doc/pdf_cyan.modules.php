@@ -1820,7 +1820,7 @@ class pdf_cyan extends ModelePDFPropales
 					if ($this->page_largeur < 210) {
 						$widthrecbox = 84; // To work with US executive format
 					}
-					$widthrecbox = 60;
+					$widthrecbox = 60; // Forcage
 					$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
 					$posy += $top_shift;
 					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
@@ -1874,9 +1874,11 @@ class pdf_cyan extends ModelePDFPropales
 					if ($this->page_largeur < 210) {
 						$widthrecbox = 84; // To work with US executive format
 					}
+					$widthrecbox = 60; // Forcage
 					$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
 					$posy += $top_shift;
 					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
+					$posx -= $widthrecbox + 5;
 					if (getDolGlobalString('MAIN_INVERT_SENDER_RECIPIENT')) {
 						$posx = $this->marge_gauche;
 					}
