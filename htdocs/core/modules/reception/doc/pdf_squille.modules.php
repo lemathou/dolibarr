@@ -1000,7 +1000,40 @@ class pdf_squille extends ModelePdfReception
 				$carac_emetteur .= "\n";
 			}
 
-			$carac_emetteur .= pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty);
+			// MMI Hack adresse réception
+			// Entrepôt réception
+			//var_dump($object->array_options);
+			if (getDolGlobalInt('MMI_RECEPTION_SENDER_ADDRESS') && !empty($object->array_options['options_fk_entrepot'])) {
+				require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
+
+				$entrepot = new Entrepot($this->db);
+				$entrepot->fetch($object->array_options['options_fk_entrepot']);
+				
+				$nom_emetteur = $entrepot->label;
+				$carac_emetteur .= $entrepot->address."\r\n";
+				$carac_emetteur .= $entrepot->zip.' '.$entrepot->town."\r\n";
+				$carac_emetteur .= $entrepot->country;
+			}
+			// Adresse client réception (direct fournisseur)
+			elseif (getDolGlobalInt('MMI_RECEPTION_SENDER_ADDRESS') && !empty($object->array_options['options_fk_adresse'])) {
+				require_once DOL_DOCUMENT_ROOT.'/contact/class/contact.class.php';
+
+				$contact = new Contact($this->db);
+				$contact->fetch($object->array_options['options_fk_adresse']);
+
+				$nom_emetteur = $contact->lastname.' '.$contact->firstname;
+				$carac_emetteur .= $contact->address."\r\n";
+				$carac_emetteur .= $contact->zip.' '.$contact->town."\r\n";
+				$carac_emetteur .= $contact->country;
+			}
+			// 
+			else {
+				$nom_emetteur = $this->emetteur->name;
+				$carac_emetteur .= getDolGlobalString('MAIN_INFO_SOCIETE_ADDRESS');
+			}
+
+			// le thitrdparty n'a rien à faire ici, c'est plutôt le user !
+			//$carac_emetteur .= pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty);
 
 			// Show sender
 			$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
@@ -1078,7 +1111,7 @@ class pdf_squille extends ModelePdfReception
 			// Show sender name
 			$pdf->SetXY($posx + 2, $posy + 3);
 			$pdf->SetFont('', 'B', $default_font_size);
-			$pdf->MultiCell($widthrecbox, 2, $outputlangs->convToOutputCharset($this->emetteur->name), 0, 'L');
+			$pdf->MultiCell($widthrecbox, 2, $outputlangs->convToOutputCharset($nom_emetteur), 0, 'L');
 			$posy = $pdf->getY();
 
 			// Show sender information
