@@ -1009,7 +1009,7 @@ class pdf_squille extends ModelePdfReception
 				$entrepot = new Entrepot($this->db);
 				$entrepot->fetch($object->array_options['options_fk_entrepot']);
 				
-				$nom_emetteur = $entrepot->label;
+				$nom_emetteur = $entrepot->lieu;
 				$carac_emetteur .= $entrepot->address."\r\n";
 				$carac_emetteur .= $entrepot->zip.' '.$entrepot->town."\r\n";
 				$carac_emetteur .= $entrepot->country;
