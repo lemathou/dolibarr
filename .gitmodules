@@ -2,6 +2,10 @@
 	path = htdocs/custom/mmicommon
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicommon.git
 	branch = 19.0
+[submodule "htdocs/custom/mmiged"]
+	path = htdocs/custom/mmiged
+	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiged.git
+        branch = 19.0
 [submodule "htdocs/custom/mmicompta"]
 	path = htdocs/custom/mmicompta
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicompta.git
