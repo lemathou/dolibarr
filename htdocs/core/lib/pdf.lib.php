@@ -1508,7 +1508,7 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 
 	$idprod = (!empty($object->lines[$i]->fk_product) ? $object->lines[$i]->fk_product : false);
 	// MMI Hack : Trim & Strip tags to be sure
-	$label = (!empty(trim(strip_tags($object->lines[$i]->label))) ? '<b>'.$object->lines[$i]->label.'</b>' : (!empty($object->lines[$i]->product_label) ? '<b>'.$object->lines[$i]->product_label.'</b>' : ''));
+	$label = (!empty(trim(strip_tags($object->lines[$i]->label))) ? $object->lines[$i]->label : (!empty($object->lines[$i]->product_label) ? $object->lines[$i]->product_label : ''));
 	$product_barcode = (!empty($object->lines[$i]->product_barcode) ? $object->lines[$i]->product_barcode : "");
 	$desc = (!empty($object->lines[$i]->desc) ? $object->lines[$i]->desc : (!empty($object->lines[$i]->description) ? $object->lines[$i]->description : ''));
 	$ref_supplier = (!empty($object->lines[$i]->ref_supplier) ? $object->lines[$i]->ref_supplier : (!empty($object->lines[$i]->ref_fourn) ? $object->lines[$i]->ref_fourn : '')); // TODO Not yet saved for supplier invoices, only supplier orders
@@ -2480,11 +2480,12 @@ function pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails = 0)
 					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
 					$progress = ($object->lines[$i]->situation_percent - $prev_progress) / 100;
 				}
-				$result .= price($sign * ($total_ht / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs);
+				$result .= price($sign * ($total_ht / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs, 1, -1, 'MT');
 			} else {
-				$result .= price($sign * $total_ht, 0, $outputlangs);
+				$result .= price($sign * $total_ht, 0, $outputlangs, 1, -1, 'MT');
 			}
 		}
+		//var_dump($result); echo '<br />';
 	}
 	return $result;
 }

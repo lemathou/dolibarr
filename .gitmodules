@@ -65,7 +65,7 @@
 [submodule "htdocs/custom/mmiproject"]
 	path = htdocs/custom/mmiproject
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproject.git
-	branch = 18.0
+	branch = 19.0
 [submodule "htdocs/custom/mmistats"]
 	path = htdocs/custom/mmistats
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmistats.git
@@ -81,7 +81,7 @@
 [submodule "htdocs/custom/mmishipping"]
 	path = htdocs/custom/mmishipping
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmishipping.git
-	branch = 16.0
+	branch = 19.0
 [submodule "htdocs/custom/abricot"]
 	path = htdocs/custom/abricot
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-abricot.git
