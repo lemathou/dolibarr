@@ -843,14 +843,19 @@ class pdf_sponge extends ModelePDFFactures
 
 					// Total excl tax line (HT)
 					if ($this->getColumnStatus('totalexcltax')) {
+						$total_excl_tax = number_format(round(pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails), 2), 2, ',', ' ');
 						$total_excl_tax = pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails);
 						// MMI Hack : Hooks does not permit to retrieve infos
 						if ($this->situationinvoice && $conf->mmidocuments->enabled && $total_excl_tax != ' ' && $object->lines[$i]->situation_percent>0) {
 							if (!empty($conf->global->SITUATION_DISPLAY_DIFF_ON_PDF)) {
-								$total_excl_tax = $total_excl_tax.'<br />('.number_format(round(str_replace(',', '.', $qty)*str_replace([' ', ','], ['', '.'], $up_excl_tax)*str_replace(',', '.', $object->lines[$i]->situation_percent)/100, 2), 2, ',', ' ').')';
+								//var_dump($total_excl_tax); echo '<br />';
+								$total_excl_tax_float = (float)str_replace([' ', ','], ['', '.'], $total_excl_tax);
+								$situation_cuml = round(str_replace(',', '.', $qty)*str_replace([' ', ','], ['', '.'], $up_excl_tax)*str_replace(',', '.', $object->lines[$i]->situation_percent)/100, 2);
+								$total_excl_tax = $total_excl_tax.'<br />('.number_format($situation_cuml>=$total_excl_tax_float ?$situation_cuml :$total_excl_tax_float, 2, ',', ' ').')';
 							}
 							else {
 								$total_excl_tax = number_format(round($object->lines[$i]->total_ht, 2), 2, ',', ' ');
+								$total_excl_tax = pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails);
 							}
 						}
 						$this->printStdColumnContent($pdf, $curY, 'totalexcltax', $total_excl_tax);
