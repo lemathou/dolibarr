@@ -2493,7 +2493,11 @@ class Societe extends CommonObject
 
 		$sql = "SELECT DISTINCT u.rowid, u.login, u.lastname, u.firstname, u.office_phone, u.job, u.email, u.statut as status, u.entity, u.photo, u.gender";
 		$sql .= ", u.office_fax, u.user_mobile, u.personal_mobile";
+		if (isModEnabled('mmicrm') && getDolGlobalInt('MMICRM_USER_MAILFROM_NAME'))
+			$sql .= ", u2.email_sender_name";
 		$sql .= " FROM ".MAIN_DB_PREFIX."societe_commerciaux as sc, ".MAIN_DB_PREFIX."user as u";
+		if (isModEnabled('mmicrm') && getDolGlobalInt('MMICRM_USER_MAILFROM_NAME'))
+			$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user_extrafields u2 ON u2.fk_object=u.rowid';
 		if (isModEnabled('multicompany') && getDolGlobalString('MULTICOMPANY_TRANSVERSE_MODE')) {
 			$sql .= ", ".MAIN_DB_PREFIX."usergroup_user as ug";
 			$sql .= " WHERE ((ug.fk_user = sc.fk_user";
@@ -2534,6 +2538,8 @@ class Societe extends CommonObject
 					$reparray[$i]['login'] = $obj->login;
 					$reparray[$i]['photo'] = $obj->photo;
 					$reparray[$i]['gender'] = $obj->gender;
+					if (getDolGlobalInt('MMICRM_USER_MAILFROM_NAME'))
+						$reparray[$i]['email_sender_name'] = $obj->email_sender_name;
 				} else {
 					$reparray[] = $obj->rowid;
 				}
