@@ -411,7 +411,9 @@ if (!$error && $massaction == 'confirm_presend') {
 				$reg = array();
 				$fromtype = GETPOST('fromtype');
 				if ($fromtype === 'user') {
-					$from = dol_string_nospecial($user->getFullName($langs), ' ', array(",")).' <'.$user->email.'>';
+					// MMI Hack
+					$user_email_name = (!empty($user->array_options['options_email_sender_name'])) ?$user->array_options['options_email_sender_name'] :$user->getFullName($langs);
+					$from = dol_string_nospecial($user_email_name, ' ', array(",")).' <'.$user->email.'>';
 				} elseif ($fromtype === 'company') {
 					$from = getDolGlobalString('MAIN_INFO_SOCIETE_NOM') . ' <' . getDolGlobalString('MAIN_INFO_SOCIETE_MAIL').'>';
 				} elseif (preg_match('/user_aliases_(\d+)/', $fromtype, $reg)) {
