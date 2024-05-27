@@ -751,8 +751,9 @@ if ($action == "dosign" && empty($cancel)) {
 				print '<span class="warning">'.$langs->trans("PropalAlreadyRefused").'</span>';
 			}
 		} else {
-			print '<input type="submit" class="butAction small wraponsmartphone marginbottomonly marginleftonly marginrightonly reposition" value="'.$langs->trans("SignPropal").'">';
-			print '<input name="refusepropal" type="submit" class="butActionDelete small wraponsmartphone marginbottomonly marginleftonly marginrightonly reposition" value="'.$langs->trans("RefusePropal").'">';
+			if (empty(getDolGlobalInt('MMICRM_PROPAL_HIDE_SIGN')))
+				print '<input type="submit" class="butAction small wraponsmartphone marginbottomonly marginleftonly marginrightonly reposition" value="'.$langs->trans("SignPropal").'">';
+			print '<input name="refusepropal" type="submit" class="'.(empty(getDolGlobalInt('MMICRM_PROPAL_HIDE_SIGN')) ?'butActionDelete' :'butAction').' small wraponsmartphone marginbottomonly marginleftonly marginrightonly reposition" value="'.$langs->trans("RefusePropal").'">';
 		}
 	} elseif ($source == 'contract') {
 		if ($message == 'signed') {
