@@ -339,7 +339,8 @@ class pdf_sponge extends ModelePDFFactures
 				$pdf->SetAutoPageBreak(1, 0);
 
 				// MMI Fix infotot height if multiple situations
-				$this->heightforinfotot = 50 + (4 * $nbpayments) + (4 * count($TPreviousIncoice2)); // Height reserved to output the info and total part and payment part
+				$this->heightforinfotot = 50 + (4 * $nbpayments) + ($object->situation_counter ?2*4
+				 :0) + (4 * count($TPreviousIncoice2)); // Height reserved to output the info and total part and payment part
 				$this->heightforfreetext = (isset($conf->global->MAIN_PDF_FREETEXT_HEIGHT) ? $conf->global->MAIN_PDF_FREETEXT_HEIGHT : 5); // Height reserved to output the free text on last page
 				$this->heightforfooter = $this->marge_basse + (!getDolGlobalString('MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS') ? 12 : 22); // Height reserved to output the footer (value include bottom margin)
 
@@ -1552,6 +1553,14 @@ class pdf_sponge extends ModelePDFFactures
 			}
 		}
 
+		// MMI Hack : Marché total depuis commande
+		/** @var Commande $commande */
+		$commande = NULL;
+		if (!empty($object->linkedObjects['commande'])) foreach($object->linkedObjects['commande'] as $commande) {
+			$total_a_payer_real = $commande->total_ht;
+			break;
+		}
+
 		if (!empty($i)) {
 			$avancementGlobal = $percent / $i;
 		} else {
@@ -1565,15 +1574,34 @@ class pdf_sponge extends ModelePDFFactures
 			$TPreviousIncoice2[$fac->situation_counter] = $fac;
 		}
 
+		// MMI Hack : Acomptes
+		$total_acomptes = 0;
 		$total_a_payer = 0;
 		$total_a_payer_ttc = 0;
+		$total_a_payer2 = 0;
 		foreach ($TPreviousIncoice2 as &$fac) {
 			$total_a_payer += $fac->total_ht;
 			$total_a_payer_ttc += $fac->total_ttc;
+			$total_a_payer2 += $fac->total_ht;
+			foreach($fac->lines as $line) {
+				if ($line->fk_remise_except) {
+					$total_acomptes -= $line->total_ht;
+					$total_a_payer -= $line->total_ht;
+				}
+			}
 		}
 		$total_a_payer += $object->total_ht;
 		$total_a_payer_ttc += $object->total_ttc;
+		foreach($object->lines as $line) {
+			if ($line->fk_remise_except) {
+				$total_acomptes -= $line->total_ht;
+				$total_a_payer -= $line->total_ht;
+			}
+		}
 
+		/*
+		  @todo : check total à payer
+		*/
 		$avancementGlobalReal = round(100*$total_a_payer/$total_a_payer_real);
 
 		if (!empty($avancementGlobal)) {
@@ -1645,7 +1673,26 @@ class pdf_sponge extends ModelePDFFactures
 			$pdf->MultiCell($largcol2, $tab2_hl, $displayAmount, 0, 'R', 1);
 
 			$posy += $tab2_hl;
+		}
 
+		// MMI Hack : Display order total
+		if (true) {
+			if (!empty($total_acomptes)) {
+				$pdf->SetFillColor(255, 255, 255);
+				$pdf->SetXY($col1x, $posy);
+				// @todo use $outputlangs->transnoentities("PDFSituationOrder")
+				$pdf->MultiCell($col2x - $col1x, $tab2_hl, 'Acomptes versés '.$outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
+
+				$pdf->SetXY($col2x, $posy);
+				$displayAmount = '+ '.price($total_acomptes, 0, $outputlangs);
+				$pdf->MultiCell($largcol2, $tab2_hl, $displayAmount, 0, 'R', 1);
+
+				$posy += $tab2_hl;
+			}
+		}
+
+		// MMI Hack : Want to show it
+		if (true) {
 			// Display all total
 			$pdf->SetFont('', '', $default_font_size - 1);
 			$pdf->SetFillColor(255, 255, 255);
@@ -1654,28 +1701,45 @@ class pdf_sponge extends ModelePDFFactures
 
 			$pdf->SetXY($col2x, $posy);
 			$pdf->MultiCell($largcol2, $tab2_hl, price($total_a_payer * $avancementGlobal / 100, 0, $outputlangs), 0, 'R', 1);
-			$pdf->SetFont('', '', $default_font_size - 2);
 
 			$posy += $tab2_hl;
-
-			if ($posy > $this->page_hauteur - 4 - $this->heightforfooter) {
-				$pdf->addPage();
-				if (!getDolGlobalInt('MAIN_PDF_DONOTREPEAT_HEAD')) {
-					$this->_pagehead($pdf, $object, 0, $outputlangs, $outputlangsbis);
-					$pdf->setY($this->tab_top_newpage);
-				} else {
-					$pdf->setY($this->marge_haute);
-				}
-
-				$posy = $pdf->GetY();
-			}
-
-			$tab2_top = $posy;
-			$index = 0;
-
-			$tab2_top += 3;
 		}
 
+		// MMI Hack : Display order total
+		if (true) {
+			if (!empty($commande)) {
+				$pdf->SetFillColor(255, 255, 255);
+				$pdf->SetXY($col1x, $posy);
+				// @todo use $outputlangs->transnoentities("PDFSituationOrder")
+				$pdf->MultiCell($col2x - $col1x, $tab2_hl, 'Marché '.$outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
+
+				$pdf->SetXY($col2x, $posy);
+				$displayAmount = ' '.price($commande->total_ht, 0, $outputlangs);
+				$pdf->MultiCell($largcol2, $tab2_hl, $displayAmount, 0, 'R', 1);
+
+				$posy += $tab2_hl;
+			}
+		}
+
+		//var_dump($posy, $this->page_hauteur, $this->heightforfooter, $this->page_hauteur - 5 - $this->heightforfooter);
+		if ($posy > $this->page_hauteur - 5 - $this->heightforfooter) {
+			$pdf->addPage();
+			if (!getDolGlobalInt('MAIN_PDF_DONOTREPEAT_HEAD')) {
+				$this->_pagehead($pdf, $object, 0, $outputlangs, $outputlangsbis);
+				$pdf->setY($this->tab_top_newpage);
+			} else {
+				$pdf->setY($this->marge_haute);
+			}
+
+			$posy = $pdf->GetY();
+		}
+
+		$tab2_top = $posy;
+		$index = 0;
+
+		$tab2_top += 3;
+		
+		$pdf->SetFont('', '', $default_font_size - 2);
 
 		// Get Total HT
 		$total_ht = (isModEnabled("multicurrency") && $object->multicurrency_tx != 1 ? $object->multicurrency_total_ht : $object->total_ht);
