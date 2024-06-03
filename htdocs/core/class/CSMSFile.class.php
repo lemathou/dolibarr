@@ -266,10 +266,8 @@ class CSMSFile
 
 	// Added by MMI Mathieu Moulin iProspective
 	function tel_international($value, $prefix='') {
-		if (empty($prefix)) {
-			global $conf;
-			$prefix = $conf->global->MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT;
-		}
+		if (empty($prefix))
+			$prefix = getDolGlobalString('MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT');
 		$value = str_replace([' ', '.', '-'], ['', '', ''], $value);
 		if (substr($value, 0, 2)=='00')
 			$value = '+'.substr($value, 2);
