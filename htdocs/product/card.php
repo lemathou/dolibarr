@@ -1235,7 +1235,19 @@ if (empty($reshook)) {
 	}
 }
 
-
+// @todo true => const cache
+if (true && $object->id) {
+	$ocache_ok = true;
+	$ocache_name = 'p_'.$object->id;
+	// @todo cache test
+	if (empty(GETPOST('clearcache')) && ($ocache = apcu_fetch($ocache_name)) && ocache_test($object, $ocache)) {
+		echo $ocache;
+		echo "<hr />cache loaded";
+		addDebugBar();
+		die();
+	}
+	ob_start();
+}
 
 /*
  * View
@@ -3096,3 +3108,18 @@ if ($action != 'create' && $action != 'edit' && $action != 'delete') {
 // End of page
 llxFooter();
 $db->close();
+
+if (!empty($ocache_ok)) {
+	$ocache = ob_get_contents();
+	ob_end_clean();
+	echo $ocache;
+	apcu_store($ocache_name, '<!-- '.time().' -->'.$ocache);
+	echo '<hr />Cache stored';
+}
+addDebugBar();
+
+function ocache_test($object, $data)
+{
+	
+	return true;
+}
