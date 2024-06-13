@@ -174,4 +174,7 @@
         path = htdocs/custom/mmiredmine
         url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiredmine.git
         branch = 19.0
-
+[submodule "htdocs/custom/mmisav"]
+        path = htdocs/custom/mmisav
+        url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmisav.git
+        branch = 19.0

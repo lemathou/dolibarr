@@ -1676,7 +1676,7 @@ class pdf_sponge extends ModelePDFFactures
 		}
 
 		// MMI Hack : Display order total
-		if (true) {
+		if ($object->situation_counter) {
 			if (!empty($total_acomptes)) {
 				$pdf->SetFillColor(255, 255, 255);
 				$pdf->SetXY($col1x, $posy);
@@ -1692,7 +1692,7 @@ class pdf_sponge extends ModelePDFFactures
 		}
 
 		// MMI Hack : Want to show it
-		if (true) {
+		if ($object->situation_counter) {
 			// Display all total
 			$pdf->SetFont('', '', $default_font_size - 1);
 			$pdf->SetFillColor(255, 255, 255);
@@ -1706,7 +1706,7 @@ class pdf_sponge extends ModelePDFFactures
 		}
 
 		// MMI Hack : Display order total
-		if (true) {
+		if ($object->situation_counter) {
 			if (!empty($commande)) {
 				$pdf->SetFillColor(255, 255, 255);
 				$pdf->SetXY($col1x, $posy);
