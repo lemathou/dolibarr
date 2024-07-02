@@ -100,6 +100,7 @@ $search_zip = GETPOST('search_zip', 'alpha');
 $search_state = GETPOST("search_state");
 $search_country = GETPOST("search_country", 'int');
 $search_email = GETPOST('search_email', 'alpha');
+$search_phone = GETPOST('search_phone', 'alpha');
 $search_type_thirdparty = GETPOST("search_type_thirdparty", 'int');
 $search_date_startday = GETPOST('search_date_startday', 'int');
 $search_date_startmonth = GETPOST('search_date_startmonth', 'int');
@@ -220,6 +221,7 @@ $arrayfields = array(
 	'state.nom'=>array('label'=>"StateShort", 'checked'=>0),
 	'country.code_iso'=>array('label'=>"Country", 'checked'=>0),
 	's.email'=>array('label'=>"Email", 'checked'=>0),
+	's.phone'=>array('label'=>"Phone", 'checked'=>0),
 	'typent.code'=>array('label'=>"ThirdPartyType", 'checked'=>$checkedtypetiers),
 	'p.date'=>array('label'=>"DatePropal", 'checked'=>1),
 	'p.fin_validite'=>array('label'=>"DateEnd", 'checked'=>1),
@@ -351,6 +353,7 @@ if (empty($reshook)) {
 		$search_type = '';
 		$search_country = '';
 		$search_email = '';
+		$search_phone = '';
 		$search_type_thirdparty = '';
 		$search_date_startday = '';
 		$search_date_startmonth = '';
@@ -644,6 +647,9 @@ if ($search_country) {
 }
 if ($search_email) {
 	$sql .= natural_search("s.email", $search_email);
+}
+if ($search_phone) {
+	$sql .= natural_search("s.phone", $search_phone);
 }
 if ($search_type_thirdparty != '' && $search_type_thirdparty > 0) {
 	$sql .= " AND s.fk_typent IN (".$db->sanitize($db->escape($search_type_thirdparty)).')';
@@ -1057,6 +1063,9 @@ if ($search_country) {
 if ($search_email) {
 	$param .= '&search_email='.urlencode($search_email);
 }
+if ($search_phone) {
+	$param .= '&search_phone='.urlencode($search_phone);
+}
 if ($search_date_signature_startday) {
 	$param .= '&search_date_signature_startday='.urlencode($search_date_signature_startday);
 }
@@ -1282,6 +1291,10 @@ if ($search_date_signature_endyear) {
 	// Email
 	if (!empty($arrayfields['s.email']['checked'])) {
 		print '<td class="liste_titre"><input class="flat maxwidth50" type="text" name="search_email" value="'.$search_email.'"></td>';
+	}
+	// Phone
+	if (!empty($arrayfields['s.phone']['checked'])) {
+		print '<td class="liste_titre"><input class="flat maxwidth50" type="text" name="search_phone" value="'.$search_phone.'"></td>';
 	}
 	// Company type
 	if (!empty($arrayfields['typent.code']['checked'])) {
@@ -1563,6 +1576,9 @@ if ($search_date_signature_endyear) {
 	if (!empty($arrayfields['s.email']['checked'])) {
 		print_liste_field_titre($arrayfields['s.email']['label'], $_SERVER["PHP_SELF"], 's.email', '', $param, '', $sortfield, $sortorder);
 	}
+	if (!empty($arrayfields['s.phone']['checked'])) {
+		print_liste_field_titre($arrayfields['s.phone']['label'], $_SERVER["PHP_SELF"], 's.phone', '', $param, '', $sortfield, $sortorder);
+	}
 	if (!empty($arrayfields['typent.code']['checked'])) {
 		print_liste_field_titre($arrayfields['typent.code']['label'], $_SERVER["PHP_SELF"], "typent.code", "", $param, 'class="center"', $sortfield, $sortorder);
 		$totalarray['nbfield']++;
@@ -1768,7 +1784,6 @@ if ($search_date_signature_endyear) {
 		$companystatic->zip = $obj->zip;
 		$companystatic->town = $obj->town;
 		$companystatic->country_code = $obj->country_code;
-		$companystatic->email = $obj->email;
 
 		$projectstatic->id = $obj->project_id;
 		$projectstatic->ref = $obj->project_ref;
@@ -1962,6 +1977,15 @@ if ($search_date_signature_endyear) {
 			if (!empty($arrayfields['s.email']['checked'])) {
 				print '<td class="nocellnopadd">';
 				print $obj->email;
+				print '</td>';
+				if (!$i) {
+					$totalarray['nbfield']++;
+				}
+			}
+			// Phone (MMI Hack)
+			if (!empty($arrayfields['s.phone']['checked'])) {
+				print '<td class="nocellnopadd">';
+				print $obj->phone;
 				print '</td>';
 				if (!$i) {
 					$totalarray['nbfield']++;
