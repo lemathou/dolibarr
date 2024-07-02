@@ -780,9 +780,9 @@ if ($id > 0 || !empty($ref)) {
 					}
 
 					if ($objp->fk_product > 0 && ($type == Product::TYPE_PRODUCT || getDolGlobalString('STOCK_SUPPORTS_SERVICES')) && isModEnabled('stock')) {
-						print '<td class="center">';
+						print '<td class="center"'.(getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ENHANCED') && $product->stock_reel < $toBeShipped[$objp->fk_product] && $toBeShipped[$objp->fk_product]>0 ?' style="background-color: #f88;"' :'').'>';
 						print $product->stock_reel;
-						if ($product->stock_reel < $toBeShipped[$objp->fk_product]) {
+						if ($product->stock_reel < $toBeShipped[$objp->fk_product] && (!getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ONLY_NEEDED') || $toBeShipped[$objp->fk_product]>0)) {
 							print ' '.img_warning($langs->trans("StockTooLow"));
 							if (getDolGlobalString('STOCK_CORRECT_STOCK_IN_SHIPMENT')) {
 								$nbPiece = $toBeShipped[$objp->fk_product] - $product->stock_reel;

@@ -1323,7 +1323,7 @@ if ($action == 'create') {
 									$deliverableQty = GETPOST('qtyl'.$indiceAsked, 'int');
 								}
 								print '<input name="idl'.$indiceAsked.'" type="hidden" value="'.$line->id.'">';
-								print '<input name="qtyl'.$indiceAsked.'" id="qtyl'.$indiceAsked.'" class="qtyl right" type="text" size="4" value="'.$deliverableQty.'">';
+								print '<input name="qtyl'.$indiceAsked.'" id="qtyl'.$indiceAsked.'" class="qtyl right"'.(getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ENHANCED') && $quantityToBeDelivered>0 ?($stock < $quantityToBeDelivered ?' style="background-color: #f88;"' :' style="background-color: #8f8;"') :'').' type="text" size="4" value="'.$deliverableQty.'">';
 							} else {
 								if (getDolGlobalString('SHIPMENT_GETS_ALL_ORDER_PRODUCTS')) {
 									print '<input name="idl'.$indiceAsked.'" type="hidden" value="'.$line->id.'">';
@@ -1353,7 +1353,7 @@ if ($action == 'create') {
 
 										if ($tmpentrepot_id > 0 && $tmpentrepot_id == $warehouse_id) {
 											//print $stock.' '.$quantityToBeDelivered;
-											if ($stock < $quantityToBeDelivered) {
+											if ($stock < $quantityToBeDelivered && (!getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ONLY_NEEDED') || $quantityToBeDelivered>0)) {
 												print ' '.img_warning($langs->trans("StockTooLow")); // Stock too low for this $warehouse_id but you can change warehouse
 											}
 										}
