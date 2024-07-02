@@ -613,7 +613,7 @@ class MouvementStock extends CommonObject
 				}
 			}
 
-			if (empty($donotcleanemptylines) && empty($conf->global->STOCK_KEEP_EMPTY_IN_DB)) {
+			if (empty($donotcleanemptylines) && ! getDolGlobalInt('STOCK_KEEP_EMPTY_IN_DB')) {
 				// If stock is now 0, we can remove entry into llx_product_stock, but only if there is no child lines into llx_product_batch (detail of batch, because we can imagine
 				// having a lot1/qty=X and lot2/qty=-X, so 0 but we must not loose repartition of different lot.
 				// Added by MMI Mathieu Moulin iProspective
