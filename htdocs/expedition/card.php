@@ -1420,7 +1420,7 @@ if ($action == 'create') {
 									$deliverableQty = min($quantityToBeDelivered, $batchStock);
 									print '<!-- subj='.$subj.'/'.$nbofsuggested.' --><tr '.((($subj + 1) == $nbofsuggested) ? 'oddeven' : '').'>';
 									print '<td colspan="3" ></td><td class="center">';
-									print '<input class="qtyl right" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'"'.(getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ENHANCED') && $quantityToBeDelivered>0 ?($stock < $quantityToBeDelivered ?' style="background-color: #f88;"' :' style="background-color: #8f8;"') :'').' type="text" size="4" value="'.$deliverableQty.'">';
+									print '<input class="qtyl right" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'"'.(getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ENHANCED') && $quantityToBeDelivered>0 ?($batchStock < $quantityToBeDelivered ?' style="background-color: #f88;"' :' style="background-color: #8f8;"') :'').' type="text" size="4" value="'.$deliverableQty.'">';
 									print '</td>';
 
 									print '<!-- Show details of lot -->';
@@ -1456,7 +1456,7 @@ if ($action == 'create') {
 							} else {
 								print '<!-- Case there is no details of lot at all -->';
 								print '<tr class="oddeven"><td colspan="3"></td><td class="center">';
-								print '<input class="qtyl right" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'"'.(getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ENHANCED') && $quantityToBeDelivered>0 ?($stock < $quantityToBeDelivered ?' style="background-color: #f88;"' :' style="background-color: #8f8;"') :'').' type="text" size="4" value="0" disabled="disabled"> ';
+								print '<input class="qtyl right" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'"'.(getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ENHANCED') && $quantityToBeDelivered>0 ?' style="background-color: #f88;"' :'').' type="text" size="4" value="0" disabled="disabled"> ';
 								print '</td>';
 
 								print '<td class="left">';
