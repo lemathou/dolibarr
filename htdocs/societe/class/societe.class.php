@@ -4170,12 +4170,16 @@ class Societe extends CommonObject
 			$isacompany = 1;
 		} elseif (!empty($this->idprof1) || !empty($this->idprof2) || !empty($this->idprof3) || !empty($this->idprof4) || !empty($this->idprof5) || !empty($this->idprof6)) {
 			$isacompany = 1;
-		} elseif (!empty($this->typent_code) && $this->typent_code != 'TE_UNKNOWN') {
-			// TODO Add a field is_a_company into dictionary
-			if (preg_match('/^TE_PRIVATE/', $this->typent_code)) {
-				$isacompany = 0;
+		} else {
+			if (getDolGlobalString('DEFINE_CUSTOMERS_ARE_COMPANIES_BY_TYPE_COMPANY')) {
+				// TODO Add a field is_a_company into dictionary
+				if (preg_match('/^TE_PRIVATE/', $this->typent_code)) {
+					$isacompany = 0;
+				} else {
+					$isacompany = 1;
+				}
 			} else {
-				$isacompany = 1;
+				$isacompany = 0;
 			}
 		}
 
@@ -5441,7 +5445,7 @@ class Societe extends CommonObject
 	 */
 	public function mergeCompany($soc_origin_id)
 	{
-		global $langs, $hookmanager, $user, $action;
+		global $conf, $langs, $hookmanager, $user, $action;
 
 		$error = 0;
 		$soc_origin = new Societe($this->db);		// The thirdparty that we will delete
@@ -5601,6 +5605,25 @@ class Societe extends CommonObject
 				}
 				// End call triggers
 			}
+
+			if (!$error) {
+				// Move files from the dir of the third party to delete into the dir of the third party to keep
+				if (!empty($conf->societe->multidir_output[$this->entity])) {
+					$srcdir = $conf->societe->multidir_output[$this->entity]."/".$soc_origin->id;
+					$destdir = $conf->societe->multidir_output[$this->entity]."/".$this->id;
+
+					if (dol_is_dir($srcdir)) {
+						$dirlist = dol_dir_list($srcdir, 'files', 1);
+						foreach ($dirlist as $filetomove) {
+							$destfile = $destdir.'/'.$filetomove['relativename'];
+							//var_dump('Move file '.$filetomove['relativename'].' into '.$destfile);
+							dol_move($filetomove['fullname'], $destfile, '0', 0, 0, 1);
+						}
+						//exit;
+					}
+				}
+			}
+
 
 			if (!$error) {
 				// We finally remove the old thirdparty

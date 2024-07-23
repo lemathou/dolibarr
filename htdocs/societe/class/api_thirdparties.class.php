@@ -1,9 +1,10 @@
 <?php
-/* Copyright (C) 2015   Jean-François Ferry     <jfefe@aternatik.fr>
- * Copyright (C) 2018   Pierre Chéné            <pierre.chene44@gmail.com>
- * Copyright (C) 2019   Cedric Ancelin          <icedo.anc@gmail.com>
- * Copyright (C) 2020-2021  Frédéric France     <frederic.france@netlogic.fr>
- * Copyright (C) 2023       Alexandre Janniaux  <alexandre.janniaux@gmail.com>
+/* Copyright (C) 2015   	Jean-François Ferry     <jfefe@aternatik.fr>
+ * Copyright (C) 2018   	Pierre Chéné            <pierre.chene44@gmail.com>
+ * Copyright (C) 2019   	Cedric Ancelin          <icedo.anc@gmail.com>
+ * Copyright (C) 2020-2024  Frédéric France     	<frederic.france@free.fr>
+ * Copyright (C) 2023       Alexandre Janniaux  	<alexandre.janniaux@gmail.com>
+ * Copyright (C) 2024		MDW						<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +49,7 @@ class Thirdparties extends DolibarrApi
 	 */
 	public function __construct()
 	{
-		global $db, $conf;
+		global $db;
 		$this->db = $db;
 
 		require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
@@ -269,7 +270,7 @@ class Thirdparties extends DolibarrApi
 				continue;
 			}
 
-			$this->company->$field = $value;
+			$this->company->$field = $this->_checkValForAPI($field, $value, $this->company);
 		}
 
 		if ($this->company->create(DolibarrApiAccess::$user) < 0) {
@@ -287,7 +288,10 @@ class Thirdparties extends DolibarrApi
 	 *
 	 * @param int   $id             Id of thirdparty to update
 	 * @param array $request_data   Datas
-	 * @return array|mixed|boolean
+	 * @return object
+	 * @throws RestException 401
+	 * @throws RestException 404
+	 * @throws RestException 500
 	 */
 	public function put($id, $request_data = null)
 	{
@@ -314,18 +318,18 @@ class Thirdparties extends DolibarrApi
 				continue;
 			}
 
-			$this->company->$field = $value;
+			$this->company->$field = $this->_checkValForAPI($field, $value, $this->company);
 		}
 
 		if (isModEnabled('mailing') && !empty($this->company->email) && isset($this->company->no_email)) {
 			$this->company->setNoEmail($this->company->no_email);
 		}
 
-		if ($this->company->update($id, DolibarrApiAccess::$user, 1, '', '', 'update', 1)) {
+		if ($this->company->update($id, DolibarrApiAccess::$user, 1, '', '', 'update', 1) > 0) {
 			return $this->get($id);
+		} else {
+			throw new RestException(500, $this->company->error);
 		}
-
-		return false;
 	}
 
 	/**
@@ -1764,7 +1768,7 @@ class Thirdparties extends DolibarrApi
 	 * @param    string	$idprof6		Prof id 6 of third party (Warning, this can return several records)
 	 * @param    string	$email			Email of third party (Warning, this can return several records)
 	 * @param    string	$ref_alias  Name_alias of third party (Warning, this can return several records)
-	 * @return array|mixed cleaned Societe object
+	 * @return object cleaned Societe object
 	 *
 	 * @throws RestException
 	 */
