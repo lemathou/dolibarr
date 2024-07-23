@@ -4,9 +4,10 @@
  * Copyright (C) 2004		Eric Seigne             <eric.seigne@ryxeo.com>
  * Copyright (C) 2005-2012	Regis Houssin           <regis.houssin@inodbox.com>
  * Copyright (C) 2015       Marcos García           <marcosgdf@gmail.com>
- * Copyright (C) 2016-2023  Charlene Benke           <charlene@patas-monkey.com>
+ * Copyright (C) 2016-2023  Charlene Benke          <charlene@patas-monkey.com>
  * Copyright (C) 2018-2023  Frédéric France         <frederic.france@netlogic.fr>
  * Copyright (C) 2020       Josep Lluís Amador      <joseplluis@lliuretic.cat>
+ * Copyright (C) 2024       Mélina Joum			    <melina.joum@altairis.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -375,6 +376,7 @@ abstract class CommonDocGenerator
 			'company_juridicalstatus'=>$object->forme_juridique,
 			'company_outstanding_limit'=>$object->outstanding_limit,
 			'company_capital'=>$object->capital,
+			'company_capital_formated'=> price($object->capital, 0, '', 1, -1),
 			'company_idprof1'=>$object->idprof1,
 			'company_idprof2'=>$object->idprof2,
 			'company_idprof3'=>$object->idprof3,
@@ -802,16 +804,20 @@ abstract class CommonDocGenerator
 		if (isset($line->fk_product) && $line->fk_product > 0) {
 			$tmpproduct = new Product($this->db);
 			$result = $tmpproduct->fetch($line->fk_product);
-			foreach ($tmpproduct->array_options as $key => $label) {
-				$resarray["line_product_".$key] = $label;
+			if (!empty($tmpproduct->array_options) && is_array($tmpproduct->array_options)) {
+				foreach ($tmpproduct->array_options as $key => $label) {
+					$resarray["line_product_".$key] = $label;
+				}
 			}
 		} else {
 			// Set unused placeholders as blank
 			$extrafields->fetch_name_optionals_label("product");
 			$extralabels = $extrafields->attributes["product"]['label'];
 
-			foreach ($extralabels as $key => $label) {
-				$resarray['line_product_options_'.$key] = '';
+			if (!empty($extralabels) && is_array($extralabels)) {
+				foreach ($extralabels as $key => $label) {
+					$resarray['line_product_options_'.$key] = '';
+				}
 			}
 		}
 
@@ -908,13 +914,17 @@ abstract class CommonDocGenerator
 						$array_other['object_'.$key] = $value;
 					} elseif (is_array($value) && $recursive) {
 						$tmparray = $this->get_substitutionarray_each_var_object($value, $outputlangs, 0);
-						foreach ($tmparray as $key2 => $value2) {
-							$array_other['object_'.$key.'_'.preg_replace('/^object_/', '', $key2)] = $value2;
+						if (!empty($tmparray) && is_array($tmparray)) {
+							foreach ($tmparray as $key2 => $value2) {
+								$array_other['object_'.$key.'_'.preg_replace('/^object_/', '', $key2)] = $value2;
+							}
 						}
 					} elseif (is_object($value) && $recursive) {
 						$tmparray = $this->get_substitutionarray_each_var_object($value, $outputlangs, 0);
-						foreach ($tmparray as $key2 => $value2) {
-							$array_other['object_'.$key.'_'.preg_replace('/^object_/', '', $key2)] = $value2;
+						if (!empty($tmparray) && is_array($tmparray)) {
+							foreach ($tmparray as $key2 => $value2) {
+								$array_other['object_'.$key.'_'.preg_replace('/^object_/', '', $key2)] = $value2;
+							}
 						}
 					}
 				}
@@ -1349,7 +1359,7 @@ abstract class CommonDocGenerator
 
 		$extrafieldOutputContent = '';
 		if (isset($object->array_options[$extrafieldOptionsKey])) {
-			$extrafieldOutputContent = $extrafields->showOutputField($extrafieldKey, $object->array_options[$extrafieldOptionsKey], '', $object->table_element);
+			$extrafieldOutputContent = $extrafields->showOutputField($extrafieldKey, $object->array_options[$extrafieldOptionsKey], '', $object->table_element, $outputlangs);
 		}
 
 		// TODO : allow showOutputField to be pdf public friendly, ex: in a link to object, clean getNomUrl to remove link and images... like a getName methode ...
@@ -1453,6 +1463,11 @@ abstract class CommonDocGenerator
 
 				if (empty($enabled)) {
 					continue;
+				}
+
+				// Load language if required
+				if (!empty($extrafields->attributes[$object->table_element]['langfile'][$key])) {
+					$outputlangs->load($extrafields->attributes[$object->table_element]['langfile'][$key]);
 				}
 
 				$field = new stdClass();
