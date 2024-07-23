@@ -279,18 +279,6 @@ class Propal extends CommonObject
 	public $labelStatus = array();
 	public $labelStatusShort = array();
 
-	// Multicurrency
-	/**
-	 * @var int ID
-	 */
-	public $fk_multicurrency;
-
-	public $multicurrency_code;
-	public $multicurrency_tx;
-	public $multicurrency_total_ht;
-	public $multicurrency_total_tva;
-	public $multicurrency_total_ttc;
-
 
 	/**
 	 *  'type' if the field format ('integer', 'integer:ObjectClass:PathToClass[:AddCreateButtonOrNot[:Filter]]', 'varchar(x)', 'double(24,8)', 'real', 'price', 'text', 'html', 'date', 'datetime', 'timestamp', 'duration', 'mail', 'phone', 'url', 'password')
@@ -1422,7 +1410,9 @@ class Propal extends CommonObject
 			}
 
 			// reset ref_client
-			$object->ref_client = '';
+			if (!getDolGlobalString('MAIN_KEEP_REF_CUSTOMER_ON_CLONING')) {
+				$object->ref_client = '';
+			}
 
 			// TODO Change product price if multi-prices
 		} else {
@@ -2701,7 +2691,10 @@ class Propal extends CommonObject
 		}
 
 		$sql  = "UPDATE ".MAIN_DB_PREFIX."propal";
-		$sql .= " SET fk_statut = ".((int) $status).", note_private = '".$this->db->escape($newprivatenote)."', date_signature='".$this->db->idate($date_signature)."', fk_user_signature=".$fk_user_signature;
+		$sql .= " SET fk_statut = ".((int) $status).", note_private = '".$this->db->escape($newprivatenote)."'";
+		if ($status == self::STATUS_SIGNED) {
+			$sql .= ", date_signature='".$this->db->idate($now)."', fk_user_signature = ".($fk_user_signature);
+		}
 		$sql .= " WHERE rowid = ".((int) $this->id);
 
 		$resql = $this->db->query($sql);
