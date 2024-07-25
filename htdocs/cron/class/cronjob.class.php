@@ -119,7 +119,7 @@ class Cronjob extends CommonObject
 	public $lastoutput;
 
 	/**
-	 * @var string 			Unit frequency of job execution
+	 * @var int 			Unit frequency of job execution (60, 86400, ...)
 	 */
 	public $unitfrequency;
 
@@ -1295,11 +1295,10 @@ class Cronjob extends CommonObject
 				} else {
 					$result = call_user_func_array(array($object, $this->methodename), $params_arr);
 				}
-
+				$errmsg = '';
 				if ($result === false || (!is_bool($result) && $result != 0)) {
 					$langs->load("errors");
 
-					$errmsg = '';
 					if (!is_array($object->errors) || !in_array($object->error, $object->errors)) {
 						$errmsg .= $object->error;
 					}
@@ -1319,7 +1318,7 @@ class Cronjob extends CommonObject
 					$error++;
 				} else {
 					dol_syslog(get_class($this)."::run_jobs END");
-					$this->lastoutput = dol_substr((empty($object->output) ? "" : $object->output."\n").$errmsg, 0, $this::MAXIMUM_LENGTH_FOR_LASTOUTPUT_FIELD, 'UTF-8', 1);
+					$this->lastoutput = dol_substr((empty($object->output) ? "" : $object->output."\n"), 0, $this::MAXIMUM_LENGTH_FOR_LASTOUTPUT_FIELD, 'UTF-8', 1);
 					$this->lastresult = var_export($result, true);
 					$retval = $this->lastresult;
 				}
