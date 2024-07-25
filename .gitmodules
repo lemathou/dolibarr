@@ -29,7 +29,7 @@
 [submodule "htdocs/custom/mmicrm"]
 	path = htdocs/custom/mmicrm
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicrm.git
-	branch = 16.0
+	branch = 19.0
 [submodule "htdocs/custom/mmidocuments"]
 	path = htdocs/custom/mmidocuments
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmidocuments.git
