@@ -1549,7 +1549,7 @@ class pdf_sponge extends ModelePDFFactures
 		$i = 0;
 		foreach ($object->lines as $line) {
 			$percent += $line->situation_percent;
-			$total_a_payer_real += $line->subprice*$line->qty; // MMI Hack (ou pas)
+			$total_a_payer_real += $line->subprice*$line->qty*(100-$line->remise_percent)/100; // MMI Hack (ou pas)
 			$i++;
 		}
 
