@@ -1935,7 +1935,7 @@ if (empty($reshook)) {
 						if (!empty($retained_warranty_date_limit) && $db->jdate($retained_warranty_date_limit)) {
 							$object->retained_warranty_date_limit = $db->jdate($retained_warranty_date_limit);
 						}
-						$object->retained_warranty_date_limit = !empty($object->retained_warranty_date_limit) ? $object->retained_warranty_date_limit : $object->calculate_date_lim_reglement($object->retained_warranty_fk_cond_reglement);
+						$object->retained_warranty_date_limit = !empty($object->retained_warranty_date_limit) ? $object->retained_warranty_date_limit : (getDolGlobalString('INVOICE_RETAINED_WARRANTY_DATE_NOAUTO') ?'' :$object->calculate_date_lim_reglement($object->retained_warranty_fk_cond_reglement));
 					}
 
 					foreach ($object->lines as $i => &$line) {
