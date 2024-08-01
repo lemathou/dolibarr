@@ -119,6 +119,21 @@ if (($line->info_bits & 2) == 2) {
 			if (getDolGlobalString('INVOICE_ADD_DEPOSIT_DATE')) {
 				print ' ('.dol_print_date($discount->datec).')';
 			}
+		} elseif ($line->description == '(DEPOSIT)' && $line->fk_prev_id > 0) { // MMI Update
+			include_once DOL_DOCUMENT_ROOT.'/core/class/discount.class.php';
+			$prevline = clone $line;
+			while($prevline->fk_prev_id) {
+				$prevline->fetch($prevline->fk_prev_id);
+			}
+			if ($prevline->fk_remise_except > 0) {
+				$discount = new DiscountAbsolute($this->db);
+				$discount->fetch($prevline->fk_remise_except);
+				print($txt ? ' - ' : '').$langs->transnoentities("DiscountFromDeposit", $discount->getNomUrl(0));
+				// Add date of deposit
+				if (getDolGlobalString('INVOICE_ADD_DEPOSIT_DATE')) {
+					print ' ('.dol_print_date($discount->datec).')';
+				}
+			}
 		} elseif ($line->description == '(EXCESS RECEIVED)' && $objp->fk_remise_except > 0) {
 			include_once DOL_DOCUMENT_ROOT.'/core/class/discount.class.php';
 			$discount = new DiscountAbsolute($this->db);

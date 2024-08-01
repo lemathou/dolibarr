@@ -1642,6 +1642,21 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 			if (getDolGlobalString('INVOICE_ADD_DEPOSIT_DATE')) {
 				$libelleproduitservice .= ' ('.dol_print_date($discount->datec, 'day', '', $outputlangs).')';
 			}
+		} elseif ($desc == '(DEPOSIT)' && $object->lines[$i]->fk_prev_id) { // MMI
+			$prevline = clone $object->lines[$i];
+			while($prevline->fk_prev_id) {
+				$prevline->fetch($prevline->fk_prev_id);
+			}
+			if ($prevline->fk_remise_except > 0) {
+				$discount = new DiscountAbsolute($db);
+				$discount->fetch($prevline->fk_remise_except);
+			}
+			$sourceref = !empty($discount->discount_type) ? $discount->ref_invoice_supplier_source : $discount->ref_facture_source;
+			$libelleproduitservice = $outputlangs->transnoentitiesnoconv("DiscountFromDeposit", $sourceref);
+			// Add date of deposit
+			if (getDolGlobalString('INVOICE_ADD_DEPOSIT_DATE')) {
+				$libelleproduitservice .= ' ('.dol_print_date($discount->datec, 'day', '', $outputlangs).')';
+			}
 		} elseif ($desc == '(EXCESS RECEIVED)' && $object->lines[$i]->fk_remise_except) {
 			$discount = new DiscountAbsolute($db);
 			$discount->fetch($object->lines[$i]->fk_remise_except);
