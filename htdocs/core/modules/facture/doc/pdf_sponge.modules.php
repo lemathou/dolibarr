@@ -9,8 +9,9 @@
  * Copyright (C) 2015       Marcos García           <marcosgdf@gmail.com>
  * Copyright (C) 2017       Ferran Marcet           <fmarcet@2byte.es>
  * Copyright (C) 2018       Frédéric France         <frederic.france@netlogic.fr>
- * Copyright (C) 2022		Anthony Berton				<anthony.berton@bb2a.fr>
+ * Copyright (C) 2022       Anthony Berton          <anthony.berton@bb2a.fr>
  * Copyright (C) 2022       Alexandre Spangaro      <aspangaro@open-dsi.fr>
+ * Copyright (C) 2024       Mathieu Moulin          <mathieu@iprospective.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +34,7 @@
  *  \brief      File of class to generate customers invoices from sponge model
  */
 
+require_once DOL_DOCUMENT_ROOT.'/core/class/discount.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/modules/facture/modules_facture.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
@@ -1546,19 +1548,9 @@ class pdf_sponge extends ModelePDFFactures
 		$total_a_payer_real = 0;
 		$i = 0;
 		foreach ($object->lines as $line) {
-			if ($line->product_type != 9) {
-				$percent += $line->situation_percent;
-				$total_a_payer_real += $line->subprice*$line->qty; // MMI Hack (ou pas)
-				$i++;
-			}
-		}
-
-		// MMI Hack : Marché total depuis commande
-		/** @var Commande $commande */
-		$commande = NULL;
-		if (!empty($object->linkedObjects['commande'])) foreach($object->linkedObjects['commande'] as $commande) {
-			$total_a_payer_real = $commande->total_ht;
-			break;
+			$percent += $line->situation_percent;
+			$total_a_payer_real += $line->subprice*$line->qty; // MMI Hack (ou pas)
+			$i++;
 		}
 
 		if (!empty($i)) {
@@ -1574,30 +1566,50 @@ class pdf_sponge extends ModelePDFFactures
 			$TPreviousIncoice2[$fac->situation_counter] = $fac;
 		}
 
-		// MMI Hack : Acomptes
+		// MMI Hack : Acomptes & Remises
 		$total_acomptes = 0;
+		$total_remises = 0;
+		// Avancement en cours
 		$total_a_payer = 0;
 		$total_a_payer_ttc = 0;
 		$total_a_payer2 = 0;
+		$remisestatic = new DiscountAbsolute($this->db);
 		foreach ($TPreviousIncoice2 as &$fac) {
 			$total_a_payer += $fac->total_ht;
 			$total_a_payer_ttc += $fac->total_ttc;
 			$total_a_payer2 += $fac->total_ht;
 			foreach($fac->lines as $line) {
+				// Test acompte MAIS PAS remise
 				if ($line->fk_remise_except) {
-					$total_acomptes -= $line->total_ht;
-					$total_a_payer -= $line->total_ht;
+					$remisestatic->fetch($line->fk_remise_except);
+					if ($remisestatic->fk_facture_source) {
+						$total_acomptes -= $line->total_ht;
+						$total_a_payer -= $line->total_ht;
+					}
+					else {
+						$total_remises -= $line->total_ht;
+					}
 				}
 			}
 		}
 		$total_a_payer += $object->total_ht;
 		$total_a_payer_ttc += $object->total_ttc;
 		foreach($object->lines as $line) {
+			// Test acompte MAIS PAS remise
 			if ($line->fk_remise_except) {
-				$total_acomptes -= $line->total_ht;
-				$total_a_payer -= $line->total_ht;
+				$remisestatic->fetch($line->fk_remise_except);
+				if ($remisestatic->fk_facture_source) {
+					$total_acomptes -= $line->total_ht;
+					$total_a_payer -= $line->total_ht;
+				}
+				else {
+					$total_remises -= $line->total_ht;
+				}
 			}
 		}
+
+		// On remet les acomptes sur le marché total
+		$total_a_payer_real += $total_acomptes;
 
 		/*
 		  @todo : check total à payer
@@ -1705,20 +1717,18 @@ class pdf_sponge extends ModelePDFFactures
 			$posy += $tab2_hl;
 		}
 
-		// MMI Hack : Display order total
+		// MMI Hack : Display total
 		if ($object->situation_counter) {
-			if (!empty($commande)) {
-				$pdf->SetFillColor(255, 255, 255);
-				$pdf->SetXY($col1x, $posy);
-				// @todo use $outputlangs->transnoentities("PDFSituationOrder")
-				$pdf->MultiCell($col2x - $col1x, $tab2_hl, 'Marché '.$outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
+			$pdf->SetFillColor(255, 255, 255);
+			$pdf->SetXY($col1x, $posy);
+			// @todo use $outputlangs->transnoentities("PDFSituationOrder")
+			$pdf->MultiCell($col2x - $col1x, $tab2_hl, 'Marché '.$outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
 
-				$pdf->SetXY($col2x, $posy);
-				$displayAmount = ' '.price($commande->total_ht, 0, $outputlangs);
-				$pdf->MultiCell($largcol2, $tab2_hl, $displayAmount, 0, 'R', 1);
+			$pdf->SetXY($col2x, $posy);
+			$displayAmount = ' '.price($total_a_payer_real, 0, $outputlangs);
+			$pdf->MultiCell($largcol2, $tab2_hl, $displayAmount, 0, 'R', 1);
 
-				$posy += $tab2_hl;
-			}
+			$posy += $tab2_hl;
 		}
 
 		//var_dump($posy, $this->page_hauteur, $this->heightforfooter, $this->page_hauteur - 5 - $this->heightforfooter);
