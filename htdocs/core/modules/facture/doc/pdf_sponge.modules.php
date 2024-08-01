@@ -1726,7 +1726,7 @@ class pdf_sponge extends ModelePDFFactures
 			$pdf->MultiCell($col2x - $col1x, $tab2_hl, 'Marché '.$outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
 
 			$pdf->SetXY($col2x, $posy);
-			$displayAmount = ' '.price($total_a_payer_real, 0, $outputlangs);
+			$displayAmount = ' '.price(round($total_a_payer_real, 2), 0, $outputlangs);
 			$pdf->MultiCell($largcol2, $tab2_hl, $displayAmount, 0, 'R', 1);
 
 			$posy += $tab2_hl;
