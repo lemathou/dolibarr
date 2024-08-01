@@ -1610,6 +1610,7 @@ class pdf_sponge extends ModelePDFFactures
 
 		// On remet les acomptes sur le marché total
 		$total_a_payer_real += $total_acomptes;
+		$total_a_payer_real = round($total_a_payer_real, 2);
 
 		/*
 		  @todo : check total à payer
