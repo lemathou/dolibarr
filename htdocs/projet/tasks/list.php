@@ -702,7 +702,7 @@ if ((is_numeric($search_opp_status) && $search_opp_status >= 0) || in_array($sea
 }
 if (!empty($search_project_user)) {
 	if (is_array($search_project_user)) {
-		foreach($$search_project_user as $uid)
+		foreach($search_project_user as $uid)
 			$param .= '&search_project_user[]='.urlencode($uid);
 	}
 	elseif ($search_project_user > 0) {
@@ -711,7 +711,7 @@ if (!empty($search_project_user)) {
 }
 if (!empty($search_task_user)) {
 	if (is_array($search_task_user)) {
-		foreach($$search_task_user as $uid)
+		foreach($search_task_user as $uid)
 			$param .= '&search_task_user[]='.urlencode($uid);
 	}
 	elseif ($search_task_user > 0) {
