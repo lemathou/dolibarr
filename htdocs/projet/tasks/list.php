@@ -65,7 +65,9 @@ $search_task_label = GETPOST('search_task_label');
 $search_task_description = GETPOST('search_task_description');
 $search_task_ref_parent = GETPOST('search_task_ref_parent');
 $search_project_user = GETPOST('search_project_user', getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE') ?'array:int' :'int');
+$search_project_user_multiple_and = getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE_AND');
 $search_task_user = GETPOST('search_task_user', getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE') ?'array:int' :'int');
+$search_task_user_multiple_and = getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE_AND');
 $search_task_progress = GETPOST('search_task_progress');
 $search_task_budget_amount = GETPOST('search_task_budget_amount');
 $search_societe = GETPOST('search_societe');
@@ -377,10 +379,24 @@ if (isset($extrafields->attributes[$object->table_element]['label']) && is_array
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX.$object->table_element."_extrafields as ef on (t.rowid = ef.fk_object)";
 }
 if (!empty($search_project_user)) {
-	$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp";
+	if ($search_project_user_multiple_and) {
+		for ($i=0; $i<count($search_project_user); $i++) {
+			$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp$i";
+		}
+	}
+	else {
+		$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp";
+	}
 }
 if (!empty($search_task_user)) {
-	$sql .= ", ".MAIN_DB_PREFIX."element_contact as ect";
+	if ($search_task_user_multiple_and) {
+		for ($i=0; $i<count($search_task_user); $i++) {
+			$sql .= ", ".MAIN_DB_PREFIX."element_contact as ect$i";
+		}
+	}
+	else {
+		$sql .= ", ".MAIN_DB_PREFIX."element_contact as ect";
+	}
 }
 $sql .= " WHERE t.fk_projet = p.rowid";
 $sql .= " AND p.entity IN (".getEntity('project').')';
@@ -452,7 +468,14 @@ if ($search_projectstatus >= 0) {
 }
 if (!empty($search_project_user)) {
 	if (is_array($search_project_user)) {
-		$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople IN (".implode(',', $search_project_user).")";
+		if ($search_project_user_multiple_and) {
+			foreach($search_project_user as $i=>$uid) {
+				$sql .= " AND ecp$i.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp$i.element_id = p.rowid AND 	ecp$i.fk_socpeople = ".((int) $uid);
+			}
+		}
+		else {
+			$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople IN (".implode(',', $search_project_user).")";
+		}
 	}
 	elseif ($search_project_user > 0) {
 		// TODO Replace this with a EXISTS and remove the link to table + DISTINCT
@@ -461,7 +484,14 @@ if (!empty($search_project_user)) {
 }
 if (!empty($search_task_user)) {
 	if (is_array($search_task_user)) {
-		$sql .= " AND ect.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listoftaskcontacttype))).") AND ect.element_id = t.rowid AND ect.fk_socpeople IN (".implode(',', $search_task_user).")";
+		if ($search_task_user_multiple_and) {
+			foreach($search_task_user as $i=>$uid) {
+				$sql .= " AND ect$i.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listoftaskcontacttype))).") AND ect$i.element_id = t.rowid AND 	ect$i.fk_socpeople = ".((int) $uid);
+			}
+		}
+		else {
+			$sql .= " AND ect.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listoftaskcontacttype))).") AND ect.element_id = t.rowid AND ect.fk_socpeople IN (".implode(',', $search_task_user).")";
+		}
 	}
 	elseif ($search_task_user > 0) {
 		$sql .= " AND ect.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listoftaskcontacttype))).") AND ect.element_id = t.rowid AND ect.fk_socpeople = ".((int) $search_task_user);
@@ -586,6 +616,7 @@ $sql .= $db->order($sortfield, $sortorder);
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
+//echo '<pre>'.$sql.'</pre>'; die();
 
 $resql = $db->query($sql);
 if (!$resql) {

@@ -104,7 +104,9 @@ $search_opp_amount = GETPOST("search_opp_amount", 'alpha');
 $search_budget_amount = GETPOST("search_budget_amount", 'alpha');
 $search_public = GETPOST("search_public", 'int');
 $search_project_user = GETPOST('search_project_user', getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE') ?'array:int' :'int');
+$search_project_user_multiple_and = getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE_AND');
 $search_project_contact = GETPOST('search_project_contact', getDolGlobalInt('PROJECT_SEARCH_CONTACT_MULTIPLE') ?'array:int' :'int');
+$search_project_contact_multiple_and = getDolGlobalInt('PROJECT_SEARCH_CONTACT_MULTIPLE_AND');
 $search_sale = GETPOST('search_sale', 'int');
 $search_usage_opportunity = GETPOST('search_usage_opportunity', 'int');
 $search_usage_task = GETPOST('search_usage_task', 'int');
@@ -510,10 +512,32 @@ if ($search_sale > 0) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe_commerciaux as sc ON sc.fk_soc = s.rowid";
 }
 if (!empty($search_project_user)) {
-	$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp";
+	if (is_array($search_project_user)) {
+		if ($search_project_user_multiple_and) {
+			for ($i=0; $i<count($search_project_user); $i++)
+				$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp$i";
+		}
+		else {
+			$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp";
+		}
+	}
+	elseif($search_project_user > 0) {
+		$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp";
+	}
 }
 if (!empty($search_project_contact)) {
-	$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp_contact";
+	if (is_array($search_project_contact)) {
+		if ($search_project_contact_multiple_and) {
+			for ($i=0; $i<count($search_project_contact); $i++)
+				$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp_contact$i";
+		}
+		else {
+			$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp_contact";
+		}
+	}
+	elseif($search_project_contact > 0) {
+		$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp_contact";
+	}
 }
 
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
@@ -619,7 +643,14 @@ if ($search_sale > 0) {
 //if (! $user->rights->societe->client->voir && ! $socid) $sql.= " AND ((s.rowid = sc.fk_soc AND sc.fk_user = ".((int) $user->id).") OR (s.rowid IS NULL))";
 if (!empty($search_project_user)) {
 	if (is_array($search_project_user)) {
-		$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople IN (".implode(',', $search_project_user).")";
+		if ($search_project_user_multiple_and) {
+			foreach($search_project_user as $i=>$uid) {
+				$sql .= " AND ecp$i.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp$i.element_id = p.rowid AND 	ecp$i.fk_socpeople = ".((int) $uid);
+			}
+		}
+		else {
+			$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople IN (".implode(',', $search_project_user).")";
+		}
 	}
 	elseif ($search_project_user > 0) {
 		// TODO Replace this with a EXISTS and remove the link to table + DISTINCT
@@ -628,7 +659,14 @@ if (!empty($search_project_user)) {
 }
 if (!empty($search_project_contact)) {
 	if (is_array($search_project_contact)) {
-		$sql .= " AND ecp_contact.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact.element_id = p.rowid AND ecp_contact.fk_socpeople IN (".implode(',', $search_project_contact).")";
+		if ($search_project_contact_multiple_and) {
+			foreach($search_project_contact as $i=>$uid) {
+				$sql .= " AND ecp_contact$i.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact$i.element_id = p.rowid AND ecp_contact$i.fk_socpeople = ".((int) $uid);
+			}
+		}
+		else {
+			$sql .= " AND ecp_contact.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact.element_id = p.rowid AND ecp_contact.fk_socpeople IN (".implode(',', $search_project_contact).")";
+		}
 	}
 	elseif ($search_project_contact > 0) {
 		// TODO Replace this with a EXISTS and remove the link to table + DISTINCT
