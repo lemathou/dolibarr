@@ -64,8 +64,8 @@ $search_task_ref = GETPOST('search_task_ref');
 $search_task_label = GETPOST('search_task_label');
 $search_task_description = GETPOST('search_task_description');
 $search_task_ref_parent = GETPOST('search_task_ref_parent');
-$search_project_user = GETPOST('search_project_user', 'int');
-$search_task_user = GETPOST('search_task_user', 'int');
+$search_project_user = GETPOST('search_project_user', getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE') ?'array:int' :'int');
+$search_task_user = GETPOST('search_task_user', getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE') ?'array:int' :'int');
 $search_task_progress = GETPOST('search_task_progress');
 $search_task_budget_amount = GETPOST('search_task_budget_amount');
 $search_societe = GETPOST('search_societe');
@@ -376,10 +376,10 @@ if (!empty($arrayfields['t.tobill']['checked']) || !empty($arrayfields['t.billed
 if (isset($extrafields->attributes[$object->table_element]['label']) && is_array($extrafields->attributes[$object->table_element]['label']) && count($extrafields->attributes[$object->table_element]['label'])) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX.$object->table_element."_extrafields as ef on (t.rowid = ef.fk_object)";
 }
-if ($search_project_user > 0) {
+if (!empty($search_project_user)) {
 	$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp";
 }
-if ($search_task_user > 0) {
+if (!empty($search_task_user)) {
 	$sql .= ", ".MAIN_DB_PREFIX."element_contact as ect";
 }
 $sql .= " WHERE t.fk_projet = p.rowid";
@@ -450,11 +450,22 @@ if ($search_projectstatus >= 0) {
 		$sql .= " AND p.fk_statut = ".((int) $search_projectstatus);
 	}
 }
-if ($search_project_user > 0) {
-	$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople = ".((int) $search_project_user);
+if (!empty($search_project_user)) {
+	if (is_array($search_project_user)) {
+		$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople IN (".implode(',', $search_project_user).")";
+	}
+	elseif ($search_project_user > 0) {
+		// TODO Replace this with a EXISTS and remove the link to table + DISTINCT
+		$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople = ".((int) $search_project_user);
+	}
 }
-if ($search_task_user > 0) {
-	$sql .= " AND ect.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listoftaskcontacttype))).") AND ect.element_id = t.rowid AND ect.fk_socpeople = ".((int) $search_task_user);
+if (!empty($search_task_user)) {
+	if (is_array($search_task_user)) {
+		$sql .= " AND ect.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listoftaskcontacttype))).") AND ect.element_id = t.rowid AND ect.fk_socpeople IN (".implode(',', $search_task_user).")";
+	}
+	elseif ($search_task_user > 0) {
+		$sql .= " AND ect.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listoftaskcontacttype))).") AND ect.element_id = t.rowid AND ect.fk_socpeople = ".((int) $search_task_user);
+	}
 }
 // Search for tag/category ($searchCategoryProjectList is an array of ID)
 $searchCategoryProjectList = array($search_categ);
@@ -689,11 +700,23 @@ if ($search_projectstatus != '') {
 if ((is_numeric($search_opp_status) && $search_opp_status >= 0) || in_array($search_opp_status, array('all', 'none'))) {
 	$param .= '&search_opp_status='.urlencode($search_opp_status);
 }
-if ($search_project_user != '') {
-	$param .= '&search_project_user='.urlencode($search_project_user);
+if (!empty($search_project_user)) {
+	if (is_array($search_project_user)) {
+		foreach($$search_project_user as $uid)
+			$param .= '&search_project_user[]='.urlencode($uid);
+	}
+	elseif ($search_project_user > 0) {
+		$param .= '&search_project_user='.urlencode($search_project_user);
+	}
 }
-if ($search_task_user > 0) {
-	$param .= '&search_task_user='.urlencode($search_task_user);
+if (!empty($search_task_user)) {
+	if (is_array($search_task_user)) {
+		foreach($$search_task_user as $uid)
+			$param .= '&search_task_user[]='.urlencode($uid);
+	}
+	elseif ($search_task_user > 0) {
+		$param .= '&search_task_user='.urlencode($search_task_user);
+	}
 }
 if ($optioncss != '') {
 	$param .= '&optioncss='.urlencode($optioncss);
@@ -796,7 +819,7 @@ $includeonly = '';
 if (!$user->hasRight('user', 'user', 'lire')) {
 	$includeonly = array($user->id);
 }
-$moreforfilter .= img_picto($tmptitle, 'user', 'class="pictofixedwidth"').$form->select_dolusers($search_project_user ? $search_project_user : '', 'search_project_user', $tmptitle, '', 0, $includeonly, '', 0, 0, 0, '', 0, '', 'maxwidth250');
+$moreforfilter .= img_picto($tmptitle, 'user', 'class="pictofixedwidth"').$form->select_dolusers($search_project_user ? $search_project_user : '', 'search_project_user', $tmptitle, '', 0, $includeonly, '', 0, 0, 0, '', 0, '', 'maxwidth250', 0, 0, getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE'));
 $moreforfilter .= '</div>';
 
 // If the user can view users
@@ -806,7 +829,7 @@ $includeonly = '';
 if (!$user->hasRight('user', 'user', 'lire')) {
 	$includeonly = array($user->id);
 }
-$moreforfilter .= img_picto($tmptitle, 'user', 'class="pictofixedwidth"').$form->select_dolusers($search_task_user, 'search_task_user', $tmptitle, '', 0, $includeonly, '', 0, 0, 0, '', 0, '', 'maxwidth250');
+$moreforfilter .= img_picto($tmptitle, 'user', 'class="pictofixedwidth"').$form->select_dolusers($search_task_user, 'search_task_user', $tmptitle, '', 0, $includeonly, '', 0, 0, 0, '', 0, '', 'maxwidth250', 0, 0, getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE'));
 $moreforfilter .= '</div>';
 
 // Filter on customer categories
