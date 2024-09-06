@@ -623,6 +623,10 @@ function projectLinesa(&$inc, $parent, &$lines, &$level, $var, $showproject, &$t
 		$totalarray = array();
 	}
 
+	$fk_tasks = [];
+	foreach($lines as $line)
+		$fk_tasks[] = $line->id;
+
 	for ($i = 0; $i < $numlines; $i++) {
 		if ($parent == 0 && $level >= 0) {
 			$level = 0; // if $level = -1, we dont' use sublevel recursion, we show all lines
@@ -630,7 +634,7 @@ function projectLinesa(&$inc, $parent, &$lines, &$level, $var, $showproject, &$t
 
 		// Process line
 		// print "i:".$i."-".$lines[$i]->fk_project.'<br>';
-		if ($lines[$i]->fk_task_parent == $parent || $level < 0) {       // if $level = -1, we dont' use sublevel recursion, we show all lines
+		if ($lines[$i]->fk_task_parent == $parent || (getDolGlobalInt('PROJECT_TASK_SEARCH_SHOW_WO_PARENT') && !in_array($lines[$i]->fk_task_parent, $fk_tasks) && $parent == 0) || $level < 0) {       // if $level = -1, we dont' use sublevel recursion, we show all lines
 			// Show task line.
 			$showline = 1;
 			$showlineingray = 0;

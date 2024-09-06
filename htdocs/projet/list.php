@@ -103,8 +103,10 @@ $search_opp_percent = GETPOST("search_opp_percent", 'alpha');
 $search_opp_amount = GETPOST("search_opp_amount", 'alpha');
 $search_budget_amount = GETPOST("search_budget_amount", 'alpha');
 $search_public = GETPOST("search_public", 'int');
-$search_project_user = GETPOST('search_project_user', 'int');
-$search_project_contact = GETPOST('search_project_contact', 'int');
+$search_project_user = GETPOST('search_project_user', getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE') ?'array:int' :'int');
+$search_project_user_multiple_and = getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE_AND');
+$search_project_contact = GETPOST('search_project_contact', getDolGlobalInt('PROJECT_SEARCH_CONTACT_MULTIPLE') ?'array:int' :'int');
+$search_project_contact_multiple_and = getDolGlobalInt('PROJECT_SEARCH_CONTACT_MULTIPLE_AND');
 $search_sale = GETPOST('search_sale', 'int');
 $search_usage_opportunity = GETPOST('search_usage_opportunity', 'int');
 $search_usage_task = GETPOST('search_usage_task', 'int');
@@ -509,11 +511,33 @@ $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON p.fk_user_creat = u.rowid';
 if ($search_sale > 0) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe_commerciaux as sc ON sc.fk_soc = s.rowid";
 }
-if ($search_project_user > 0) {
-	$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp";
+if (!empty($search_project_user)) {
+	if (is_array($search_project_user)) {
+		if ($search_project_user_multiple_and) {
+			for ($i=0; $i<count($search_project_user); $i++)
+				$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp$i";
+		}
+		else {
+			$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp";
+		}
+	}
+	elseif($search_project_user > 0) {
+		$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp";
+	}
 }
-if ($search_project_contact > 0) {
-	$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp_contact";
+if (!empty($search_project_contact)) {
+	if (is_array($search_project_contact)) {
+		if ($search_project_contact_multiple_and) {
+			for ($i=0; $i<count($search_project_contact); $i++)
+				$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp_contact$i";
+		}
+		else {
+			$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp_contact";
+		}
+	}
+	elseif($search_project_contact > 0) {
+		$sql .= ", ".MAIN_DB_PREFIX."element_contact as ecp_contact";
+	}
 }
 
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
@@ -617,13 +641,37 @@ if ($search_sale > 0) {
 }
 // No check is done on company permission because readability is managed by public status of project and assignement.
 //if (! $user->rights->societe->client->voir && ! $socid) $sql.= " AND ((s.rowid = sc.fk_soc AND sc.fk_user = ".((int) $user->id).") OR (s.rowid IS NULL))";
-if ($search_project_user > 0) {
-	// TODO Replace this with a EXISTS and remove the link to table + DISTINCT
-	$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople = ".((int) $search_project_user);
+if (!empty($search_project_user)) {
+	if (is_array($search_project_user)) {
+		if ($search_project_user_multiple_and) {
+			foreach($search_project_user as $i=>$uid) {
+				$sql .= " AND ecp$i.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp$i.element_id = p.rowid AND 	ecp$i.fk_socpeople = ".((int) $uid);
+			}
+		}
+		else {
+			$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople IN (".implode(',', $search_project_user).")";
+		}
+	}
+	elseif ($search_project_user > 0) {
+		// TODO Replace this with a EXISTS and remove the link to table + DISTINCT
+		$sql .= " AND ecp.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople = ".((int) $search_project_user);
+	}
 }
-if ($search_project_contact > 0) {
-	// TODO Replace this with a EXISTS and remove the link to table + DISTINCT
-	$sql .= " AND ecp_contact.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact.element_id = p.rowid AND ecp_contact.fk_socpeople = ".((int) $search_project_contact);
+if (!empty($search_project_contact)) {
+	if (is_array($search_project_contact)) {
+		if ($search_project_contact_multiple_and) {
+			foreach($search_project_contact as $i=>$uid) {
+				$sql .= " AND ecp_contact$i.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact$i.element_id = p.rowid AND ecp_contact$i.fk_socpeople = ".((int) $uid);
+			}
+		}
+		else {
+			$sql .= " AND ecp_contact.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact.element_id = p.rowid AND ecp_contact.fk_socpeople IN (".implode(',', $search_project_contact).")";
+		}
+	}
+	elseif ($search_project_contact > 0) {
+		// TODO Replace this with a EXISTS and remove the link to table + DISTINCT
+		$sql .= " AND ecp_contact.fk_c_type_contact IN (".$db->sanitize(join(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact.element_id = p.rowid AND ecp_contact.fk_socpeople = ".((int) $search_project_contact);
+	}
 }
 if ($search_opp_amount != '') {
 	$sql .= natural_search('p.opp_amount', $search_opp_amount, 1);
@@ -775,6 +823,7 @@ $sql .= $db->order($sortfield, $sortorder);
 if ($limit) {
 	$sql .= $db->plimit($limit + 1, $offset);
 }
+//echo '<pre>'.$sql.'</pre>'; die();
 
 $resql = $db->query($sql);
 if (!$resql) {
@@ -961,11 +1010,23 @@ if ($search_opp_percent != '') {
 if ($search_public != '') {
 	$param .= '&search_public='.urlencode($search_public);
 }
-if ($search_project_user > 0) {
-	$param .= '&search_project_user='.urlencode($search_project_user);
+if (!empty($search_project_user)) {
+	if (is_array($search_project_user)) {
+		foreach($search_project_user as $uid)
+			$param .= '&search_project_user[]='.urlencode($uid);
+	}
+	elseif ($search_project_user > 0) {
+		$param .= '&search_project_user='.urlencode($search_project_user);
+	}
 }
-if ($search_project_contact > 0) {
-	$param .= '&search_project_contact='.urlencode($search_project_contact);
+if (!empty($search_project_contact)) {
+	if (is_array($search_project_contact)) {
+		foreach($search_project_contact as $uid)
+			$param .= '&search_project_contact[]='.urlencode($uid);
+	}
+	elseif ($search_project_contact > 0) {
+		$param .= '&search_project_contact='.urlencode($search_project_contact);
+	}
 }
 if ($search_sale > 0) {
 	$param .= '&search_sale='.urlencode($search_sale);
@@ -1106,12 +1167,12 @@ $includeonly = '';
 if (!$user->hasRight('user', 'user', 'lire')) {
 	$includeonly = array($user->id);
 }
-$moreforfilter .= img_picto($tmptitle, 'user', 'class="pictofixedwidth"').$form->select_dolusers($search_project_user ? $search_project_user : '', 'search_project_user', $tmptitle, '', 0, $includeonly, '', 0, 0, 0, '', 0, '', 'maxwidth300 widthcentpercentminusx');
+$moreforfilter .= img_picto($tmptitle, 'user', 'class="pictofixedwidth"').$form->select_dolusers($search_project_user ? $search_project_user : '', 'search_project_user', $tmptitle, '', 0, $includeonly, '', 0, 0, 0, '', 0, '', 'maxwidth300 widthcentpercentminusx', 0, 0, getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE'));
 $moreforfilter .= '</div>';
 
 $moreforfilter .= '<div class="divsearchfield">';
 $tmptitle = $langs->trans('ProjectsWithThisContact');
-$moreforfilter .= img_picto($tmptitle, 'contact', 'class="pictofixedwidth"').$form->selectcontacts(0, $search_project_contact ? $search_project_contact : '', 'search_project_contact', $tmptitle, '', '', 0, 'maxwidth300 widthcentpercentminusx');
+$moreforfilter .= img_picto($tmptitle, 'contact', 'class="pictofixedwidth"').$form->selectcontacts(0, $search_project_contact ? $search_project_contact : '', 'search_project_contact', $tmptitle, '', '', 0, 'maxwidth300 widthcentpercentminusx', false, 0, 0, [], '', '', getDolGlobalInt('PROJECT_SEARCH_CONTACT_MULTIPLE'));
 $moreforfilter .= '</div>';
 
 // If the user can view thirdparties other than his'
@@ -1596,7 +1657,7 @@ while ($i < $imaxinloop) {
 						$stringassignedusers .= $c->getNomUrl(-2, '', 0, '', -1, 0, 'valignmiddle'.($ifisrt ? '' : ' notfirst'));
 					}
 					/*} else {
-					 if (get_class($c) == 'User') {
+					//  if (get_class($c) == 'User') {
 					 $stringassignedusers .= $c->getNomUrl(2, '', 0, 0, 24, 1, '', 'valignmiddle'.($ifisrt ? '' : ' notfirst'));
 					 } else {
 					 $stringassignedusers .= $c->getNomUrl(2, '', 0, '', -1, 0, 'valignmiddle'.($ifisrt ? '' : ' notfirst'));
