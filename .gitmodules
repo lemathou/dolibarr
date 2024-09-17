@@ -177,4 +177,9 @@
 [submodule "htdocs/custom/mmisav"]
         path = htdocs/custom/mmisav
         url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmisav.git
+	branch = 19.0
+[submodule "htdocs/custom/mmiwildx"]
+        path = htdocs/custom/mmiwildx
+        url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mmiwildx.git
         branch = 19.0
+
