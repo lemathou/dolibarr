@@ -305,6 +305,10 @@ $morewherefilter = '';
 if (count($morewherefilterarray) > 0) {
 	$morewherefilter = ' AND '.implode(' AND ', $morewherefilterarray);
 }
+// Add where from hooks
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+$morewherefilter .= $hookmanager->resPrint;
 
 if ($action == 'createtask' && $user->hasRight('projet', 'creer')) {
 	$error = 0;
@@ -552,6 +556,10 @@ if ($id > 0 || !empty($ref)) {
 	}
 	// Add $param from extra fields
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_param.tpl.php';
+	// Add $param from hooks
+	$parameters = array('param' => &$param);
+	$reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, $object); // Note that $action and $object may have been modified by hook
+	$param .= $hookmanager->resPrint;
 
 	$arrayofmassactions = array();
 	if ($user->hasRight('projet', 'creer')) {
@@ -916,6 +924,10 @@ if ($action == 'create' && $user->hasRight('projet', 'creer') && (empty($object-
 	$moreforfilter .= img_picto('', 'user', 'class="pictofixedwidth"');
 	$moreforfilter .= $form->select_dolusers($tmpuser->id > 0 ? $tmpuser->id : '', 'search_user_id', $langs->trans("TasksAssignedTo"), null, 0, '', '');
 	$moreforfilter .= '</div>';
+	// Hook fields
+	$parameters = array('arrayfields'=>$arrayfields, 'param'=>$param, 'sortfield'=>$sortfield, 'sortorder'=>$sortorder);
+	$reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters); // Note that $action and $object may have been modified by hook
+	$moreforfilter .= $hookmanager->resPrint;
 	if ($moreforfilter) {
 		print '<div class="liste_titre liste_titre_bydiv centpercent">';
 		print $moreforfilter;
