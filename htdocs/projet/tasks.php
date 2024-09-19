@@ -784,12 +784,12 @@ if ($action == 'create' && $user->hasRight('projet', 'creer') && (empty($object-
 	print '<tr><td>'.$langs->trans("AffectedTo").'</td><td>';
 	print img_picto('', 'user', 'class="pictofixedwidth"');
 	if (is_array($contactsofproject) && count($contactsofproject)) {
-		print $form->select_dolusers($user->id, 'userid', 0, '', 0, '', $contactsofproject, 0, 0, 0, '', 0, '', 'maxwidth500 widthcentpercentminusx');
+		print $form->select_dolusers(getDolGlobalInt('TASK_CREATE_WITHOUT_DEFAULT_CONTACT') ?NULL :$user->id, 'userid', getDolGlobalInt('TASK_CREATE_WITHOUT_DEFAULT_CONTACT'), '', 0, '', $contactsofproject, 0, 0, 0, '', 0, '', 'maxwidth500 widthcentpercentminusx');
 	} else {
 		if ((isset($projectid) && $projectid > 0) || $object->id > 0) {
 			print '<span class="opacitymedium">'.$langs->trans("NoUserAssignedToTheProject").'</span>';
 		} else {
-			print $form->select_dolusers($user->id, 'userid', 0, '', 0, '', '', 0, 0, 0, '', 0, '', 'maxwidth500 widthcentpercentminusx');
+			print $form->select_dolusers(getDolGlobalInt('TASK_CREATE_WITHOUT_DEFAULT_CONTACT') ?NULL :$user->id, 'userid', getDolGlobalInt('TASK_CREATE_WITHOUT_DEFAULT_CONTACT'), '', 0, '', '', 0, 0, 0, '', 0, '', 'maxwidth500 widthcentpercentminusx');
 		}
 	}
 	print '</td></tr>';
