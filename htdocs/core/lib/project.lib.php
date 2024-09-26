@@ -739,22 +739,30 @@ function projectLinesa(&$inc, $parent, &$lines, &$level, $var, $showproject, &$t
 
 				// Title of task
 				if (count($arrayfields) > 0 && !empty($arrayfields['t.label']['checked'])) {
+					$label = dol_escape_htmltag($lines[$i]->label);
 					$labeltoshow = '';
 					if ($showlineingray) {
 						$labeltoshow .= '<i>';
 					}
 					//else print '<a href="'.DOL_URL_ROOT.'/projet/tasks/task.php?id='.$lines[$i]->id.'&withproject=1">';
-					for ($k = 0; $k < $level; $k++) {
-						$labeltoshow .= '<div class="marginleftonly">';
+					if (getDolGlobalInt('PROJECT_TASK_PARENT_INDENT_ALT')) {
+						if ($level>1)
+							$labeltoshow .= '<span style="color: gray;">'.str_repeat('→', $level).'</span>';
+						$labeltoshow .= $label;
 					}
-					$labeltoshow .= dol_escape_htmltag($lines[$i]->label);
-					for ($k = 0; $k < $level; $k++) {
-						$labeltoshow .= '</div>';
+					else {
+						for ($k = 0; $k < $level; $k++) {
+							$labeltoshow .= '<div class="marginleftonly">';
+						}
+						$labeltoshow .= $label;
+						for ($k = 0; $k < $level; $k++) {
+							$labeltoshow .= '</div>';
+						}
 					}
 					if ($showlineingray) {
 						$labeltoshow .= '</i>';
 					}
-					print '<td class="tdoverflowmax200" title="'.dol_escape_htmltag($labeltoshow).'">';
+					print '<td class="tdoverflowmax200" title="'.dol_escape_htmltag($label).'">';
 					print $labeltoshow;
 					print "</td>\n";
 				}
