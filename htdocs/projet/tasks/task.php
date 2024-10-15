@@ -585,7 +585,7 @@ if ($id > 0 || !empty($ref)) {
 		if ($object->fk_task_parent > 0) {
 			$tasktmp = new Task($db);
 			$tasktmp->fetch($object->fk_task_parent);
-			print $tasktmp->getNomUrl(1);
+			print $tasktmp->getNomUrl(1, '', 'task', getDolGlobalInt('TASK_SHOW_PARENT_LABEL') ?1 :0);
 		}
 		print '</td></tr>';
 
