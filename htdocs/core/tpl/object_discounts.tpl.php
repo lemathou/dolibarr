@@ -62,7 +62,7 @@ if ($isNewObject) {
 
 // Is there is commercial discount or down payment available ?
 if ($absolute_discount > 0) {
-	if (!empty($cannotApplyDiscount) || !$isInvoice || $isNewObject || $object->statut > $objclassname::STATUS_DRAFT || $object->type == $objclassname::TYPE_CREDIT_NOTE || $object->type == $objclassname::TYPE_DEPOSIT) {
+	if (!empty($cannotApplyDiscount) || !$isInvoice || $isNewObject || (isModEnabled('accounting') && $object->getVentilExportCompta() > 0) || ($object->statut > $objclassname::STATUS_DRAFT && ! getDolGlobalInt('INVOICE_VALIDATED_PERMIT_DEPOSIT')) || $object->type == $objclassname::TYPE_CREDIT_NOTE || $object->type == $objclassname::TYPE_DEPOSIT) {
 		$translationKey = !empty($discount_type) ? 'HasAbsoluteDiscountFromSupplier' : 'CompanyHasAbsoluteDiscount';
 		$text = $langs->trans($translationKey, price($absolute_discount), $langs->transnoentities("Currency".$conf->currency)).'.';
 
