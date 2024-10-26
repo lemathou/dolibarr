@@ -8450,21 +8450,21 @@ class Form
 		$num = 0;
 
 		// Search data
-		$sql = "SELECT t.rowid, " . $fieldstoshow . " FROM " . $this->db->prefix() . $objecttmp->table_element . " as t";
+		$sql = "SELECT t.rowid, " . $fieldstoshow . " FROM " . $this->db->prefix() . $this->db->sanitize($objecttmp->table_element) . " as t";
 		if (!empty($objecttmp->isextrafieldmanaged)) {
-			$sql .= " LEFT JOIN " . $this->db->prefix() . $objecttmp->table_element . "_extrafields as e ON t.rowid=e.fk_object";
+			$sql .= " LEFT JOIN " . $this->db->prefix() . $this->db->sanitize($objecttmp->table_element) . "_extrafields as e ON t.rowid = e.fk_object";
 		}
 		if (!empty($objecttmp->parent_element)) {
 			$parent_properties = getElementProperties($objecttmp->parent_element);
-			$sql .= " INNER JOIN " . $this->db->prefix() . $parent_properties['table_element'] . " as o ON o.rowid=t.".$objecttmp->fk_parent_attribute;
+			$sql .= " INNER JOIN " . $this->db->prefix() . $this->db->sanitize($parent_properties['table_element']) . " as o ON o.rowid = t.".$objecttmp->fk_parent_attribute;
 		}
 		if (in_array($objecttmp->parent_element, ['commande', 'propal', 'facture', 'expedition'])) {
-			$sql .= " LEFT JOIN " . $this->db->prefix() . "product as p ON p.rowid=t.fk_product";
+			$sql .= " LEFT JOIN " . $this->db->prefix() . "product as p ON p.rowid = t.fk_product";
 		}
 		if (isset($objecttmp->ismultientitymanaged)) {
 			if (!is_numeric($objecttmp->ismultientitymanaged)) {
 				$tmparray = explode('@', $objecttmp->ismultientitymanaged);
-				$sql .= " INNER JOIN " . $this->db->prefix() . $tmparray[1] . " as parenttable ON parenttable.rowid = t." . $tmparray[0];
+				$sql .= " INNER JOIN " . $this->db->prefix() . $this->db->sanitize($tmparray[1]) . " as parenttable ON parenttable.rowid = t." . $this->db->sanitize($tmparray[0]);
 			}
 			if ($objecttmp->ismultientitymanaged === 'fk_soc@societe') {
 				if (!$user->hasRight('societe', 'client', 'voir')) {
@@ -8491,7 +8491,7 @@ class Form
 					$sql .= " AND t.entity IN (" . getEntity($objecttmp->table_element) . ")";
 				}
 				if (!is_numeric($objecttmp->ismultientitymanaged)) {
-					$sql .= " AND parenttable.entity = t." . $tmparray[0];
+					$sql .= " AND parenttable.entity = t." . $this->db->sanitize($tmparray[0]);
 				}
 				if ($objecttmp->ismultientitymanaged == 1 && !empty($user->socid)) {
 					if ($objecttmp->element == 'societe') {
