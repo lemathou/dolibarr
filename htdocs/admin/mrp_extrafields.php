@@ -5,6 +5,7 @@
  * Copyright (C) 2012		Regis Houssin			<regis.houssin@inodbox.com>
  * Copyright (C) 2014		Florian Henry			<florian.henry@open-concept.pro>
  * Copyright (C) 2015		Jean-François Ferry		<jfefe@aternatik.fr>
+ * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +45,8 @@ $action = GETPOST('action', 'aZ09');
 $attrname = GETPOST('attrname', 'alpha');
 $elementtype = 'mrp_mo';
 
+$help_url = '';
+
 if (!$user->admin) {
 	accessforbidden();
 }
@@ -61,6 +64,7 @@ require DOL_DOCUMENT_ROOT.'/core/actions_extrafields.inc.php';
  * View
  */
 
+$textobject = $langs->transnoentitiesnoconv('ManufacturingOrder');
 
 llxHeader('', $langs->trans("MrpSetupPage"), $help_url, '', 0, 0, '', '', '', 'mod-admin page-mrp_extrafields');
 

@@ -1,6 +1,7 @@
 <?php
-/* Copyright (C) 2017-2019 Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+/* Copyright (C) 2017-2019  Laurent Destailleur     <eldy@users.sourceforge.net>
+ * Copyright (C) 2024		MDW						<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024       Frédéric France         <frederic.france@free.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -156,7 +157,7 @@ if ($action == 'add' && !empty($permissiontoadd)) {
 			$object->$key = '(PROV)';
 		}
 		if ($key == 'pass_crypted') {
-			$object->pass = GETPOST("pass", "none");
+			$object->pass = GETPOST("pass", "password");
 			// TODO Manadatory for password not yet managed
 		} else {
 			if (!empty($val['notnull']) && $val['notnull'] > 0 && $object->$key == '' && !isset($val['default'])) {
@@ -178,7 +179,7 @@ if ($action == 'add' && !empty($permissiontoadd)) {
 
 	// Special field
 	$model_pdf = GETPOST('model');
-	if (!empty($model_pdf) && property_exists($this, 'model_pdf')) {
+	if (!empty($model_pdf) && property_exists($object, 'model_pdf')) {
 		$object->model_pdf = $model_pdf;
 	}
 
@@ -312,7 +313,7 @@ if ($action == 'update' && !empty($permissiontoadd)) {
 		}
 
 		$object->$key = $value;
-		if ($val['notnull'] > 0 && $object->$key == '' && (!isset($val['default']) || is_null($val['default']))) {
+		if (!empty($val['notnull']) && $val['notnull'] > 0 && $object->$key == '' && (!isset($val['default']) || is_null($val['default']))) {
 			$error++;
 			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv($val['label'])), null, 'errors');
 		}

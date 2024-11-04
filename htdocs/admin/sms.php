@@ -153,6 +153,7 @@ print load_fiche_titre($langs->trans("SmsSetup"), '', 'title_setup');
 
 print '<span class="opacitymedium">'.$langs->trans("SmsDesc")."</span><br>\n";
 print "<br>\n";
+print "<br>\n";
 
 // List of sending methods
 $listofmethods = (is_array($conf->modules_parts['sms']) ? $conf->modules_parts['sms'] : array());
@@ -198,7 +199,7 @@ if ($action == 'edit') {
 
 	print '</table>';
 
-	print '<br><div class="center">';
+	print '<div class="center">';
 	print '<input class="button button-save" type="submit" name="save" value="'.$langs->trans("Save").'"'.(!count($listofmethods) ? ' disabled' : '').'>';
 	print '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
 	print '<input class="button button-cancel" type="submit" name="cancel" value="'.$langs->trans("Cancel").'">';
@@ -240,14 +241,18 @@ if ($action == 'edit') {
 
 	print '<div class="tabsAction">';
 
-	print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit">'.$langs->trans("Modify").'</a>';
+	if ($action != 'test') {
+		print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit">'.$langs->trans("Modify").'</a>';
 
-	if (count($listofmethods) && getDolGlobalString('MAIN_SMS_SENDMODE')) {
-		print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=test&amp;mode=init">'.$langs->trans("DoTestSend").'</a>';
-	} else {
-		print '<a class="butActionRefused classfortooltip" href="#">'.$langs->trans("DoTestSend").'</a>';
+		if (count($listofmethods) && getDolGlobalString('MAIN_SMS_SENDMODE')) {
+			print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=test&mode=init&token='.newToken().'">'.$langs->trans("DoTestSend").'</a>';
+		} else {
+			print '<a class="butActionRefused classfortooltip" href="#">'.$langs->trans("DoTestSend").'</a>';
+		}
 	}
+
 	print '</div>';
+
 
 	// Affichage formulaire de TEST simple
 	if ($action == 'test') {

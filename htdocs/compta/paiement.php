@@ -75,7 +75,7 @@ if ($facid > 0) {
 	$ret = $object->fetch($facid);
 }
 
-// Initialize technical object to manage hooks of paiements. Note that conf->hooks_modules contains array array
+// Initialize a technical object to manage hooks of paiements. Note that conf->hooks_modules contains array array
 $hookmanager->initHooks(array('paiementcard', 'globalcard'));
 
 $formquestion = array();
@@ -123,7 +123,7 @@ if (empty($reshook)) {
 				if ($result <= 0) {
 					dol_print_error($db);
 				}
-				$amountsresttopay[$cursorfacid] = price2num($tmpinvoice->total_ttc - $tmpinvoice->getSommePaiement());
+				$amountsresttopay[$cursorfacid] = price2num($tmpinvoice->total_ttc - $tmpinvoice->getSommePaiement(0));
 				if ($amounts[$cursorfacid]) {
 					// Check amount
 					if ($amounts[$cursorfacid] && (abs((float) $amounts[$cursorfacid]) > abs((float) $amountsresttopay[$cursorfacid]))) {
@@ -282,12 +282,18 @@ if (empty($reshook)) {
 				$error++;
 			}
 		}
+		/*
+		var_dump($paiement->amount);
+		var_dump($paiement->multicurrency_amount);
+		var_dump($paiement->multicurrency_currency);
+		*/
 
 		if (!$error) {
 			$label = '(CustomerInvoicePayment)';
 			if (GETPOST('type') == Facture::TYPE_CREDIT_NOTE) {
 				$label = '(CustomerInvoicePaymentBack)'; // Refund of a credit note
 			}
+
 			$result = $paiement->addPaymentToBank($user, 'payment', $label, GETPOSTINT('accountid'), GETPOST('chqemetteur'), GETPOST('chqbank'));
 			if ($result < 0) {
 				setEventMessages($paiement->error, $paiement->errors, 'errors');
@@ -361,8 +367,8 @@ if ($action == 'create' || $action == 'confirm_paiement' || $action == 'add_paie
 		}
 
 		// Invoice with Paypal transaction
-		// TODO add hook here
-		if (isModEnabled('paypalplus') && $conf->global->PAYPAL_ENABLE_TRANSACTION_MANAGEMENT && !empty($facture->ref_ext)) {
+		// @TODO add hook here
+		if (isModEnabled('paypalplus') && getDolGlobalString('PAYPAL_ENABLE_TRANSACTION_MANAGEMENT') && !empty($facture->ref_ext)) {
 			if (getDolGlobalString('PAYPAL_BANK_ACCOUNT')) {
 				$accountid = getDolGlobalString('PAYPAL_BANK_ACCOUNT');
 			}
@@ -512,7 +518,7 @@ if ($action == 'create' || $action == 'confirm_paiement' || $action == 'add_paie
 
 			print '<td>';
 			print img_picto('', 'bank_account', 'class="pictofixedwidth"');
-			print $form->select_comptes($accountid, 'accountid', 0, '', 2, '', 0, 'widthcentpercentminusx maxwidth500', 1);
+			print $form->select_comptes($accountid, 'accountid', 0, '', 2, '', (isModEnabled('multicurrency') ? 1 : 0), 'widthcentpercentminusx maxwidth500', 1);
 			print '</td>';
 		} else {
 			print '<td>&nbsp;</td>';
@@ -745,10 +751,10 @@ if ($action == 'create' || $action == 'confirm_paiement' || $action == 'add_paie
 								if (!empty($conf->use_javascript_ajax)) {
 									print img_picto("Auto fill", 'rightarrow', "class='AutoFillAmount' data-rowname='".$namef."' data-value='".($sign * (float) $multicurrency_remaintopay)."'");
 								}
-								print '<input type="text" class="maxwidth75 multicurrency_amount" name="'.$namef.'" value="'.GETPOST($namef).'">';
+								print '<input type="text" class="maxwidth75 multicurrency_amount" name="'.$namef.'" value="'.(GETPOST($namef) != '0' ? GETPOST($namef) : '').'">';
 								print '<input type="hidden" class="multicurrency_remain" name="'.$nameRemain.'" value="'.$multicurrency_remaintopay.'">';
 							} else {
-								print '<input type="text" class="maxwidth75" name="'.$namef.'_disabled" value="'.GETPOST($namef).'" disabled>';
+								print '<input type="text" class="maxwidth75" name="'.$namef.'_disabled" value="'.(GETPOST($namef) != '0' ? GETPOST($namef) : '').'" disabled>';
 								print '<input type="hidden" name="'.$namef.'" value="'.GETPOST($namef).'">';
 							}
 						}
@@ -883,7 +889,7 @@ if ($action == 'create' || $action == 'confirm_paiement' || $action == 'add_paie
 			}
 
 			print '<br><div class="center">';
-			print '<input type="checkbox" checked name="closepaidinvoices"> '.$checkboxlabel;
+			print '<input type="checkbox" checked name="closepaidinvoices" id="closepaidinvoices"><label for="closepaidinvoices"> '.$checkboxlabel.'</label>';
 			/*if (isModEnabled('prelevement')) {
 				$langs->load("withdrawals");
 				if (!empty($conf->global->WITHDRAW_DISABLE_AUTOCREATE_ONPAYMENTS)) print '<br>'.$langs->trans("IfInvoiceNeedOnWithdrawPaymentWontBeClosed");

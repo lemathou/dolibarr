@@ -252,7 +252,7 @@ $server->register(
 /**
  * Create project
  *
- * @param	array		$authentication		Array of authentication information
+ * @param	array{login:string,password:string,entity:?int,dolibarrkey:string}		$authentication		Array of authentication information
  * @param	array		$project			Project info
  * @return	array							array of new order
  */
@@ -281,7 +281,7 @@ function createProject($authentication, $project)
 
 
 	if (!$error) {
-		$fuser->getrights();
+		$fuser->loadRights();
 
 		if ($fuser->hasRight('projet', 'creer')) {
 			$newobject = new Project($db);
@@ -347,7 +347,7 @@ function createProject($authentication, $project)
 /**
  * Get a project
  *
- * @param	array		$authentication		Array of authentication information
+ * @param	array{login:string,password:string,entity:?int,dolibarrkey:string}		$authentication		Array of authentication information
  * @param	string		$id		    		internal id
  * @param	string		$ref		    	internal reference
  * @return	array							Array result
@@ -376,7 +376,7 @@ function getProject($authentication, $id = '', $ref = '')
 	}
 
 	if (!$error) {
-		$fuser->getrights();
+		$fuser->loadRights();
 
 		if ($fuser->hasRight('projet', 'lire')) {
 			$project = new Project($db);
