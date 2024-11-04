@@ -348,7 +348,7 @@ abstract class CommonObjectLine extends CommonObject
 		if ($parentattribute) {
 			$parent_element->fetch($this->$parentattribute);
 		}
-		
+
 		return $parent_element->getNomUrl($withpicto).' - Line #'.$this->id;
 	}
 }
