@@ -630,7 +630,6 @@ class pdf_espadon extends ModelePdfExpedition
 						$voltxt = round($object->lines[$i]->volume * $object->lines[$i]->qty_shipped, 5).' '.measuringUnitString(0, "volume", $object->lines[$i]->volume_units ? $object->lines[$i]->volume_units : 0, 1);
 					}
 
-
 					if ($this->getColumnStatus('weight')) {
 						$this->printStdColumnContent($pdf, $curY, 'weight', $weighttxt.(($weighttxt && $voltxt) ? '<br>' : '').$voltxt);
 						$nexY = max($pdf->GetY(), $nexY);
@@ -1279,7 +1278,7 @@ class pdf_espadon extends ModelePdfExpedition
 		$this->cols['weight'] = array(
 			'rank' => $rank,
 			'width' => 30, // in mm
-			'status' => true,
+			'status' => ! getDolGlobalString('SHIPPING_PDF_HIDE_WEIGHT_AND_VOLUME') ? 1 : 0,
 			'title' => array(
 				'textkey' => 'WeightVolShort'
 			),
