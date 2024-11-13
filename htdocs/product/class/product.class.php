@@ -5204,6 +5204,10 @@ class Product extends CommonObject
 		if (!empty($this->ref)) {
 			$datas['ref']= '<br><b>'.$langs->trans('ProductRef').':</b> '.$this->ref;
 		}
+		// MMI Hack
+		if (getDolGlobalInt('MMIPRODUCT_TOOLTIP_SHOW_SUPPLIER_REF') && !empty($this->array_options['options_supplier_ref'])) {
+			$datas['supplier_ref'] = '<br /><b>Réf fournisseur :</b> '.$this->array_options['options_supplier_ref'];
+		}
 		if (!empty($this->label)) {
 			$datas['label']= '<br><b>'.$langs->trans('ProductLabel').':</b> '.$this->label;
 		}
