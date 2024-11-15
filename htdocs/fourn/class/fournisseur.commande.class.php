@@ -3093,7 +3093,7 @@ class CommandeFournisseur extends CommonOrder
 		$sql .= $this->db->order("rowid", "ASC");
 		$sql .= $this->db->plimit(1);
 		$resql = $this->db->query($sql);
-		if ($resql) {
+		if ($resql && $resql->num_rows) {
 			$obj = $this->db->fetch_object($resql);
 			$prodid = $obj->rowid;
 		}
