@@ -471,7 +471,7 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 
 			if (!getDolGlobalString('MAIN_PDF_DISABLESOURCEDETAILS')) {
 				// MMI Hack : Conseiller
-				if (!empty($conf->global->MMIDOCUMENTS_PDF_COMMERCIAL)) {
+				if (getDolGlobalInt('MMIDOCUMENTS_PDF_COMMERCIAL')) {
 					//var_dump($sourcecompany, $targetcompany, $targetcontact, $usecontact);
 					global $user;
 					$commerciaux = $targetcompany->getSalesRepresentatives($user);
