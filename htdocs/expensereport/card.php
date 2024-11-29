@@ -2230,7 +2230,11 @@ if ($action == 'create') {
 										}
 									}
 
-									if (!$thumbshown) {
+									if (!$thumbshown && $fileinfo['extension'] == 'pdf' && !empty($filepdf) && !empty($relativepath) && !empty($fileinfo['filename'])) {
+										$formFile = new FormFile($db);
+										$imgpreview = $formFile->showPreview([], $modulepart, $relativepath.'/'.$fileinfo['filename'].'.'.strtolower($fileinfo['extension']), 0);
+										print $imgpreview;
+									} elseif (!$thumbshown) {
 										print img_mime($ecmfilesstatic->filename);
 									}
 								}
@@ -2615,7 +2619,7 @@ if ($action == 'create') {
                     let tva = jQuery("#vatrate").find(":selected").val();
                     let qty = jQuery(".input_qty").val();
 
-					let path = "'.DOL_DOCUMENT_ROOT.'/expensereport/ajax/ajaxik.php";
+					let path = "'.dol_buildpath("/expensereport/ajax/ajaxik.php", 1).'";
 					path += "?fk_c_exp_tax_cat="+tax_cat;
 					path += "&fk_expense="+'.((int) $object->id).';
                     path += "&vatrate="+tva;
@@ -2878,7 +2882,7 @@ if ($action != 'presend') {
 }
 
 // Presend form
-$modelmail = 'expensereport';
+$modelmail = 'expensereport_send';
 $defaulttopic = 'SendExpenseReportRef';
 $diroutput = $conf->expensereport->dir_output;
 $trackid = 'exp'.$object->id;

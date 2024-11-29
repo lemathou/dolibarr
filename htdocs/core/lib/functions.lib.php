@@ -1629,6 +1629,17 @@ function dol_escape_php($stringtoescape, $stringforquotes = 2)
 }
 
 /**
+ *  Returns text escaped for all protocols (so only alpha chars and numbers)
+ *
+ *  @param      string		$stringtoescape		String to escape
+ *  @return     string     		 				Escaped string for XML content.
+ */
+function dol_escape_all($stringtoescape)
+{
+	return preg_replace('/[^a-z0-9_]/i', '', $stringtoescape);
+}
+
+/**
  *  Returns text escaped for inclusion into a XML string
  *
  *  @param      string		$stringtoescape		String to escape
@@ -2537,7 +2548,16 @@ function dol_banner_tab($object, $paramid, $morehtml = '', $shownav = 1, $fieldi
 			$tmptxt = $object->getLibStatut(5, $object->alreadypaid);
 		}
 		$morehtmlstatus .= $tmptxt;
-	} elseif (in_array($object->element, array('facture', 'invoice', 'invoice_supplier', 'chargesociales', 'loan', 'tva'))) {	// TODO Move this to use ->alreadypaid
+	} elseif (in_array($object->element, array('facture', 'invoice', 'invoice_supplier'))) {	// TODO Move this to use ->alreadypaid
+		$totalallpayments = $object->getSommePaiement(0);
+		$totalallpayments += $object->getSumCreditNotesUsed(0);
+		$totalallpayments += $object->getSumDepositsUsed(0);
+		$tmptxt = $object->getLibStatut(6, $totalallpayments);
+		if (empty($tmptxt) || $tmptxt == $object->getLibStatut(3)) {
+			$tmptxt = $object->getLibStatut(5, $totalallpayments);
+		}
+		$morehtmlstatus .= $tmptxt;
+	} elseif (in_array($object->element, array('chargesociales', 'loan', 'tva'))) {	// TODO Move this to use ->alreadypaid
 		$tmptxt = $object->getLibStatut(6, $object->totalpaid);
 		if (empty($tmptxt) || $tmptxt == $object->getLibStatut(3)) {
 			$tmptxt = $object->getLibStatut(5, $object->totalpaid);
@@ -2620,7 +2640,6 @@ function dol_banner_tab($object, $paramid, $morehtml = '', $shownav = 1, $fieldi
 	} elseif ($reshook > 0) {
 		$morehtmlref = $hookmanager->resPrint;
 	}
-
 
 	print '<div class="'.($onlybanner ? 'arearefnobottom ' : 'arearef ').'heightref valignmiddle centpercent">';
 	print $form->showrefnav($object, $paramid, $morehtml, $shownav, $fieldid, $fieldref, $morehtmlref, $moreparam, $nodbprefix, $morehtmlleft, $morehtmlstatus, $morehtmlright);
@@ -6137,11 +6156,13 @@ function price($amount, $form = 0, $outlangs = '', $trunc = 1, $rounding = -1, $
 	if (dol_strlen($decpart) > $nbdecimal) {
 		$nbdecimal = dol_strlen($decpart);
 	}
-	// Si on depasse max
-	if ($trunc && $nbdecimal > $conf->global->MAIN_MAX_DECIMALS_SHOWN) {
-		$nbdecimal = $conf->global->MAIN_MAX_DECIMALS_SHOWN;
-		if (preg_match('/\.\.\./i', $conf->global->MAIN_MAX_DECIMALS_SHOWN)) {
-			// Si un affichage est tronque, on montre des ...
+
+	// If nbdecimal is higher than max to show
+	$nbdecimalmaxshown = (int) str_replace('...', '', getDolGlobalString('MAIN_MAX_DECIMALS_SHOWN'));
+	if ($trunc && $nbdecimal > $nbdecimalmaxshown) {
+		$nbdecimal = $nbdecimalmaxshown;
+		if (preg_match('/\.\.\./i', getDolGlobalString('MAIN_MAX_DECIMALS_SHOWN'))) {
+			// If output is truncated, we show ...
 			$end = '...';
 		}
 	}
@@ -6149,9 +6170,9 @@ function price($amount, $form = 0, $outlangs = '', $trunc = 1, $rounding = -1, $
 	// If force rounding
 	if ((string) $forcerounding != '-1') {
 		if ($forcerounding === 'MU') {
-			$nbdecimal = $conf->global->MAIN_MAX_DECIMALS_UNIT;
+			$nbdecimal = getDolGlobalInt('MAIN_MAX_DECIMALS_UNIT');
 		} elseif ($forcerounding === 'MT') {
-			$nbdecimal = $conf->global->MAIN_MAX_DECIMALS_TOT;
+			$nbdecimal = getDolGlobalInt('MAIN_MAX_DECIMALS_TOT');
 		} elseif ($forcerounding >= 0) {
 			$nbdecimal = $forcerounding;
 		}
@@ -6603,7 +6624,12 @@ function getTaxesFromId($vatrate, $buyer = null, $seller = null, $firstparamisid
 		$sql .= ", ".MAIN_DB_PREFIX."c_country as c";
 		/*if ($mysoc->country_code == 'ES') $sql.= " WHERE t.fk_pays = c.rowid AND c.code = '".$db->escape($buyer->country_code)."'";    // vat in spain use the buyer country ??
 		else $sql.= " WHERE t.fk_pays = c.rowid AND c.code = '".$db->escape($seller->country_code)."'";*/
-		$sql .= " WHERE t.fk_pays = c.rowid AND c.code = '".$db->escape($seller->country_code)."'";
+		$sql .= " WHERE t.fk_pays = c.rowid";
+		if (getDolGlobalString('SERVICE_ARE_ECOMMERCE_200238EC')) {
+			$sql .= " AND c.code = '".$db->escape($buyer->country_code)."'";
+		} else {
+			$sql .= " AND c.code = '".$db->escape($seller->country_code)."'";
+		}
 		$sql .= " AND t.taux = ".((float) $vatratecleaned)." AND t.active = 1";
 		$sql .= " AND t.entity IN (".getEntity('c_tva').")";
 		if ($vatratecode) {
@@ -12558,6 +12584,10 @@ function jsonOrUnserialize($stringtodecode)
  */
 function forgeSQLFromUniversalSearchCriteria($filter, &$errorstr = '', $noand = 0, $nopar = 0, $noerror = 0)
 {
+	if (empty($filter)) {
+		return ''; // to avoid the return "AND (())"
+	}
+
 	if (!preg_match('/^\(.*\)$/', $filter)) {    // If $filter does not start and end with ()
 		$filter = '(' . $filter . ')';
 	}
