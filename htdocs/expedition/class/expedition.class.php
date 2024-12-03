@@ -2362,7 +2362,11 @@ class Expedition extends CommonObject
 			$error ++;
 		}
 
-		return $error;
+		if (!$error) {
+			return 1;
+		} else {
+			return -1;
+		}
 	}
 
 	/**
