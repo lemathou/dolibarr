@@ -9,15 +9,15 @@
 [submodule "htdocs/custom/mmicompta"]
 	path = htdocs/custom/mmicompta
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicompta.git
-	branch = 16.0
+	branch = 19.0
 [submodule "htdocs/custom/sfycustom"]
 	path = htdocs/custom/sfycustom
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-sfycustom.git
-	branch = 16.0
+	url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-sfycustom.git
+	branch = 19.0
 [submodule "htdocs/custom/mbietransactions"]
 	path = htdocs/custom/mbietransactions
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mbietransactions.git
-	branch = 16.0
+	url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mbietransactions.git
+	branch = 19.0-mmi
 [submodule "htdocs/custom/mmiatelier"]
 	path = htdocs/custom/mmiatelier
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiatelier.git
@@ -32,7 +32,7 @@
 	branch = 19.0
 [submodule "htdocs/custom/mmidocuments"]
 	path = htdocs/custom/mmidocuments
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmidocuments.git
+	url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mmidocuments.git
 	branch = 16.0
 [submodule "htdocs/custom/mmientrepots"]
 	path = htdocs/custom/mmientrepots
@@ -177,4 +177,9 @@
 [submodule "htdocs/custom/mmisav"]
         path = htdocs/custom/mmisav
         url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmisav.git
+	branch = 19.0
+[submodule "htdocs/custom/mmiwildx"]
+        path = htdocs/custom/mmiwildx
+        url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mmiwildx.git
         branch = 19.0
+
