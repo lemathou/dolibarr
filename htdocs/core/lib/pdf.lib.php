@@ -474,9 +474,23 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 				if (getDolGlobalInt('MMIDOCUMENTS_PDF_COMMERCIAL')) {
 					//var_dump($sourcecompany, $targetcompany, $targetcontact, $usecontact);
 					global $user;
-					$commerciaux = $targetcompany->getSalesRepresentatives($user);
-					if(is_array($commerciaux))
-						$commercial = $commerciaux[0];
+					if(!empty($object)) {
+						$arrayidcontact = $object->getIdContact('internal', 'SALESREPFOLL');
+						if (!empty($arrayidcontact)) {
+							$object->fetch_user($arrayidcontact[0]);
+							$commercial = [
+								'firstname'=>$object->user->firstname,
+								'lastname'=>$object->user->lastname,
+								'office_phone'=>$object->user->office_phone,
+								'email'=>$object->user->email,
+							];
+						}
+					}
+					if (empty($commercial)) {
+						$commerciaux = $targetcompany->getSalesRepresentatives($user);
+						if(is_array($commerciaux) && !empty($commerciaux))
+							$commercial = $commerciaux[0];
+					}
 					//var_dump($commercial);
 					if (!empty($commercial))
 						$stringaddress .= ($stringaddress ? "\n" : '').'Conseiller: '.$outputlangs->convToOutputCharset($commercial['firstname'].' '.$commercial['lastname']);
