@@ -555,7 +555,7 @@ if (dol_strlen($canvas) > 0) {
 	$sql .= " AND p.canvas = '".$db->escape($canvas)."'";
 }
 // Search for tag/category ($searchCategoryProductList is an array of ID)
-if (!empty($searchCategoryProductList)) {
+if (!empty($searchCategoryProductList) && empty(getDolGlobalInt('MMI_PRODUCT_CATSEARCH_SUBCAT'))) {
 	$searchCategoryProductSqlList = array();
 	$listofcategoryid = '';
 	foreach ($searchCategoryProductList as $searchCategoryProduct) {
@@ -570,7 +570,7 @@ if (!empty($searchCategoryProductList)) {
 		}
 	}
 	if ($listofcategoryid) {
-		$searchCategoryProductSqlList[] = " EXISTS (SELECT ck.fk_product FROM ".MAIN_DB_PREFIX."categorie_product as ck WHERE p.rowid = ck.fk_product AND ck.fk_categorie IN (".$db->sanitize($listofcategoryid)."))";
+			$searchCategoryProductSqlList[] = " EXISTS (SELECT ck.fk_product FROM ".MAIN_DB_PREFIX."categorie_product as ck WHERE p.rowid = ck.fk_product AND ck.fk_categorie IN (".$db->sanitize($listofcategoryid)."))";
 	}
 	if ($searchCategoryProductOperator == 1) {
 		if (!empty($searchCategoryProductSqlList)) {
