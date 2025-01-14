@@ -182,4 +182,8 @@
         path = htdocs/custom/mmiwildx
         url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mmiwildx.git
         branch = 19.0
+[submodule "htdocs/custom/mmibrevo"]
+        path = htdocs/custom/mmibrevo
+        url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mmibrevo.git
+        branch = 19.0
 
