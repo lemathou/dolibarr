@@ -8602,8 +8602,8 @@ abstract class CommonObject
 						continue; // <> -1 and <> 1 and <> 3 = not visible on forms, only on list
 					} elseif (($mode == 'edit') && abs($visibility) != 1 && abs($visibility) != 3 && abs($visibility) != 4) {
 						continue; // <> -1 and <> 1 and <> 3 = not visible on forms, only on list and <> 4 = not visible at the creation
-					} elseif ($mode == 'view' && empty($visibility)) {
-						continue;
+					} elseif ($mode == 'view' && (abs($visibility) == 3 || $visibility<0)) {
+						continue; // Here this is considered as a "view", but we have no option to hide fields on view form, and the list form is not used, so I suggest considering this as the list view
 					}
 					if (empty($perms)) {
 						continue;
