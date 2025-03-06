@@ -215,6 +215,10 @@ class ProductFournisseur extends Product
 		$this->db->begin();
 
 		// Call trigger
+		if (getDolGlobalInt('MMIPRODUCT_PRODUCT_DEFULT_SUPPLIER_UPDATE')) {
+			// MMI Hack so that the trigger is usefull...
+			$this->product_fourn_price_id = $rowid;
+		}
 		$result = $this->call_trigger('SUPPLIER_PRODUCT_BUYPRICE_DELETE', $user);
 		if ($result < 0) {
 			$error++;
