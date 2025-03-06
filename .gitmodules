@@ -44,8 +44,8 @@
 	branch = 16.0
 [submodule "htdocs/custom/mmifournisseurprice"]
 	path = htdocs/custom/mmifournisseurprice
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmifournisseurprice.git
-	branch = 16.0
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmifournisseurprice.git
+	branch = 19.0
 [submodule "htdocs/custom/mmipayments"]
 	path = htdocs/custom/mmipayments
 	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmipayments.git
