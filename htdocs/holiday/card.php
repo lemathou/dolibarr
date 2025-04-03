@@ -245,7 +245,7 @@ if (empty($reshook)) {
 
 			// If there is no Business Days within request
 			$nbopenedday = num_open_day($date_debut_gmt, $date_fin_gmt, 0, 1, $halfday);
-			if ($nbopenedday < 0.5) {
+			if ($nbopenedday < 0.5 && !$conf->global->MMIHOLIDAY_ALLOW_REQUEST_WITHOUT_OPEN_DAY) {
 				setEventMessages($langs->trans("ErrorDureeCP"), null, 'errors'); // No working day
 				$error++;
 				$action = 'create';
