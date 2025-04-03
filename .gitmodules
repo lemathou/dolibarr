@@ -1,189 +1,296 @@
-[submodule "htdocs/custom/mmicommon"]
-	path = htdocs/custom/mmicommon
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicommon.git
-	branch = 19.0
-[submodule "htdocs/custom/mmiged"]
-	path = htdocs/custom/mmiged
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiged.git
-        branch = 19.0
-[submodule "htdocs/custom/mmicompta"]
-	path = htdocs/custom/mmicompta
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmicompta.git
-	branch = 19.0
-[submodule "htdocs/custom/sfycustom"]
-	path = htdocs/custom/sfycustom
-	url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-sfycustom.git
-	branch = 19.0
-[submodule "htdocs/custom/mbietransactions"]
-	path = htdocs/custom/mbietransactions
-	url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mbietransactions.git
+# Adapt this file and your ~/.ssh/config, specify at least :
+# * Port 12222 : for git@gitlab.iprospective.fr
+# * Port 12322 : for git@gogs.iprospective.fr
+# * ForwardAgent yes : for gitlab@repos.iprospective.net
+# * ForwardAgent yes : for gogs@repos.iprospective.net
+[submodule "htdocs/custom_dolicloud"]
+	path = htdocs/custom_dolicloud
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-modules-dolicloud.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-modules-dolicloud.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-modules-dolicloud.git
 	branch = 19.0-mmi
-[submodule "htdocs/custom/mmiatelier"]
-	path = htdocs/custom/mmiatelier
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiatelier.git
-	branch = 16.0
-[submodule "htdocs/custom/mmiavisverifies"]
-	path = htdocs/custom/mmiavisverifies
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiavisverifies.git
-	branch = 16.0
-[submodule "htdocs/custom/mmicrm"]
-	path = htdocs/custom/mmicrm
-	url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mmicrm.git
-	branch = 19.0
-[submodule "htdocs/custom/mmidocuments"]
-	path = htdocs/custom/mmidocuments
-	url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mmidocuments.git
-	branch = 16.0
-[submodule "htdocs/custom/mmientrepots"]
-	path = htdocs/custom/mmientrepots
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmientrepots.git
-	branch = 16.0
-[submodule "htdocs/custom/mmifilters"]
-	path = htdocs/custom/mmifilters
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmifilters.git
-	branch = 16.0
-[submodule "htdocs/custom/mmifournisseurprice"]
-	path = htdocs/custom/mmifournisseurprice
-	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmifournisseurprice.git
-	branch = 19.0
-[submodule "htdocs/custom/mmipayments"]
-	path = htdocs/custom/mmipayments
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmipayments.git
-	branch = 16.0
-[submodule "htdocs/custom/mmiprestasync"]
-	path = htdocs/custom/mmiprestasync
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiprestasync.git
-	branch = 19.0
-[submodule "htdocs/custom/mmiproduct"]
-	path = htdocs/custom/mmiproduct
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproduct.git
-	branch = 19.0
-[submodule "htdocs/custom/mmiproductdluo"]
-	path = htdocs/custom/mmiproductdluo
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproductdluo.git
-	branch = 16.0
-[submodule "htdocs/custom/mmiproject"]
-	path = htdocs/custom/mmiproject
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiproject.git
-	branch = 19.0
-[submodule "htdocs/custom/mmistats"]
-	path = htdocs/custom/mmistats
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmistats.git
-	branch = 19.0
-[submodule "htdocs/custom/mmivateec"]
-	path = htdocs/custom/mmivateec
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmivateec.git
-	branch = 16.0
-[submodule "htdocs/custom/mmiworkflow"]
-	path = htdocs/custom/mmiworkflow
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiworkflow.git
-	branch = 19.0
-[submodule "htdocs/custom/mmishipping"]
-	path = htdocs/custom/mmishipping
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmishipping.git
-	branch = 19.0
 [submodule "htdocs/custom/abricot"]
 	path = htdocs/custom/abricot
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-abricot.git
+	#url = https://github.com/ATM-Consulting/dolibarr_module_abricot.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-abricot.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-abricot.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-abricot.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/aproximite"]
 	path = htdocs/custom/aproximite
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-aproximite.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-aproximite.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-aproximite.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-aproximite.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/bompdf"]
 	path = htdocs/custom/bompdf
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-bompdf.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-bompdf.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-bompdf.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-bompdf.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/contacttracking"]
 	path = htdocs/custom/contacttracking
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-contacttracking.git
+	#url = https://dev.altairis.net/altairisfr/contacttracking_inovea.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-contacttracking.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-contacttracking.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-contacttracking.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/dropdownmenu"]
 	path = htdocs/custom/dropdownmenu
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-dropdownmenu.git
+	#url = https://github.com/BB2A-Anthony/dolibarr_dropdownmenu.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-dropdownmenu.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-dropdownmenu.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-dropdownmenu.git
 	branch = 19.0-mmi
 [submodule "htdocs/custom/externalaccess"]
 	path = htdocs/custom/externalaccess
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-externalaccess.git
+	#url = https://github.com/ATM-Consulting/dolibarr_module_externalaccess.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-externalaccess.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-externalaccess.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-externalaccess.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/inventory"]
 	path = htdocs/custom/inventory
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-inventory.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-inventory.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-inventory.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-inventory.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/margincontrol"]
 	path = htdocs/custom/margincontrol
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-margincontrol.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-margincontrol.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-margincontrol.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-margincontrol.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/milestone"]
 	path = htdocs/custom/milestone
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-milestone.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-milestone.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-milestone.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-milestone.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/stocktransfers"]
 	path = htdocs/custom/stocktransfers
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-stocktransfers.git
+	#url = https://github.com/caos30/dolibarr_stocktransfers_module.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-stocktransfers.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-stocktransfers.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-stocktransfers.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/multismtp"]
 	path = htdocs/custom/multismtp
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-multismtp.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-multismtp.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-multismtp.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-multismtp.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/supplierorderfromorder"]
 	path = htdocs/custom/supplierorderfromorder
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-supplierorderfromorder.git
+	#url = https://github.com/ATM-Consulting/dolibarr_module_supplierorderfromorder.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-supplierorderfromorder.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-supplierorderfromorder.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-supplierorderfromorder.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/zenfusionmaps"]
 	path = htdocs/custom/zenfusionmaps
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-zenfusionmaps.git
+	#url = https://github.com/GPCsolutions/zenfusionmaps.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-zenfusionmaps.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-zenfusionmaps.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-zenfusionmaps.git
 	branch = 16.0-mmi
-[submodule "htdocs/custom_dolicloud"]
-	path = htdocs/custom_dolicloud
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-modules-dolicloud.git
-	branch = 19.0-mmi
 [submodule "htdocs/custom/attachments"]
 	path = htdocs/custom/attachments
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-attachments.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-attachments.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-attachments.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-attachments.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/propalehistory"]
 	path = htdocs/custom/propalehistory
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-propalehistory.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-propalehistory.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-propalehistory.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-propalehistory.git
 	branch = 16.0-mmi
 [submodule "htdocs/custom/listincsv"]
 	path = htdocs/custom/listincsv
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-listincsv.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-listincsv.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-listincsv.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-listincsv.git
 	branch = 18.0-mmi
-[submodule "htdocs/custom/mmisecurity"]
-	path = htdocs/custom/mmisecurity
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmisecurity.git
-	branch = 16.0
 [submodule "htdocs/custom/subtotal"]
 	path = htdocs/custom/subtotal
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-subtotal.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-subtotal.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-subtotal.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-subtotal.git
 	branch = 18.0-mmi
 [submodule "htdocs/custom/discountrules"]
 	path = htdocs/custom/discountrules
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-discountrules.git
+	#url = https://github.com/ATM-Consulting/dolibarr_module_discountrules.git
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-discountrules.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-discountrules.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-discountrules.git
 	branch = 18.0-mmi
 [submodule "htdocs/custom/btp"]
 	path = htdocs/custom/btp
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-btp.git
-        branch = 16.0-mmi
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-btp.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-btp.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-btp.git
+	branch = 16.0-mmi
 [submodule "htdocs/custom/nomenclature"]
 	path = htdocs/custom/nomenclature
-	url = git@gogs.iprospective.fr:iProspective/dolibarr-module-nomenclature.git
-        branch = 16.0-mmi
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-nomenclature.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-nomenclature.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-nomenclature.git
+	branch = 16.0-mmi
+[submodule "htdocs/custom/mmicommon"]
+	path = htdocs/custom/mmicommon
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmicommon.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmicommon.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmicommon.git
+	branch = 19.0
+[submodule "htdocs/custom/mmiged"]
+	path = htdocs/custom/mmiged
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiged.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiged.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiged.git
+	branch = 19.0
+[submodule "htdocs/custom/mmicompta"]
+	path = htdocs/custom/mmicompta
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmicompta.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmicompta.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmicompta.git
+	branch = 19.0
+[submodule "htdocs/custom/sfycustom"]
+	path = htdocs/custom/sfycustom
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-sfycustom.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-sfycustom.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-sfycustom.git
+	branch = 19.0
+[submodule "htdocs/custom/mbietransactions"]
+	path = htdocs/custom/mbietransactions
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mbietransactions.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mbietransactions.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mbietransactions.git
+	branch = 19.0-mmi
+[submodule "htdocs/custom/mmiatelier"]
+	path = htdocs/custom/mmiatelier
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiatelier.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiatelier.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiatelier.git
+	branch = 16.0
+[submodule "htdocs/custom/mmiavisverifies"]
+	path = htdocs/custom/mmiavisverifies
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiavisverifies.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiavisverifies.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiavisverifies.git
+	branch = 16.0
+[submodule "htdocs/custom/mmicrm"]
+	path = htdocs/custom/mmicrm
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmicrm.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmicrm.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmicrm.git
+	branch = 19.0
+[submodule "htdocs/custom/mmidocuments"]
+	path = htdocs/custom/mmidocuments
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmidocuments.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmidocuments.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmidocuments.git
+	branch = 16.0
+[submodule "htdocs/custom/mmientrepots"]
+	path = htdocs/custom/mmientrepots
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmientrepots.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmientrepots.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmientrepots.git
+	branch = 16.0
+[submodule "htdocs/custom/mmifilters"]
+	path = htdocs/custom/mmifilters
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmifilters.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmifilters.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmifilters.git
+	branch = 16.0
+[submodule "htdocs/custom/mmifournisseurprice"]
+	path = htdocs/custom/mmifournisseurprice
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmifournisseurprice.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmifournisseurprice.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmifournisseurprice.git
+	branch = 19.0
+[submodule "htdocs/custom/mmipayments"]
+	path = htdocs/custom/mmipayments
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmipayments.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmipayments.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmipayments.git
+	branch = 16.0
+[submodule "htdocs/custom/mmiprestasync"]
+	path = htdocs/custom/mmiprestasync
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiprestasync.git
+	branch = 19.0
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiprestasync.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiprestasync.git
+[submodule "htdocs/custom/mmiproduct"]
+	path = htdocs/custom/mmiproduct
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiproduct.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiproduct.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiproduct.git
+	branch = 19.0
+[submodule "htdocs/custom/mmiproductdluo"]
+	path = htdocs/custom/mmiproductdluo
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiproductdluo.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiproductdluo.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiproductdluo.git
+	branch = 16.0
+[submodule "htdocs/custom/mmiproject"]
+	path = htdocs/custom/mmiproject
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiproject.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiproject.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiproject.git
+	branch = 19.0
+[submodule "htdocs/custom/mmistats"]
+	path = htdocs/custom/mmistats
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmistats.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmistats.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmistats.git
+	branch = 19.0
+[submodule "htdocs/custom/mmivateec"]
+	path = htdocs/custom/mmivateec
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmivateec.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmivateec.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmivateec.git
+	branch = 16.0
+[submodule "htdocs/custom/mmiworkflow"]
+	path = htdocs/custom/mmiworkflow
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiworkflow.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiworkflow.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiworkflow.git
+	branch = 19.0
+[submodule "htdocs/custom/mmishipping"]
+	path = htdocs/custom/mmishipping
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmishipping.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmishipping.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmishipping.git
+	branch = 19.0
+[submodule "htdocs/custom/mmisecurity"]
+	path = htdocs/custom/mmisecurity
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmisecurity.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmisecurity.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmisecurity.git
+	branch = 16.0
 [submodule "htdocs/custom/mmiredmine"]
-        path = htdocs/custom/mmiredmine
-        url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmiredmine.git
-        branch = 19.0
+	path = htdocs/custom/mmiredmine
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiredmine.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiredmine.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiredmine.git
+	branch = 19.0
 [submodule "htdocs/custom/mmisav"]
-        path = htdocs/custom/mmisav
-        url = git@gogs.iprospective.fr:iProspective/dolibarr-module-mmisav.git
+	path = htdocs/custom/mmisav
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmisav.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmisav.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmisav.git
 	branch = 19.0
 [submodule "htdocs/custom/mmiwildx"]
-        path = htdocs/custom/mmiwildx
-        url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mmiwildx.git
-        branch = 19.0
+	path = htdocs/custom/mmiwildx
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiwildx.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiwildx.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiwildx.git
+	branch = 19.0
 [submodule "htdocs/custom/mmibrevo"]
-        path = htdocs/custom/mmibrevo
-        url = git@gitlab.iprospective.fr:iprospective/dolibarr/dolibarr-module-mmibrevo.git
-        branch = 19.0
+	path = htdocs/custom/mmibrevo
+	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmibrevo.git
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmibrevo.git
+	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmibrevo.git
+	branch = 19.0
 

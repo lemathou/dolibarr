@@ -4418,7 +4418,7 @@ class Form
 							if (depositPercent.length > 0) {
 								$("#' . $htmlname . '_deposit_percent_container").show().find("#' . $htmlname . '_deposit_percent").val(depositPercent);
 							} else {
-								$("#' . $htmlname . '_deposit_percent_container").hide();
+								$("#' . $htmlname . '_deposit_percent_container").hide().find("#' . $htmlname . '_deposit_percent").val(0);
 							}
 
 							return true;
@@ -8903,7 +8903,8 @@ class Form
 								escapeMarkup: function (markup) { return markup; }, 	// let our custom formatter work
 								// Specify format function for selected item
 								formatSelection: formatSelection,
-							 	templateSelection: formatSelection		/* For 4.0 */
+							 	templateSelection: formatSelection,		/* For 4.0 */
+							 	language: select2arrayoflanguage
 							});
 
 							/* Add also morecss to the css .select2 that is after the #htmlname, for component that are show dynamically after load, because select2 set
