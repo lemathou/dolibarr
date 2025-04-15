@@ -1375,10 +1375,10 @@ abstract class CommonObject
 
 		$sql = "SELECT ec.rowid, ec.statut as statuslink, ec.fk_socpeople as id, ec.fk_c_type_contact"; // This field contains id of llx_socpeople or id of llx_user
 		if ($source == 'internal') {
-			$sql .= ", '-1' as socid, t.statut as statuscontact, t.login, t.photo";
+			$sql .= ", '-1' as socid, t.statut as statuscontact, t.login, t.photo, t.fk_country as country_id";
 		}
 		if ($source == 'external' || $source == 'thirdparty') {
-			$sql .= ", t.fk_soc as socid, t.statut as statuscontact";
+			$sql .= ", t.fk_soc as socid, t.statut as statuscontact, t.fk_pays as country_id";
 		}
 		$sql .= ", t.civility as civility, t.lastname as lastname, t.firstname, t.email";
 		$sql .= ", tc.source, tc.element, tc.code, tc.libelle as type_label";
@@ -1444,6 +1444,13 @@ abstract class CommonObject
 						'status' => $obj->statuslink,
 						'fk_c_type_contact' => $obj->fk_c_type_contact
 					);
+					// MMI : For export options
+					if (getDolGlobalInt('MMIDOCUMENTS_PDF_EXPORT_ORIGINE')) {
+						require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+						$country = (!empty($obj->country_id)) ?getCountry($obj->country_id,'all') :NULL;
+						$tab[$i]['country_id'] = $obj->country_id;
+						$tab[$i]['country'] = $country;
+					}
 				} else {
 					$tab[$i] = $obj->id;
 				}
