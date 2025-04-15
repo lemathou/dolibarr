@@ -1941,19 +1941,21 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 	}
 	//var_dump($liste_contact); die();
 	// Show origin, hfcide, weight & dimensions inc ase of Export only
-	if (in_array($objecttype, ['Facture', 'Commande', 'Propale']) && $export && (!empty($conf->global->MMIDOCUMENTS_PDF_EXPORT_ORIGINE))) {
+	if (in_array($objecttype, ['Facture', 'Commande', 'Propale']) && $export && (!empty($conf->global->MMIDOCUMENTS_PDF_EXPORT_ORIGINE))
+		&& (!empty($prodser->customcode) || !empty($prodser->country_code) || !empty($prodser->weight) || !empty($prodser->height) || !empty($prodser->depth) || !empty($prodser->width))) {
 		//var_dump($prodser);
+		$libelleproduitservice .= '__N__'.$outputlangs->transnoentitiesnoconv('ExportInfo').' :';
 		if (!empty($prodser->customcode)) {
-			$libelleproduitservice .= '__N__  '.$outputlangs->transnoentitiesnoconv('CustomCode').': '.$prodser->customcode;
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('CustomCode').': '.$prodser->customcode;
 		}
 		if (!empty($prodser->country_code)) {
-			$libelleproduitservice .= '__N__  '.$outputlangs->transnoentitiesnoconv('Origin').': '.$prodser->country_code;
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('Origin').': '.$prodser->country_code;
 		}
 		if (!empty($prodser->weight)) {
-			$libelleproduitservice .= '__N__  '.$outputlangs->transnoentitiesnoconv('Weight').': '.$prodser->weight.($prodser->weight_units ?$prodser->weight_units :'');
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('Weight').': '.$prodser->weight.(is_numeric($prodser->weight_units) ?measuringUnitString(0, 'weight', $prodser->weight_units) :'');
 		}
 		if (!empty($prodser->height) || !empty($prodser->depth) || !empty($prodser->width)) {
-			$libelleproduitservice .= '__N__  '.$outputlangs->transnoentitiesnoconv('Dimensions').': '.$prodser->height.($prodser->height_units ?$prodser->height_units :'').' x '.$prodser->length.($prodser->length_units ?$prodser->length_units :'').' x '.$prodser->width.($prodser->width_units ?$prodser->width_units :'');
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('Dimensions').': '.($prodser->height ?$prodser->height :0).(is_numeric($prodser->height_units) ?measuringUnitString(0, 'size', $prodser->height_units) :'').' x '.($prodser->length ?$prodser->length :0).(is_numeric($prodser->length_units) ?measuringUnitString(0, 'size', $prodser->length_units) :'').' x '.($prodser->width ?$prodser->width :0).(is_numeric($prodser->width_units) ?measuringUnitString(0, 'size', $prodser->width_units) :'');
 		}
 	}
 	// Show Location
