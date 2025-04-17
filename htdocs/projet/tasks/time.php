@@ -1443,6 +1443,14 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		print '<input type="hidden" name="tab" value="' . $tab . '">';
 		print '<input type="hidden" name="page_y" value="">';
 
+		$objectclass = 'TaskTime';
+		$objectlabel = 'TimeSpent';
+		$permissiontoread = $user->hasRight('projet', 'lire');
+		$permissiontodelete = $user->hasRight('projet', 'supprimer');
+		$permissiontoadd = $user->hasRight('projet', 'creer');
+		$uploaddir = $conf->project->dir_output;
+		include DOL_DOCUMENT_ROOT.'/core/actions_massactions.inc.php';
+
 		// Form to convert time spent into invoice
 		if ($massaction == 'generateinvoice') {
 			if (!empty($projectstatic->thirdparty) && $projectstatic->thirdparty->id > 0) {
