@@ -763,7 +763,8 @@ function projectLinesa(&$inc, $parent, &$lines, &$level, $var, $showproject, &$t
 						$labeltoshow .= '</i>';
 					}
 					$label_disp = getDolGlobalString('PROJECT_TASK_LIST_LABEL_DISP');
-					print '<td class="'.($label_disp==='nowrap' ?'nowraponall' :($label_disp==='full' ?'' :'tdoverflowmax200')).'" title="'.dol_escape_htmltag($label).'">';
+					$label_cssclass = $label_disp==='nowrap' ?'nowraponall' :($label_disp==='full' ?'' :'tdoverflowmax200');
+					print '<td class="'.$label_cssclass.'" title="'.dol_escape_htmltag($label).'">';
 					print $labeltoshow;
 					print "</td>\n";
 				}

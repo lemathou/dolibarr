@@ -1289,7 +1289,9 @@ while ($i < $imaxinloop) {
 			}
 			// Label
 			if (!empty($arrayfields['t.label']['checked'])) {
-				print '<td class="tdoverflowmax200" title="'.dol_escape_htmltag($object->label).'">';
+				$label_disp = getDolGlobalString('PROJECT_TASK_LIST_LABEL_DISP');
+				$label_cssclass = $label_disp==='nowrap' ?'nowraponall' :($label_disp==='full' ?'' :'tdoverflowmax200');
+				print '<td class="'.$label_cssclass.'" title="'.dol_escape_htmltag($object->label).'">';
 				print dol_escape_htmltag($object->label);
 				print '</td>';
 				if (!$i) {
