@@ -293,4 +293,10 @@
 	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmibrevo.git
 	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmibrevo.git
 	branch = 19.0
+[submodule "htdocs/custom/mmiyounited"]
+        path = htdocs/custom/mmiyounited
+        #url = https://gogs.iprospective.fr/iProspective/dolibarr-module-mmiyounited.git
+        url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-mmiyounited.git
+        #url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-mmiyounited.git
+        branch = 19.0
 
