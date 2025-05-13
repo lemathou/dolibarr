@@ -1925,11 +1925,38 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 	}
 
 	// Added by MMI Mathieu Moulin iProspective
-	// Show barcode if shipping
 	$objecttype = get_class($object);
+	// Show barcode if shipping
 	if (in_array($objecttype, ['Expedition']) && (!empty($conf->global->SHIPPING_PDF_BARCODE))) {
 		if ($prodser->barcode)
 			$libelleproduitservice .= '__N__  Barcode: '.$prodser->barcode;
+	}
+	// Check if export (outside EU)
+	$export = false;
+	$liste_contact = $object->liste_contact(-1, 'external');
+	foreach($liste_contact as $contact) {
+		if ($contact['code']=="SHIPPING" && !empty($contact['country']['code']) && !is_numeric(strpos($conf->global->MAIN_COUNTRIES_IN_EEC, $contact['country']['code']))) {
+			$export = true;
+		}
+	}
+	//var_dump($liste_contact); die();
+	// Show origin, hfcide, weight & dimensions inc ase of Export only
+	if (in_array($objecttype, ['Facture', 'Commande', 'Propale']) && $export && (!empty($conf->global->MMIDOCUMENTS_PDF_EXPORT_ORIGINE))
+		&& (!empty($prodser->customcode) || !empty($prodser->country_code) || !empty($prodser->weight) || !empty($prodser->height) || !empty($prodser->depth) || !empty($prodser->width))) {
+		//var_dump($prodser);
+		$libelleproduitservice .= '__N__'.$outputlangs->transnoentitiesnoconv('ExportInfo').' :';
+		if (!empty($prodser->customcode)) {
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('CustomCode').': '.$prodser->customcode;
+		}
+		if (!empty($prodser->country_code)) {
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('Origin').': '.$prodser->country_code;
+		}
+		if (!empty($prodser->weight)) {
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('Weight').': '.$prodser->weight.(is_numeric($prodser->weight_units) ?measuringUnitString(0, 'weight', $prodser->weight_units) :'');
+		}
+		if (!empty($prodser->height) || !empty($prodser->depth) || !empty($prodser->width)) {
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('Dimensions').': '.($prodser->height ?$prodser->height :0).(is_numeric($prodser->height_units) ?measuringUnitString(0, 'size', $prodser->height_units) :'').' x '.($prodser->length ?$prodser->length :0).(is_numeric($prodser->length_units) ?measuringUnitString(0, 'size', $prodser->length_units) :'').' x '.($prodser->width ?$prodser->width :0).(is_numeric($prodser->width_units) ?measuringUnitString(0, 'size', $prodser->width_units) :'');
+		}
 	}
 	// Show Location
 	if (in_array($objecttype, ['Expedition']) && !empty($conf->global->SHIPPING_PDF_LOCATION) && !empty($conf->categorie->enabled)) {
