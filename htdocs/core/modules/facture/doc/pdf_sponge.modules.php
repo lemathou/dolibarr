@@ -1401,7 +1401,7 @@ class pdf_sponge extends ModelePDFFactures
 			}
 
 			// Show online payment link
-			if (empty($object->mode_reglement_code) || $object->mode_reglement_code == 'CB' || $object->mode_reglement_code == 'VAD') {
+			if (empty($object->mode_reglement_code) || $object->mode_reglement_code == 'CB' || $object->mode_reglement_code == 'VAD' || getDolGlobalInt('PDF_SHOW_LINK_TO_ONLINE_PAYMENT_ALWAYS')) {
 				$useonlinepayment = 0;
 				if (getDolGlobalString('PDF_SHOW_LINK_TO_ONLINE_PAYMENT')) {
 					if (isModEnabled('paypal')) {
@@ -1414,7 +1414,6 @@ class pdf_sponge extends ModelePDFFactures
 						$useonlinepayment++;
 					}
 				}
-
 
 				if ($object->statut != Facture::STATUS_DRAFT && $useonlinepayment) {
 					require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';

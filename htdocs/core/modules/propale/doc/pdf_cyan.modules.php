@@ -1116,6 +1116,41 @@ class pdf_cyan extends ModelePDFPropales
 				$posy = $pdf->GetY() + 2;
 			}
 
+			// Show online payment link
+			if (empty($object->mode_reglement_code) || $object->mode_reglement_code == 'CB' || $object->mode_reglement_code == 'VAD' || getDolGlobalInt('PDF_SHOW_LINK_TO_ONLINE_PAYMENT_ALWAYS')) {
+				$useonlinepayment = 0;
+				if (getDolGlobalString('PDF_SHOW_LINK_TO_ONLINE_PAYMENT')) {
+					if (isModEnabled('paypal')) {
+						$useonlinepayment++;
+					}
+					if (isModEnabled('stripe')) {
+						$useonlinepayment++;
+					}
+					if (isModEnabled('paybox')) {
+						$useonlinepayment++;
+					}
+				}
+
+				if ($object->statut != Facture::STATUS_DRAFT && $useonlinepayment) {
+					require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
+					global $langs;
+
+					$langs->loadLangs(array('payment', 'paybox', 'stripe'));
+					$servicename = $langs->transnoentities('Online');
+					if (!empty($object->context['propale_history']['original_ref']))
+						$ref = $object->context['propale_history']['original_ref'];
+					else
+						$ref = $object->ref;
+					$paiement_url = getOnlinePaymentUrl('', 'propal', $ref, '', '', '');
+					$linktopay = $langs->trans("ToOfferALinkForOnlinePayment", '').' <a href="'.$paiement_url.'">'.$outputlangs->transnoentities("ClickHere").'</a>';
+
+					$pdf->SetXY($this->marge_gauche, $posy);
+					$pdf->writeHTMLCell($posxend - $this->marge_gauche, 5, '', '', dol_htmlentitiesbr($linktopay), 0, 1);
+
+					$posy = $pdf->GetY() + 1;
+				}
+			}
+
 			// Show payment mode CHQ
 			if (empty($object->mode_reglement_code) || $object->mode_reglement_code == 'CHQ') {
 				// Si mode reglement non force ou si force a CHQ
