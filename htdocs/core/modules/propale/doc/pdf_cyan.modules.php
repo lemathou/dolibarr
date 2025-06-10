@@ -1131,7 +1131,7 @@ class pdf_cyan extends ModelePDFPropales
 					}
 				}
 
-				if ($object->statut != Facture::STATUS_DRAFT && $useonlinepayment) {
+				if ($object->statut != Facture::STATUS_DRAFT && ($useonlinepayment || getDolGlobalInt('PDF_SHOW_LINK_TO_ONLINE_PAYMENT_ALWAYS'))) {
 					require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
 					global $langs;
 
