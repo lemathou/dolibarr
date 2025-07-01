@@ -162,12 +162,6 @@ function getValidOnlinePaymentMethods($paymentmethod = '')
 		$langs->load("stripe");
 		$validpaymentmethod['stripe'] = 'valid';
 	}
-	// Added by MMI Mathieu Moulin iProspective
-	// @todo put inside new HOOK
-	if ((empty($paymentmethod) || $paymentmethod == 'mbietransactions') && isModEnabled('mbietransactions')) {
-		$langs->load("mbietransactions@mbietransactions");
-		$validpaymentmethod['mbietransactions'] = 'valid';
-	}
 
 	// This hook is used to complete the $validpaymentmethod array so an external payment modules
 	// can add its own key (ie 'payzen' for Payzen, ...)
