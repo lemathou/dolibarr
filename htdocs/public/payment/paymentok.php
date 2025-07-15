@@ -270,7 +270,6 @@ if (isModEnabled('paypal')) {
 			if (!empty($paymentType)) {
 				dol_syslog("We call GetExpressCheckoutDetails", LOG_DEBUG, 0, '_payment');
 				$resArray = getDetails($onlinetoken);
-				//var_dump($resarray);
 
 				$ack = strtoupper($resArray["ACK"]);
 				if ($ack == "SUCCESS" || $ack == "SUCCESSWITHWARNING") {
@@ -382,7 +381,7 @@ if (empty($paymentType)) {
 
 $fulltag = $FULLTAG;
 $tmptag = dolExplodeIntoArray($fulltag, '.', '=');
-
+//var_dump($tmptag);
 
 dol_syslog("ispaymentok=".$ispaymentok." tmptag=".var_export($tmptag, true), LOG_DEBUG, 0, '_payment');
 
@@ -935,6 +934,91 @@ if ($ispaymentok) {
 			}
 		} else {
 			$postactionmessages[] = 'Invoice paid '.$tmptag['INV'].' was not found';
+			$ispostactionok = -1;
+		}
+	} elseif (array_key_exists('PRO', $tmptag) && $tmptag['PRO'] > 0) {
+		include_once DOL_DOCUMENT_ROOT . '/comm/propal/class/propal.class.php';
+		$object = new Propal($db);
+		$result = $object->fetch((int) $tmptag['PRO']);
+		if ($result) {
+			$FinalPaymentAmt = $_SESSION["FinalPaymentAmt"];
+
+			$paymentTypeId = 0;
+			if ($paymentmethod == 'paybox') {
+				$paymentTypeId = getDolGlobalInt('PAYBOX_PAYMENT_MODE_FOR_PAYMENTS');
+				$paymentType = 'CB';
+			}
+			if ($paymentmethod == 'paypal') {
+				$paymentTypeId = getDolGlobalInt('PAYPAL_PAYMENT_MODE_FOR_PAYMENTS');
+				$paymentType = 'PAYPAL';
+			}
+			if ($paymentmethod == 'stripe') {
+				$paymentTypeId = getDolGlobalInt('STRIPE_PAYMENT_MODE_FOR_PAYMENTS');
+				$paymentType = 'CB';
+			}
+			if (empty($paymentTypeId)) {
+				dol_syslog("paymentType = ".$paymentType, LOG_DEBUG, 0, '_payment');
+
+				if (empty($paymentType)) {
+					$paymentType = 'CB';
+				}
+				// May return nothing when paymentType means nothing
+				// (for example when paymentType is 'Mark', 'Sole', 'Sale', for paypal)
+				$paymentTypeId = dol_getIdFromCode($db, $paymentType, 'c_paiement', 'code', 'id', 1);
+
+				// If previous line has returned nothing, we force to get the ID of payment of Credit Card (hard coded code 'CB').
+				if (empty($paymentTypeId) || $paymentTypeId < 0) {
+					$paymentTypeId = dol_getIdFromCode($db, 'CB', 'c_paiement', 'code', 'id', 1);
+				}
+			}
+			// ATTENTION SUPPRIMER LA LIGNE CI-DESSOUS EN PROD !!
+			$FinalPaymentAmt = '6.00'; // For test purpose, we set a fixed amount
+
+			$bankaccountid = 0;
+			if (!$error && isModEnabled("banque")) {
+				if ($paymentmethod == 'paybox') {
+					$bankaccountid = $conf->global->PAYBOX_BANK_ACCOUNT_FOR_PAYMENTS;
+				} elseif ($paymentmethod == 'paypal') {
+					$bankaccountid = $conf->global->PAYPAL_BANK_ACCOUNT_FOR_PAYMENTS;
+				} elseif ($paymentmethod == 'stripe') {
+					$bankaccountid = $conf->global->STRIPE_BANK_ACCOUNT_FOR_PAYMENTS;
+				}
+			}
+
+			// Do action only if $FinalPaymentAmt is set (session variable is cleaned after this page to avoid duplicate actions when page is POST a second time)
+			if (isModEnabled('facture')) {
+				if (!empty($FinalPaymentAmt) && $paymentTypeId > 0) {
+					dol_include_once('mmipayment/class/mmipayment.class.php');
+
+					$objecttype = 'Propal';
+					$id = $object->id;
+					$ref = $object->ref;
+					$infos = [
+						//'date' => dol_now(), // automatique
+						'amount' => $FinalPaymentAmt,
+						'mode' => $paymentTypeId,
+						'num' => $TRANSACTIONID,
+						'note' => 'Etransactions Trans '.$TRANSACTIONID.' pour '.$objecttype.' '.$ref,
+						'accountid' => $bankaccountid,
+						//'chqemetteur' => '', // pas obligatoire
+						//'chqbank' => '', // pas obligatoire
+						'module_oid' => $object->id
+					];
+
+					// @todo chercher si déjà enregistré
+
+					$paiement_id = mmi_payments::add($objecttype, $id, $infos);
+
+				} else {
+					$postactionmessages[] = 'Failed to get a valid value for "amount paid" (' . $FinalPaymentAmt . ') or "payment type id" (' . $paymentTypeId . ') to record the payment of propal ' . $tmptag['PRO'] . '. May be payment was already recorded.';
+					$ispostactionok = -1;
+				}
+			} else {
+				$postactionmessages[] = 'Invoice module is not enable';
+				$ispostactionok = -1;
+			}
+		} else {
+			$postactionmessages[] = 'Proopal paid ' . $tmptag['PRO'] . ' was not found';
 			$ispostactionok = -1;
 		}
 	} elseif (array_key_exists('ORD', $tmptag) && $tmptag['ORD'] > 0) {
