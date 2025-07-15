@@ -1992,6 +1992,24 @@ if ($num > 0) {
 		$totalcreditnotes = $facturestatic->getSumCreditNotesUsed();
 		$totaldeposits = $facturestatic->getSumDepositsUsed();
 		$totalpay = $paiement + $totalcreditnotes + $totaldeposits;
+
+		// MMI hack remises
+		// Trop perçus
+		if ($conf->global->MMI_PAYMENT_SOUSTRACT_CREDIT_NOTES) {
+			$sqltroppercu = "SELECT SUM(re.amount_ttc) AS amount_ttc";
+			$sqltroppercu .= " FROM ".MAIN_DB_PREFIX."societe_remise_except as re";
+			$sqltroppercu .= " WHERE re.fk_facture_source = ".((int) $facturestatic->id);
+			$resqltroppercu = $db->query($sqltroppercu);
+			if (!empty($resqltroppercu)) {
+				$objtroppercu = $db->fetch_object($resqltroppercu);
+				$totaltroppercu = $objtroppercu->amount_ttc ?: 0;
+			} else {
+				$totaltroppercu = 0;
+				dol_print_error($db);
+			}
+			$totalpay -= $totaltroppercu;
+		}
+
 		$remaintopay = $obj->total_ttc - $totalpay;
 
 		$multicurrency_paiement = $facturestatic->getSommePaiement(1);
@@ -1999,9 +2017,15 @@ if ($num > 0) {
 		$multicurrency_totaldeposits = $facturestatic->getSumDepositsUsed(1);
 
 		$totalpay = $paiement + $totalcreditnotes + $totaldeposits;
+		if ($conf->global->MMI_PAYMENT_SOUSTRACT_CREDIT_NOTES) {
+			$totalpay -= $totaltroppercu;
+		}
 		$remaintopay = price2num($facturestatic->total_ttc - $totalpay);
 
 		$multicurrency_totalpay = $multicurrency_paiement + $multicurrency_totalcreditnotes + $multicurrency_totaldeposits;
+		if ($conf->global->MMI_PAYMENT_SOUSTRACT_CREDIT_NOTES) {
+			$multicurrency_totalpay -= $totaltroppercu;
+		}
 		$multicurrency_remaintopay = price2num($facturestatic->multicurrency_total_ttc - $multicurrency_totalpay);
 
 		if ($facturestatic->status == Facture::STATUS_CLOSED && $facturestatic->close_code == 'discount_vat') {		// If invoice closed with discount for anticipated payment

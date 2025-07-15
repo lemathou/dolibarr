@@ -5345,6 +5345,47 @@ if ($action == 'create') {
 		}
 
 		if ($object->type != Facture::TYPE_CREDIT_NOTE) {
+			// Trop perçus
+			if ($conf->global->MMI_PAYMENT_SOUSTRACT_CREDIT_NOTES) {
+				$total_creditnote_and_deposit = 0;
+				$sql = "SELECT re.datec, re.rowid, re.amount_ht, re.amount_tva, re.amount_ttc,";
+				$sql .= " re.description, re.fk_facture, f.ref";
+				$sql .= " FROM ".MAIN_DB_PREFIX."societe_remise_except as re";
+				$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."facture as f ON re.fk_facture = f.rowid";
+				$sql .= " WHERE re.fk_facture_source = ".((int) $object->id);
+				$resql = $db->query($sql);
+				if (!empty($resql)) {
+					print '<tr class="liste_titre">'
+						.'<td class="liste_titre">Trop perçu</td>'
+						.'<td class="liste_titre"><span class="hideonsmartphone">'.$langs->trans('Date').'</span></td>'
+						.'<td class="liste_titre" colspan="2"></td>'
+						.'<td class="liste_titre right">Montant</td>'
+						.'</tr>';
+					while ($obj = $db->fetch_object($resql)) {
+						// Decrement total paid
+						$totalpaid -= $obj->amount_ttc;
+
+						// Link to invoice
+
+						$dateofpayment = $db->jdate($objp->dp);
+						$tmparray = dol_getdate($dateofpayment);
+						if ($tmparray['seconds'] == 0 && $tmparray['minutes'] == 0 && ($tmparray['hours'] == 0 || $tmparray['hours'] == 12)) {	// We set hours to 0:00 or 12:00 because we don't know it
+							$objdate = dol_print_date($dateofpayment, 'day');
+						} else {	// Hours was set to real date of payment (special case for POS for example)
+							$objdate = dol_print_date($dateofpayment, 'dayhour', 'tzuser');
+						}
+						print '<tr>'
+							.'<td>'.($obj->ref ?'<a href="/compta/facture/card.php?id='.$obj->fk_facture.'">'.$obj->ref.'</a>' :'<a href="/comm/remx.php?id='.$object->socid.'">(Non utilisé)</a>').'</td>'
+							.'<td>'.$objdate.'</td>'
+							.'<td colspan="2"></td>'
+							.'<td class="right"><span class="amount">'.price(-$obj->amount_ttc).'</span></td>'
+							.'</tr>';
+					}
+				} else {
+					dol_print_error($db);
+				}
+			}
+
 			// Total already paid
 			print '<tr><td colspan="'.$nbcols.'" class="right">';
 			print '<span class="opacitymedium">';
