@@ -971,8 +971,6 @@ if ($ispaymentok) {
 					$paymentTypeId = dol_getIdFromCode($db, 'CB', 'c_paiement', 'code', 'id', 1);
 				}
 			}
-			// ATTENTION SUPPRIMER LA LIGNE CI-DESSOUS EN PROD !!
-			$FinalPaymentAmt = '6.00'; // For test purpose, we set a fixed amount
 
 			$bankaccountid = 0;
 			if (!$error && isModEnabled("banque")) {
