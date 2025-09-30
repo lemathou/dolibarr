@@ -560,6 +560,7 @@ if ($id > 0 || $ref) {
 	if (!empty($conf->use_javascript_ajax)) {
 		?>
 		<script type="text/javascript">
+			var collapse_batch_empty = <?php echo (isModEnabled('productbatch') && getDolGlobalString('STOCK_HIDE_ALL_EMPTY_BATCH_BY_DEFAULT') ? 'true' : 'false'); ?>;
 			$(document).ready(function() {
 				$(".collapse_batch").click(function() {
 					console.log("We click on collapse_batch");
@@ -567,6 +568,9 @@ if ($id > 0 || $ref) {
 
 					if($(this).text().indexOf('+') > 0) {
 						$(".batch_warehouse" + id_entrepot).show();
+						if (collapse_batch_empty) {
+							$("#ent_empty" + id_entrepot).show().html('(empty -)');
+						}
 						$(this).html('(-)');
 						jQuery("#show_all").hide();
 						jQuery("#hide_all").show();
@@ -574,15 +578,38 @@ if ($id > 0 || $ref) {
 					else {
 						$(".batch_warehouse" + id_entrepot).hide();
 						$(this).html('(+)');
+						if (collapse_batch_empty) {
+							$("#ent_empty" + id_entrepot).hide();
+						}
 					}
 
 					return false;
 				});
+				if (collapse_batch_empty) {
+					$(".collapse_empty_batch").click(function() {
+						var id_entrepot = $(this).attr('id').replace('ent_empty', '');
+						console.log("We click on collapse_empty_batch on entrepot "+id_entrepot);
+
+						if($(this).text().indexOf('+') > 0) {
+							$(".batch_empty_warehouse" + id_entrepot).show();
+							$(this).html('(empty -)');
+							jQuery("#show_all").hide();
+							jQuery("#hide_all").show();
+						}
+						else {
+							$(".batch_empty_warehouse" + id_entrepot).hide();
+							$(this).html('(empty +)');
+						}
+
+						return false;
+					});
+				}
 
 				$("#show_all").click(function() {
 					console.log("We click on show_all");
 					$("[class^=batch_warehouse]").show();
 					$("[class^=collapse_batch]").html('(-)');
+					$("[class^=collapse_empty_batch]").html('(-)');
 					jQuery("#show_all").hide();
 					jQuery("#hide_all").show();
 					return false;
@@ -592,6 +619,7 @@ if ($id > 0 || $ref) {
 					console.log("We click on hide_all");
 					$("[class^=batch_warehouse]").hide();
 					$("[class^=collapse_batch]").html('(+)');
+					$("[class^=collapse_empty_batch]").html('(+)');
 					jQuery("#hide_all").hide();
 					jQuery("#show_all").show();
 					return false;
@@ -1056,6 +1084,11 @@ if (!$variants || getDolGlobalString('VARIANT_ALLOW_STOCK_MOVEMENT_ON_VARIANT_PA
 				print '<a class="collapse_batch marginleftonly" id="ent' . $entrepotstatic->id . '" href="#">';
 				print(!getDolGlobalString('STOCK_SHOW_ALL_BATCH_BY_DEFAULT') ? '(+)' : '(-)');
 				print '</a>';
+				if (getDolGlobalString('STOCK_HIDE_ALL_EMPTY_BATCH_BY_DEFAULT')) {
+					print ' <a class="collapse_empty_batch marginleftonly" id="ent_empty' . $entrepotstatic->id . '" href="#">';
+					print '(empty +)';
+					print '</a>';
+				}
 			}
 			print '</td>';
 
@@ -1168,7 +1201,7 @@ if (!$variants || getDolGlobalString('VARIANT_ALLOW_STOCK_MOVEMENT_ON_VARIANT_PA
 						print '<td></td>';
 						print '</tr>';
 					} else {
-						print "\n".'<tr style="display:'.(!getDolGlobalString('STOCK_SHOW_ALL_BATCH_BY_DEFAULT') ? 'none' : 'visible').';" class="batch_warehouse'.$entrepotstatic->id.'"><td class="left">';
+						print "\n".'<tr style="display:'.(!getDolGlobalString('STOCK_SHOW_ALL_BATCH_BY_DEFAULT') || (getDolGlobalString('STOCK_HIDE_ALL_EMPTY_BATCH_BY_DEFAULT') && $pdluo->qty == 0) ? 'none' : 'visible').';" class="batch_warehouse'.$entrepotstatic->id.($pdluo->qty==0 ?' batch_empty_warehouse'.$entrepotstatic->id :'').'"><td class="left">';
 						print '</td>';
 						print '<td class="right nowraponall">';
 						if ($product_lot_static->id > 0) {
