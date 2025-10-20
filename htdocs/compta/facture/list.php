@@ -1471,6 +1471,10 @@ if (!empty($arrayfields['country.code_iso']['checked'])) {
 	print $form->select_country($search_country, 'search_country', '', 0, 'minwidth150imp maxwidth150', 'code2', 1, 0, 1, null, 1);
 	print '</td>';
 }
+// Email
+if (!empty($arrayfields['s.email']['checked'])) { // MMI Hack
+	print '<td class="liste_titre"><input class="flat maxwidth100" type="text" name="search_email" value="'.dol_escape_htmltag($search_email).'"></td>';
+}
 // Company type
 if (!empty($arrayfields['typent.code']['checked'])) {
 	print '<td class="liste_titre maxwidthonsmartphone center">';
@@ -1741,6 +1745,10 @@ if (!empty($arrayfields['state.nom']['checked'])) {
 }
 if (!empty($arrayfields['country.code_iso']['checked'])) {
 	print_liste_field_titre($arrayfields['country.code_iso']['label'], $_SERVER["PHP_SELF"], "country.code_iso", "", $param, '', $sortfield, $sortorder, 'center ');
+	$totalarray['nbfield']++;
+}
+if (!empty($arrayfields['s.email']['checked'])) { // MMI Hack
+	print_liste_field_titre($arrayfields['s.email']['label'], $_SERVER["PHP_SELF"], "s.email", "", $param, '', $sortfield, $sortorder, 'center ');
 	$totalarray['nbfield']++;
 }
 if (!empty($arrayfields['typent.code']['checked'])) {
@@ -2311,6 +2319,15 @@ if ($num > 0) {
 				$tmparray = getCountry($obj->fk_pays, 'all');
 				print '<td class="center tdoverflowmax100" title="'.dol_escape_htmltag($tmparray['label']).'">';
 				print dol_escape_htmltag($tmparray['label']);
+				print '</td>';
+				if (!$i) {
+					$totalarray['nbfield']++;
+				}
+			}
+			// Email
+			if (!empty($arrayfields['s.email']['checked'])) { // MMI Hack
+				print '<td class="nocellnopadd">';
+				print $obj->email;
 				print '</td>';
 				if (!$i) {
 					$totalarray['nbfield']++;
