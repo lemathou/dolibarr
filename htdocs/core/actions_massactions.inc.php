@@ -35,7 +35,6 @@
 // $toselect may be defined
 // $diroutputmassaction may be defined
 
-
 // Protection
 if (empty($objectclass) || empty($uploaddir)) {
 	dol_print_error(null, 'include of actions_massactions.inc.php is done but var $objectclass or $uploaddir was not defined');
@@ -576,6 +575,10 @@ if (!$error && $massaction == 'confirm_presend') {
 					// Send mail (substitutionarray must be done just before this)
 					require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 					$mailfile = new CMailFile($subjectreplaced, $sendto, $from, $messagereplaced, $filepath, $mimetype, $filename, $sendtocc, $sendtobcc, $deliveryreceipt, -1, '', '', $trackid, '', $sendcontext, '', $upload_dir_tmp);
+					// MMI : Specific options for hooks
+					if (isset($sendoptions) && is_array($sendoptions)) {
+						$mailfile->sendoptions = $sendoptions;
+					}
 					if ($mailfile->error) {
 						$resaction .= '<div class="error">'.$mailfile->error.'</div>';
 					} else {

@@ -44,6 +44,7 @@ class CMailFile
 	public $sendcontext;
 	public $sendmode;
 	public $sendsetup;
+	public $sendoptions = [];
 
 	/**
 	 * @var string Subject of email
