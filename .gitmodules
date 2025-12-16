@@ -54,7 +54,7 @@
 	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-inventory.git
 	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-inventory.git
 	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-inventory.git
-	branch = 16.0-mmi
+	branch = 19.0-mmi
 [submodule "htdocs/custom/margincontrol"]
 	path = htdocs/custom/margincontrol
 	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-margincontrol.git
