@@ -176,6 +176,9 @@ if ($id > 0 || !empty($ref)) {
 			//Calcul total qty and amount for global if full scan list
 			$total_ht = 0;
 			$total_qty = 0;
+			if ($showShippedQty) {
+				$total_shippedqty = 0;
+			}
 
 			// Count total nb of records
 			$totalofrecords = '';
