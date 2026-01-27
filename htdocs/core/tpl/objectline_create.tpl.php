@@ -398,9 +398,14 @@ if ($nolinesbefore) {
 				echo '<div id="attributes_box"></div>';
 			}
 		}
+
 		// Added by MMI Mathieu Moulin iProspective
-		if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL))
-			echo '<div id="added_labelprod"></div>';
+		if (is_object($hookmanager)) {
+			$reshook = $hookmanager->executeHooks('formAddProductToDocumentCard', $parameters, $object, $action);
+			if (!empty($hookmanager->resPrint)) {
+				print $hookmanager->resPrint;
+			}
+		}
 		// Editor wysiwyg
 		require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 		$nbrows = ROWS_2;
