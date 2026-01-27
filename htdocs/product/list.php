@@ -1661,7 +1661,7 @@ while ($i < $imaxinloop) {
 
 		// Label
 		if (!empty($arrayfields['p.label']['checked'])) {
-			print '<td class="tdoverflowmax200" title="'.dol_escape_htmltag($product_static->label).'">'.$product_static->label.'</td>';
+			print '<td class="tdoverflowmax'.(getDolGlobalInt('PRODUCT_LIST_LABEL_WIDTH') ?: '200').'" title="'.dol_escape_htmltag($product_static->label).'">'.$product_static->label.'</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;
 			}
