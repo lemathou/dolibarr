@@ -1762,7 +1762,38 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 		}
 	}
 
-	if (empty($hideref)) {
+	// MMI hack @todo create a Hook
+	if (getDolGlobalInt('MMI_DOCUMENTS_DISPLAY_REF_ACTIVE')) {
+		$documenttypes = explode(',', getDolGlobalString('MMI_DOCUMENTS_DISPLAY_REF_OWN'));
+		$show_own_ref = ($object->array_options['options_pdf_show_productline_ref'] === '1' || (in_array($object->element, $documenttypes) && $object->array_options['options_pdf_show_productline_ref'] !== '0'))
+			&& (empty(getDolGlobalInt('MMI_DOCUMENTS_DISPLAY_REF_MARCHE_HIDE')) || empty($object->array_options['options_appeloffre']) || !in_array($object->array_options['options_appeloffre'], ['1', '2']));
+		$supplierdocumenttypes = explode(',', getDolGlobalString('MMI_DOCUMENTS_DISPLAY_REF_SUPPLIER'));
+		$show_supplier_ref = ($object->array_options['options_pdf_show_productline_supplier_ref'] === '1' || (in_array($object->element, $supplierdocumenttypes) && $object->array_options['options_pdf_show_productline_supplier_ref'] !== '0'))
+			&& (empty(getDolGlobalInt('MMI_DOCUMENTS_DISPLAY_REF_MARCHE_HIDE')) || empty($object->array_options['options_appeloffre']) || !in_array($object->array_options['options_appeloffre'], ['1', '2']));
+		//var_dump($issupplierline, $object->element, $object->array_options, $ref_supplier, $documenttypes, $supplierdocumenttypes);
+
+		if ($issupplierline && $ref_supplier && $show_supplier_ref) {
+			// Both refs
+			if ($prodser->ref && $show_own_ref) {
+				$ref_prodserv = $prodser->ref.' ('.$outputlangs->transnoentitiesnoconv("SupplierRef").' '.$ref_supplier.')';
+			}
+			// Supplier ref only
+			else {
+				$ref_prodserv = $ref_supplier;
+			}
+		}
+		// Own ref only
+		else {
+			if ($prodser->ref && $show_own_ref) {
+				$ref_prodserv = $prodser->ref; // Show local ref only
+			}
+		}
+
+		if (!empty($libelleproduitservice) && !empty($ref_prodserv)) {
+			$ref_prodserv .= " - ";
+		}
+	}
+	elseif (empty($hideref)) {
 		if ($issupplierline) {
 			if (!getDolGlobalString('PDF_HIDE_PRODUCT_REF_IN_SUPPLIER_LINES')) {  // Common case
 				$ref_prodserv = $prodser->ref; // Show local ref
