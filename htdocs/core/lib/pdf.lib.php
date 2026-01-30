@@ -1763,7 +1763,7 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 	}
 
 	// MMI hack @todo create a Hook
-	if (getDolGlobalInt('MMI_DOCUMENTS_DISPLAY_REF_ACTIVE')) {
+	if (getDolGlobalInt('MMI_DOCUMENTS_DISPLAY_REF_ACTIVE') && in_array($object->element, ['propal', 'order', 'invoice', 'order_supplier'])) {
 		$documenttypes = explode(',', getDolGlobalString('MMI_DOCUMENTS_DISPLAY_REF_OWN'));
 		$show_own_ref = ($object->array_options['options_pdf_show_productline_ref'] === '1' || (in_array($object->element, $documenttypes) && $object->array_options['options_pdf_show_productline_ref'] !== '0'))
 			&& (empty(getDolGlobalInt('MMI_DOCUMENTS_DISPLAY_REF_MARCHE_HIDE')) || empty($object->array_options['options_appeloffre']) || !in_array($object->array_options['options_appeloffre'], ['1', '2']));
