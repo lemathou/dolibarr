@@ -1587,7 +1587,7 @@ class Product extends CommonObject
 			if (!$error) {
 				// We remove directory
 				$ref = dol_sanitizeFileName($this->ref);
-				if ($conf->product->dir_output) {
+				if ($conf->product->dir_output && $ref !== '') {
 					$dir = $conf->product->dir_output."/".$ref;
 					if (file_exists($dir)) {
 						$res = @dol_delete_dir_recursive($dir);
