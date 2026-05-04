@@ -1046,7 +1046,7 @@ class MouvementStock extends CommonObject
 			$ret = $origin->getNomUrl(1);
 			// MMI
 			global $conf;
-			if (!empty($conf->global->MMI_MOVEMENT_LIST_ENHANCE)) {
+			if (!empty($conf->global->MMI_CORE_MOVEMENT_LIST_ENHANCE)) {
 				if ($origin_type=='shipping') {
 					require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 					if ($origin->origin=='commande' && !empty($origin->origin_id)) {
