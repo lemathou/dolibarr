@@ -379,9 +379,10 @@ if (empty($reshook)) {
 				}
 				$qty = "qtyl".$i;
 				$comment = "comment".$i;
-				// EATBY <-> DLUO and SELLBY <-> DLC, see productbatch.class.php
-				$eatby = "dluo".$i;
-				$sellby = "dlc".$i;
+				// EATBY <-> DLC see productbatch.class.php
+				// SELLBY <-> DLUO=DDM
+				$eatby = "dlc".$i;
+				$sellby = "dluo".$i;
 				$batch = "batch".$i;
 				$cost_price = "cost_price".$i;
 
@@ -414,14 +415,33 @@ if (empty($reshook)) {
 					$eatbydate = str_replace('/', '-', $eatby);
 					$sellbydate = str_replace('/', '-', $sellby);
 
-					if (getDolGlobalString('STOCK_CALCULATE_ON_RECEPTION') || getDolGlobalString('STOCK_CALCULATE_ON_RECEPTION_CLOSE')) {
-						$ret = $object->addline($entrepot_id, GETPOSTINT($idl), price2num(GETPOST($qty), 'MS'), $array_options[$i], GETPOST($comment), strtotime($eatbydate), strtotime($sellbydate), GETPOST($batch), GETPOSTFLOAT($cost_price, 'MU'));
-					} else {
-						$ret = $object->addline($entrepot_id, GETPOSTINT($idl), price2num(GETPOST($qty), 'MS'), $array_options[$i], GETPOST($comment), strtotime($eatbydate), strtotime($sellbydate), GETPOST($batch));
+					// MMI Hack : Check Config batch OK
+					if ($conf->productbatch->enabled && (empty($conf->global->PRODUCT_DISABLE_SELLBY) || empty($conf->global->PRODUCT_DISABLE_EATBY)) && !empty($conf->global->RECEPTION_BATCH_MUST_HAVE_DATE)) {
+						// Missing date
+						if (!empty(GETPOST($batch, 'alpha'))) {
+							$missingdate = $missingeatby = $missingsellby = false;
+							if(empty($eatby) || (!preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $eatby) && !preg_match("/^(0[1-9]|[1-2][0-9]|3[0-1])\/(0[1-9]|1[0-2])\/[0-9]{4}$/", $eatby)))
+								$missingeatby = true;
+							if(empty($sellby) || (!preg_match("/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/", $sellby) && !preg_match("/^(0[1-9]|[1-2][0-9]|3[0-1])\/(0[1-9]|1[0-2])\/[0-9]{4}$/", $sellby)))
+								$missingsellby = true;
+							if ($missingeatby && $missingsellby)
+								$missingdate = true;
+							if ($missingdate) {
+								setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("DLC").'/'.$langs->transnoentitiesnoconv("DLUO")), null, 'errors');
+								$error++;
+							}
+						}
 					}
-					if ($ret < 0) {
-						setEventMessages($object->error, $object->errors, 'errors');
-						$error++;
+					if (!$error) {
+						if (getDolGlobalString('STOCK_CALCULATE_ON_RECEPTION') || getDolGlobalString('STOCK_CALCULATE_ON_RECEPTION_CLOSE')) {
+							$ret = $object->addline($entrepot_id, GETPOSTINT($idl), price2num(GETPOST($qty), 'MS'), $array_options[$i], GETPOST($comment), strtotime($eatbydate), strtotime($sellbydate), GETPOST($batch), GETPOSTFLOAT($cost_price, 'MU'));
+						} else {
+							$ret = $object->addline($entrepot_id, GETPOSTINT($idl), price2num(GETPOST($qty), 'MS'), $array_options[$i], GETPOST($comment), strtotime($eatbydate), strtotime($sellbydate), GETPOST($batch));
+						}
+						if ($ret < 0) {
+							setEventMessages($object->error, $object->errors, 'errors');
+							$error++;
+						}
 					}
 				}
 			}
@@ -666,11 +686,11 @@ if (empty($reshook)) {
 						$batch = "batch".$line_id;
 						$dlc = "dlc".$line_id;
 						$dluo = "dluo".$line_id;
-						// EATBY <-> DLUO
-						$eatby = GETPOST($dluo, 'alpha');
+						// EATBY <-> DLC
+						$eatby = GETPOST($dlc, 'alpha');
 						$eatbydate = str_replace('/', '-', $eatby);
-						// SELLBY <-> DLC
-						$sellby = GETPOST($dlc, 'alpha');
+						// SELLBY <-> DLUO
+						$sellby = GETPOST($dluo, 'alpha');
 						$sellbydate = str_replace('/', '-', $sellby);
 						$line->batch = GETPOST($batch, 'alpha');
 						$line->eatby = strtotime($eatbydate);
@@ -1272,12 +1292,12 @@ if ($action == 'create') {
 							print '<td><input name="batch'.$indiceAsked.'" value="'.$dispatchLines[$indiceAsked]['lot'].'"></td>';
 							if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
 								print '<td class="nowraponall">';
-								print $form->selectDate($dispatchLines[$indiceAsked]['DLC'], 'dlc'.$indiceAsked, 0, 0, 1, "");
+								print $form->selectDate($dispatchLines[$indiceAsked]['DLUO'], 'dluo'.$indiceAsked, 0, 0, 1, "");
 								print '</td>';
 							}
 							if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
 								print '<td class="nowraponall">';
-								print $form->selectDate($dispatchLines[$indiceAsked]['DLUO'], 'dluo'.$indiceAsked, 0, 0, 1, "");
+								print $form->selectDate($dispatchLines[$indiceAsked]['DLC'], 'dlc'.$indiceAsked, 0, 0, 1, "");
 								print '</td>';
 							}
 						} else {
@@ -1632,7 +1652,16 @@ if ($action == 'create') {
 	// Other attributes
 	$cols = 2;
 
+	// MMI Hack : Other attributes / extrafields show/hide
+	$extrafields_showhide = $conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE && (empty($action) || !in_array($action, ['edit_extras', 'update_extras']));
+	if ($extrafields_showhide) {
+		echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
+		echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
+	}
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
+	if ($extrafields_showhide) {
+		echo '</tbody>';
+	}
 
 	print '</table>';
 
@@ -1977,11 +2006,11 @@ if ($action == 'create') {
 						print '<td class="nowraponall left"><input name="batch'.$line_id.'" id="batch'.$line_id.'" type="text" value="'.$lines[$i]->batch.'"><br>';
 						if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
 							print $langs->trans('SellByDate').' : ';
-							print $form->selectDate($lines[$i]->sellby, 'dlc'.$line_id, 0, 0, 1, "").'</br>';
+							print $form->selectDate($lines[$i]->sellby, 'dluo'.$line_id, 0, 0, 1, "").'</br>';
 						}
 						if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
 							print $langs->trans('EatByDate').' : ';
-							print $form->selectDate($lines[$i]->eatby, 'dluo'.$line_id, 0, 0, 1, "");
+							print $form->selectDate($lines[$i]->eatby, 'dlc'.$line_id, 0, 0, 1, "");
 						}
 						print '</td>';
 					}

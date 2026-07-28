@@ -155,6 +155,12 @@ class pdf_espadon extends ModelePdfExpedition
 			$outputlangsbis->loadLangs(array("main", "bills", "orders", "products", "dict", "companies", "propal", "deliveries", "sendings", "productbatch"));
 		}
 
+		// Added by MMI Mathieu Moulin iProspective
+		// Sort by Product Ref
+		if (!empty($conf->global->MMI_EXPE_ORDER_LINES_BY_REF))
+			usort($object->lines, function($i, $j){
+				return ($i->ref > $j->ref) ?1 :(($i->ref < $j->ref) ?-1 :0);
+			});
 		$nblines = count($object->lines);
 
 		// Loop on each lines to detect if there is at least one image to show
@@ -329,46 +335,36 @@ class pdf_espadon extends ModelePdfExpedition
 					$notetoshow = dol_concatdesc($notetoshow, $extranote);
 				}
 
-				if (!empty($notetoshow) || !empty($object->tracking_number)) {
+				if (!empty($notetoshow) || !empty($object->shipping_method_id) || !empty($object->tracking_number)) {
 					$tab_top -= 2;
 					$tab_topbeforetrackingnumber = $tab_top;
+					$height_trackingnumber = 4;
 
-					// Tracking number
-					if (!empty($object->tracking_number)) {
-						$height_trackingnumber = 4;
-
-						$pdf->SetFont('', 'B', $default_font_size - 2);
-						$pdf->writeHTMLCell(60, $height_trackingnumber, $this->posxdesc - 1, $tab_top - 1, $outputlangs->transnoentities("TrackingNumber") . " : " . $object->tracking_number, 0, 1, false, true, 'L');
-						$tab_top_alt = $pdf->GetY();
+					if (!empty($object->shipping_method_id) || !empty($object->tracking_number)) {
+						$label = '';
+						if ($object->shipping_method_id > 0) {
+							// Get code using getLabelFromKey
+							$code = $outputlangs->getLabelFromKey($this->db, $object->shipping_method_id, 'c_shipment_mode', 'rowid', 'code');
+							$label = $outputlangs->trans("SendingMethod").": ".$outputlangs->trans("SendingMethod".strtoupper($code));
+						}
 
 						$object->getUrlTrackingStatus($object->tracking_number);
-						if (!empty($object->tracking_url)) {
-							if ($object->shipping_method_id > 0) {
-								// Get code using getLabelFromKey
-								$code = $outputlangs->getLabelFromKey($this->db, $object->shipping_method_id, 'c_shipment_mode', 'rowid', 'code');
-								$label = '';
-								if ($object->tracking_url != $object->tracking_number) {
-									$label .= $outputlangs->trans("LinkToTrackYourPackage")."<br>";
-								}
-								$label .= $outputlangs->trans("SendingMethod").": ".$outputlangs->trans("SendingMethod".strtoupper($code));
-								//var_dump($object->tracking_url != $object->tracking_number);exit;
-								if ($object->tracking_url != $object->tracking_number) {
-									$label .= " : ";
-									$label .= $object->tracking_url;
-								}
+						if (!empty($object->tracking_url) && $object->shipping_method_id > 0 && $object->tracking_url != $object->tracking_number)
+							$label .= ($label ?' / ' :'').$outputlangs->trans("LinkToTrackYourPackage").' : '.$object->tracking_url;
+						if (!empty($object->tracking_number))
+							$label .= ($label ?' / ' :'').$outputlangs->transnoentities("TrackingNumber")." : ".$object->tracking_number;
 
-								$height_trackingnumber += 4;
-								$pdf->SetFont('', 'B', $default_font_size - 2);
-								$pdf->writeHTMLCell(60, $height_trackingnumber, $this->posxdesc - 1, $tab_top_alt, $label, 0, 1, false, true, 'L');
-							}
-						}
-						$tab_top = $pdf->GetY();
+						$pdf->SetFont('', 'B', $default_font_size - 2);
+						$pdf->writeHTMLCell(160, $height_trackingnumber, $this->posxdesc - 1, $tab_top, $label, 0, 1, false, true, 'L');
+						$tab_top += 5;
 					}
 
 					// Notes
 					$pagenb = $pdf->getPage();
-					if (!empty($notetoshow) || !empty($object->tracking_number)) {
-						$tab_top -= 1;
+
+					if (!empty($notetoshow)) {
+						$tab_top += 2;
+
 
 						$tab_width = $this->page_largeur - $this->marge_gauche - $this->marge_droite;
 						$pageposbeforenote = $pagenb;
@@ -596,7 +592,7 @@ class pdf_espadon extends ModelePdfExpedition
 
 
 						if (!empty($this->cols['photo']) && isset($imglinesize['width']) && isset($imglinesize['height'])) {
-							$pdf->Image($realpatharray[$i], $this->getColumnContentXStart('photo'), $curY + 1, $imglinesize['width'], $imglinesize['height'], '', '', '', 2, 300); // Use 300 dpi
+							$pdf->Image($realpatharray[$i], $this->getColumnContentXStart('photo'), $curY + 1, $imglinesize['width'], $imglinesize['height'], '', '', '', 2, !empty($conf->global->MAIN_SHIPPING_PDF_IMAGE_DPI) ?$conf->global->MAIN_SHIPPING_PDF_IMAGE_DPI :300); // Use 300 dpi
 							// $pdf->Image does not increase value return by getY, so we save it manually
 							$posYAfterImage = $curY + $imglinesize['height'];
 						}
@@ -673,10 +669,9 @@ class pdf_espadon extends ModelePdfExpedition
 						$weighttxt = round($object->lines[$i]->weight * $object->lines[$i]->qty_shipped, 5).' '.measuringUnitString(0, "weight", $object->lines[$i]->weight_units, 1);
 					}
 					$voltxt = '';
-					if (empty($object->lines[$i]->fk_product_type) && $object->lines[$i]->volume) {
+					if (empty($object->lines[$i]->fk_product_type) && $object->lines[$i]->volume && !getDolGlobalString('SHIPPING_PDF_HIDE_VOLUME')) {
 						$voltxt = round($object->lines[$i]->volume * $object->lines[$i]->qty_shipped, 5).' '.measuringUnitString(0, "volume", $object->lines[$i]->volume_units ? $object->lines[$i]->volume_units : 0, 1);
 					}
-
 
 					if ($this->getColumnStatus('weight')) {
 						$this->printStdColumnContent($pdf, $curY, 'weight', $weighttxt.(($weighttxt && $voltxt) ? '<br>' : '').$voltxt);
@@ -867,13 +862,13 @@ class pdf_espadon extends ModelePdfExpedition
 		if (!empty($totalWeight)) {
 			$totalWeighttoshow = showDimensionInBestUnit($totalWeight, 0, "weight", $outputlangs, -1, 'no', 1);
 		}
-		if (!empty($totalVolume)) {
+		if (!empty($totalVolume) && !getDolGlobalString('SHIPPING_PDF_HIDE_VOLUME')) {
 			$totalVolumetoshow = showDimensionInBestUnit($totalVolume, 0, "volume", $outputlangs, -1, 'no', 1);
 		}
 		if (!empty($object->trueWeight)) {
 			$totalWeighttoshow = showDimensionInBestUnit($object->trueWeight, $object->weight_units, "weight", $outputlangs);
 		}
-		if (!empty($object->trueVolume)) {
+		if (!empty($object->trueVolume) && !getDolGlobalString('SHIPPING_PDF_HIDE_VOLUME')) {
 			if ($object->volume_units < 50) {
 				$totalVolumetoshow = showDimensionInBestUnit($object->trueVolume, $object->volume_units, "volume", $outputlangs);
 			} else {
@@ -1048,7 +1043,7 @@ class pdf_espadon extends ModelePdfExpedition
 		$pdf->MultiCell($w, 4, $outputlangs->transnoentities("RefSending")." : ".$object->ref, '', 'R');
 
 		// Date planned delivery
-		if (!empty($object->date_delivery)) {
+		if (!getDolGlobalString('SHIPPING_PDF_HIDE_DELIVERY_DATE') && !empty($object->date_delivery)) {
 			$posy += 4;
 			$pdf->SetXY($posx, $posy);
 			$pdf->SetTextColor(0, 0, 60);
@@ -1343,7 +1338,7 @@ class pdf_espadon extends ModelePdfExpedition
 		$this->cols['weight'] = array(
 			'rank' => $rank,
 			'width' => 30, // in mm
-			'status' => true,
+			'status' => ! getDolGlobalString('SHIPPING_PDF_HIDE_WEIGHT_AND_VOLUME') ? 1 : 0,
 			'title' => array(
 				'textkey' => 'WeightVolShort'
 			),

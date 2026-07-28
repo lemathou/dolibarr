@@ -100,6 +100,7 @@ $search_town = GETPOST('search_town', 'alpha');
 $search_zip = GETPOST('search_zip', 'alpha');
 $search_state = GETPOST('search_state', 'alpha');
 $search_country = GETPOST('search_country', 'aZ09');
+$search_email = GETPOST('search_email', 'alpha'); // MMI
 $search_type_thirdparty = GETPOST('search_type_thirdparty', 'intcomma');
 $search_user = GETPOST('search_user', 'intcomma');
 $search_sale = GETPOST('search_sale', 'intcomma');
@@ -171,8 +172,10 @@ $fieldstosearchall = array(
 	'pd.description' => 'Description',
 	's.nom' => "ThirdParty",
 	's.name_alias' => "AliasNameShort",
+	's.address' => "Adresse",
 	's.zip' => "Zip",
 	's.town' => "Town",
+	's.email' => "Email",
 	'c.note_public' => 'NotePublic',
 );
 if (empty($user->socid)) {
@@ -193,6 +196,7 @@ $arrayfields = array(
 	's.zip' => array('label' => "Zip", 'checked' => -1, 'position' => 40, 'searchall' => 1),
 	'state.nom' => array('label' => "StateShort", 'checked' => 0, 'position' => 45),
 	'country.code_iso' => array('label' => "Country", 'checked' => 0, 'position' => 50),
+	's.email' => array('label' => "Email", 'checked' => 0, 'position' => 51),
 	'typent.code' => array('label' => "ThirdPartyType", 'checked' => $checkedtypetiers, 'position' => 55),
 	'c.date_commande' => array('label' => "OrderDateShort", 'checked' => 1, 'position' => 60, 'csslist' => 'nowraponall'),
 	'c.date_delivery' => array('label' => "DateDeliveryPlanned", 'checked' => 1, 'enabled' => !getDolGlobalString('ORDER_DISABLE_DELIVERY_DATE'), 'position' => 65, 'csslist' => 'nowraponall'),
@@ -294,6 +298,7 @@ if (empty($reshook)) {
 		$search_state = "";
 		$search_type = '';
 		$search_country = '';
+		$search_email = "";
 		$search_type_thirdparty = '';
 		$search_total_ht = '';
 		$search_total_vat = '';
@@ -855,6 +860,8 @@ if ($search_all) {
 $sql .= ' s.rowid as socid, s.nom as name, s.name_alias as alias, s.email, s.phone, s.fax, s.address, s.town, s.zip, s.fk_pays, s.client, s.fournisseur, s.code_client,';
 $sql .= " s.parent as fk_parent,";
 $sql .= " s2.nom as name2,";
+// MMI : get soc private note
+$sql .= ' s.note_private soc_note_private,';
 $sql .= " typent.code as typent_code,";
 $sql .= " state.code_departement as state_code, state.nom as state_name,";
 $sql .= " country.code as country_code,";
@@ -887,6 +894,11 @@ $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s2 ON s2.rowid = s.parent";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_country as country on (country.rowid = s.fk_pays)";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_typent as typent on (typent.id = s.fk_typent)";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_departements as state on (state.rowid = s.fk_departement)";
+// MMI Hack Hook
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListJoinSoc', $parameters); // Note that $action and $object may have been modified by hook
+$sql .= $hookmanager->resPrint;
+
 $sql .= ', '.MAIN_DB_PREFIX.'commande as c';
 if (!empty($extrafields->attributes[$object->table_element]['label']) && is_array($extrafields->attributes[$object->table_element]['label']) && count($extrafields->attributes[$object->table_element]['label'])) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."commande_extrafields as ef on (c.rowid = ef.fk_object)";
@@ -896,6 +908,11 @@ if ($search_all) {
 }
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."projet as p ON p.rowid = c.fk_projet";
 $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user as u ON c.fk_user_author = u.rowid';
+// MMI Hack Hook
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListJoinCommande', $parameters); // Note that $action and $object may have been modified by hook
+$sql .= $hookmanager->resPrint;
+
 // Add table from hooks
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
@@ -980,6 +997,9 @@ if ($search_state) {
 }
 if ($search_country) {
 	$sql .= " AND s.fk_pays IN (".$db->sanitize($search_country).')';
+}
+if ($search_email) {
+	$sql .= natural_search("s.email", $search_email);
 }
 if ($search_type_thirdparty && $search_type_thirdparty != '-1') {
 	$sql .= " AND s.fk_typent IN (".$db->sanitize($search_type_thirdparty).')';
@@ -1330,6 +1350,9 @@ if ($search_state != '') {
 if ($search_country != '') {
 	$param .= '&search_country='.urlencode((string) ($search_country));
 }
+if ($search_email != '') { // MMI Hack
+	$param .= '&search_email='.urlencode($search_email);
+}
 if ($search_type_thirdparty && $search_type_thirdparty != '-1') {
 	$param .= '&search_type_thirdparty='.urlencode((string) ($search_type_thirdparty));
 }
@@ -1552,7 +1575,6 @@ if (empty($reshook)) {
 } else {
 	$moreforfilter = $hookmanager->resPrint;
 }
-
 if (!empty($moreforfilter)) {
 	print '<div class="liste_titre liste_titre_bydiv centpercent">';
 	print $moreforfilter;
@@ -1937,6 +1959,9 @@ if (!empty($arrayfields['country.code_iso']['checked'])) {
 	print_liste_field_titre($arrayfields['country.code_iso']['label'], $_SERVER["PHP_SELF"], "country.code_iso", "", $param, '', $sortfield, $sortorder, 'center ');
 	$totalarray['nbfield']++;
 }
+if (!empty($arrayfields['s.email']['checked'])) { // MMI Hack
+	print '<td class="liste_titre"><input class="flat maxwidth100" type="text" name="search_email" value="'.dol_escape_htmltag($search_email).'"></td>';
+}
 if (!empty($arrayfields['typent.code']['checked'])) {
 	print_liste_field_titre($arrayfields['typent.code']['label'], $_SERVER["PHP_SELF"], "typent.code", "", $param, '', $sortfield, $sortorder, 'center ');
 	$totalarray['nbfield']++;
@@ -2128,6 +2153,8 @@ while ($i < $imaxinloop) {
 	$companystatic->zip = $obj->zip;
 	$companystatic->town = $obj->town;
 	$companystatic->country_code = $obj->country_code;
+	$companystatic->email = $obj->email; // MMI Hack
+	$companystatic->note_private = $obj->soc_note_private; // MMI Hack : get soc private note
 	if (!isset($getNomUrl_cache[$obj->socid])) {
 		$getNomUrl_cache[$obj->socid] = $companystatic->getNomUrl(1, 'customer', 100, 0, 1, empty($arrayfields['s.name_alias']['checked']) ? 0 : 1);
 	}
@@ -2354,6 +2381,16 @@ while ($i < $imaxinloop) {
 			print '<td class="center">';
 			$tmparray = getCountry($obj->fk_pays, 'all');
 			print $tmparray['label'];
+			print '</td>';
+			if (!$i) {
+				$totalarray['nbfield']++;
+			}
+		}
+
+		// Email MMI
+		if (!empty($arrayfields['s.email']['checked'])) {
+			print '<td class="nocellnopadd">';
+			print $obj->email;
 			print '</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;

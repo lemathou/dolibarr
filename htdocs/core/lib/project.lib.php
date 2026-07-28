@@ -623,6 +623,10 @@ function projectLinesa(&$inc, $parent, &$lines, &$level, $var, $showproject, &$t
 		$totalarray = array();
 	}
 
+	$fk_tasks = [];
+	foreach($lines as $line)
+		$fk_tasks[] = $line->id;
+
 	for ($i = 0; $i < $numlines; $i++) {
 		if ($parent == 0 && $level >= 0) {
 			$level = 0; // if $level = -1, we don't use sublevel recursion, we show all lines
@@ -630,7 +634,7 @@ function projectLinesa(&$inc, $parent, &$lines, &$level, $var, $showproject, &$t
 
 		// Process line
 		// print "i:".$i."-".$lines[$i]->fk_project.'<br>';
-		if ($lines[$i]->fk_task_parent == $parent || $level < 0) {       // if $level = -1, we don't use sublevel recursion, we show all lines
+		if ($lines[$i]->fk_task_parent == $parent || (getDolGlobalInt('PROJECT_TASK_SEARCH_SHOW_WO_PARENT') && !in_array($lines[$i]->fk_task_parent, $fk_tasks) && $parent == 0) || $level < 0) {       // if $level = -1, we don't use sublevel recursion, we show all lines
 			// Show task line.
 			$showline = 1;
 			$showlineingray = 0;
@@ -736,22 +740,32 @@ function projectLinesa(&$inc, $parent, &$lines, &$level, $var, $showproject, &$t
 
 				// Title of task
 				if (count($arrayfields) > 0 && !empty($arrayfields['t.label']['checked'])) {
+					$label = dol_escape_htmltag($lines[$i]->label);
 					$labeltoshow = '';
 					if ($showlineingray) {
 						$labeltoshow .= '<i>';
 					}
 					//else print '<a href="'.DOL_URL_ROOT.'/projet/tasks/task.php?id='.$lines[$i]->id.'&withproject=1">';
-					for ($k = 0; $k < $level; $k++) {
-						$labeltoshow .= '<div class="marginleftonly">';
+					if (getDolGlobalInt('PROJECT_TASK_PARENT_INDENT_ALT')) {
+						if ($level>1)
+							$labeltoshow .= '<span style="color: gray;">'.str_repeat('→', $level).'</span>';
+						$labeltoshow .= $label;
 					}
-					$labeltoshow .= dol_escape_htmltag($lines[$i]->label);
-					for ($k = 0; $k < $level; $k++) {
-						$labeltoshow .= '</div>';
+					else {
+						for ($k = 0; $k < $level; $k++) {
+							$labeltoshow .= '<div class="marginleftonly">';
+						}
+						$labeltoshow .= $label;
+						for ($k = 0; $k < $level; $k++) {
+							$labeltoshow .= '</div>';
+						}
 					}
 					if ($showlineingray) {
 						$labeltoshow .= '</i>';
 					}
-					print '<td class="tdoverflowmax200" title="'.dol_escape_htmltag($labeltoshow).'">';
+					$label_disp = getDolGlobalString('PROJECT_TASK_LIST_LABEL_DISP');
+					$label_cssclass = $label_disp==='nowrap' ?'nowraponall' :($label_disp==='full' ?'' :'tdoverflowmax200');
+					print '<td class="'.$label_cssclass.'" title="'.dol_escape_htmltag($label).'">';
 					print $labeltoshow;
 					print "</td>\n";
 				}

@@ -12,6 +12,7 @@
  * Copyright (C) 2022		Anthony Berton				<anthony.berton@bb2a.fr>
  * Copyright (C) 2022       Alexandre Spangaro      <aspangaro@open-dsi.fr>
  * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024       Mathieu Moulin          <mathieu@iprospective.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +35,7 @@
  *  \brief      File of class to generate customers invoices from sponge model
  */
 
+require_once DOL_DOCUMENT_ROOT.'/core/class/discount.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/modules/facture/modules_facture.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
@@ -327,12 +329,22 @@ class pdf_sponge extends ModelePDFFactures
 				$nblines = count($object->lines);
 				$nbpayments = count($object->getListOfPayments());
 
+				// MMI Fix infotot height if multiple situations
+				$object->fetchPreviousNextSituationInvoice();
+				$TPreviousIncoice = $object->tab_previous_situation_invoice;
+				$TPreviousIncoice2 = [];
+				foreach($TPreviousIncoice as &$fac) {
+					$TPreviousIncoice2[$fac->situation_counter] = $fac;
+				}
+
 				// Create pdf instance
 				$pdf = pdf_getInstance($this->format);
 				$default_font_size = pdf_getPDFFontSize($outputlangs); // Must be after pdf_getInstance
 				$pdf->SetAutoPageBreak(1, 0);
 
-				$this->heightforinfotot = 50 + (4 * $nbpayments); // Height reserved to output the info and total part and payment part
+				// MMI Fix infotot height if multiple situations
+				$this->heightforinfotot = 50 + (4 * $nbpayments) + ($object->situation_counter ?2*4
+				 :0) + (4 * count($TPreviousIncoice2)); // Height reserved to output the info and total part and payment part
 				$this->heightforfreetext = (isset($conf->global->MAIN_PDF_FREETEXT_HEIGHT) ? $conf->global->MAIN_PDF_FREETEXT_HEIGHT : 5); // Height reserved to output the free text on last page
 				$this->heightforfooter = $this->marge_basse + (!getDolGlobalString('MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS') ? 12 : 22); // Height reserved to output the footer (value include bottom margin)
 
@@ -468,6 +480,12 @@ class pdf_sponge extends ModelePDFFactures
 				// $this->tab_top is y where we must continue content (90 = 42 + 48: 42 is height of logo and ref, 48 is address blocks)
 				$this->tab_top = 90 + $top_shift + $shipp_shift;		// top_shift is an addition for linked objects or addons (0 in most cases)
 				$this->tab_top_newpage = (!getDolGlobalInt('MAIN_PDF_DONOTREPEAT_HEAD') ? 42 + $top_shift : 10);
+
+				// Added by MMI Mathieu Moulin iProspective
+				// Text complement
+				if (!empty($conf->global->DOCUMENT_SHOW_COMPLEMENT) && !empty($textComplement = $this->textComplement($object, $outputlangs))) {
+					$heightforfreetext += $heightfocomplement = $this->heightComplementArea($pdf, $textComplement, $default_font_size);
+				}
 
 				// You can add more thing under header here, if you increase $extra_under_address_shift too.
 				$extra_under_address_shift = 0;
@@ -838,6 +856,13 @@ class pdf_sponge extends ModelePDFFactures
 					// Situation progress
 					if ($this->getColumnStatus('progress')) {
 						$progress = pdf_getlineprogress($object, $i, $outputlangs, $hidedetails);
+						// MMI Hack : Hooks does not permit to retrieve infos
+						if ($conf->mmidocuments->enabled && !empty($conf->global->SITUATION_DISPLAY_DIFF_ON_PDF) && $progress != ' ' && $object->lines[$i]->situation_percent>0) {
+							if ($progress>0) {
+								$progress = '+'.$progress;
+							}
+							$progress = $progress.'<br />('.$object->lines[$i]->situation_percent.'%)';
+						}
 						$this->printStdColumnContent($pdf, $curY, 'progress', $progress);
 						$nexY = max($pdf->GetY(), $nexY);
 					}
@@ -858,7 +883,21 @@ class pdf_sponge extends ModelePDFFactures
 
 					// Total excl tax line (HT)
 					if ($this->getColumnStatus('totalexcltax')) {
+						$total_excl_tax = number_format(round(pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails), 2), 2, ',', ' ');
 						$total_excl_tax = pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails);
+						// MMI Hack : Hooks does not permit to retrieve infos
+						if ($this->situationinvoice && $conf->mmidocuments->enabled && $total_excl_tax != ' ' && $object->lines[$i]->situation_percent>0) {
+							if (!empty($conf->global->SITUATION_DISPLAY_DIFF_ON_PDF)) {
+								//var_dump($total_excl_tax); echo '<br />';
+								$total_excl_tax_float = (float)str_replace([' ', ','], ['', '.'], $total_excl_tax);
+								$situation_cuml = round(str_replace(',', '.', $qty)*str_replace([' ', ','], ['', '.'], $up_excl_tax)*str_replace(',', '.', $object->lines[$i]->situation_percent)/100, 2);
+								$total_excl_tax = $total_excl_tax.'<br />('.number_format($situation_cuml>=$total_excl_tax_float ?$situation_cuml :$total_excl_tax_float, 2, ',', ' ').')';
+							}
+							else {
+								$total_excl_tax = number_format(round($object->lines[$i]->total_ht, 2), 2, ',', ' ');
+								$total_excl_tax = pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails);
+							}
+						}
 						$this->printStdColumnContent($pdf, $curY, 'totalexcltax', $total_excl_tax);
 						$nexY = max($pdf->GetY(), $nexY);
 					}
@@ -1044,6 +1083,12 @@ class pdf_sponge extends ModelePDFFactures
 				// Display payment area
 				if (($deja_regle || $amount_credit_notes_included || $amount_deposits_included) && !getDolGlobalString('INVOICE_NO_PAYMENT_DETAILS')) {
 					$posy = $this->drawPaymentsTable($pdf, $object, $posy, $outputlangs);
+				}
+
+				// Added by MMI Mathieu Moulin iProspective
+				// Text complement
+				if (!empty($textComplement)) {
+					$posy = $this->drawComplementArea($pdf, $textComplement, $posy, $outputlangs)+2;
 				}
 
 				// Pagefoot
@@ -1247,16 +1292,34 @@ class pdf_sponge extends ModelePDFFactures
 
 		$pdf->SetFont('', '', $default_font_size - 1);
 
-		// If France, show VAT mention if not applicable
-		if ($this->emetteur->country_code == 'FR' && empty($mysoc->tva_assuj)) {
+		// MMI Mathieu Moulin iProspective
+		// Replacement for VAT exempt notice
+		global $hookmanager;
+		$parameters = array(
+			'object' => $object,
+			'outputlangs' => $outputlangs,
+			'mysoc' => $mysoc,
+			'emetteur' => $this->emetteur,
+		);
+		$reshook = $hookmanager->executeHooks('VATNotificationOnPDF', $parameters, $this); // Note that $object may have been modified by hook
+		//var_dump($hookmanager); die();
+		//var_dump($reshook); die();
+		if ($reshook < 0) {
+			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+		} elseif (empty($reshook)) {
+			// If France, show VAT mention if not applicable
+			if ($this->emetteur->country_code == 'FR' && empty($mysoc->tva_assuj))
+				if ($mysoc->forme_juridique_code == 92)
+					$vat_info = $outputlangs->transnoentities("VATIsNotUsedForInvoiceAsso");
+				else
+					$vat_info = $outputlangs->transnoentities("VATIsNotUsedForInvoice");
+		} else {
+			$vat_info = $hookmanager->resPrint;
+		}
+		if (!empty($vat_info)) {
 			$pdf->SetFont('', '', $default_font_size - 2);
 			$pdf->SetXY($this->marge_gauche, $posy);
-			if ($mysoc->forme_juridique_code == 92) {
-				$pdf->MultiCell(100, 3, $outputlangs->transnoentities("VATIsNotUsedForInvoiceAsso"), 0, 'L', 0);
-			} else {
-				$pdf->MultiCell(100, 3, $outputlangs->transnoentities("VATIsNotUsedForInvoice"), 0, 'L', 0);
-			}
-
+			$pdf->MultiCell(100, 3, $vat_info, 0, 'L', 0);
 			$posy = $pdf->GetY() + 4;
 		}
 
@@ -1280,6 +1343,23 @@ class pdf_sponge extends ModelePDFFactures
 			$pdf->MultiCell($posxend - $posxval, 4, $lib_condition_paiement, 0, 'L');
 
 			$posy = $pdf->GetY() + 3; // We need spaces for 2 lines payment conditions
+		}
+
+		// Added by MMI Mathieu Moulin iProspective
+		// Show shipping date
+		if (!empty($object->array_options['options_date_livraison_aff']) && !empty($object->array_options['options_date_livraison'])) {
+			$outputlangs->load("sendings");
+			$pdf->SetFont('', 'B', $default_font_size - 2);
+			$pdf->SetXY($this->marge_gauche, $posy);
+			$liv_type = $object->array_options['options_date_livraison_aff'];
+			$titre = $outputlangs->transnoentities(($liv_type==2 ?'DeliveryDate' :"DateDeliveryPlanned")).':';
+			$pdf->MultiCell(80, 4, $titre, 0, 'L');
+			$pdf->SetFont('', '', $default_font_size - 2);
+			$pdf->SetXY($posxval, $posy);
+			$dlp = dol_print_date($object->array_options['options_date_livraison'], "daytext", false, $outputlangs, true);
+			$pdf->MultiCell(80, 4, $dlp, 0, 'L');
+
+			$posy = $pdf->GetY() + 3; // for 2 lines
 		}
 
 		// Show category of operations
@@ -1359,7 +1439,7 @@ class pdf_sponge extends ModelePDFFactures
 			}
 
 			// Show online payment link
-			if (empty($object->mode_reglement_code) || $object->mode_reglement_code == 'CB' || $object->mode_reglement_code == 'VAD') {
+			if (empty($object->mode_reglement_code) || $object->mode_reglement_code == 'CB' || $object->mode_reglement_code == 'VAD' || getDolGlobalInt('PDF_SHOW_LINK_TO_ONLINE_PAYMENT_ALWAYS')) {
 				$useonlinepayment = 0;
 				if (getDolGlobalString('PDF_SHOW_LINK_TO_ONLINE_PAYMENT')) {
 					// Show online payment link
@@ -1368,7 +1448,6 @@ class pdf_sponge extends ModelePDFFactures
 					$validpaymentmethod = getValidOnlinePaymentMethods('');
 					$useonlinepayment = count($validpaymentmethod);
 				}
-
 
 				if ($object->statut != Facture::STATUS_DRAFT && $useonlinepayment) {
 					require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
@@ -1522,12 +1601,12 @@ class pdf_sponge extends ModelePDFFactures
 
 		// overall percentage of advancement
 		$percent = 0;
+		$total_a_payer_real = 0;
 		$i = 0;
 		foreach ($object->lines as $line) {
-			if ($line->product_type != 9) {
-				$percent += $line->situation_percent;
-				$i++;
-			}
+			$percent += $line->situation_percent;
+			$total_a_payer_real += $line->subprice*$line->qty*(100-$line->remise_percent)/100; // MMI Hack (ou pas)
+			$i++;
 		}
 
 		if (!empty($i)) {
@@ -1538,15 +1617,61 @@ class pdf_sponge extends ModelePDFFactures
 
 		$object->fetchPreviousNextSituationInvoice();
 		$TPreviousIncoice = $object->tab_previous_situation_invoice;
+		$TPreviousIncoice2 = [];
+		foreach($TPreviousIncoice as &$fac) {
+			$TPreviousIncoice2[$fac->situation_counter] = $fac;
+		}
 
+		// MMI Hack : Acomptes & Remises
+		$total_acomptes = 0;
+		$total_remises = 0;
+		// Avancement en cours
 		$total_a_payer = 0;
 		$total_a_payer_ttc = 0;
-		foreach ($TPreviousIncoice as &$fac) {
+		$total_a_payer2 = 0;
+		$remisestatic = new DiscountAbsolute($this->db);
+		foreach ($TPreviousIncoice2 as &$fac) {
 			$total_a_payer += $fac->total_ht;
 			$total_a_payer_ttc += $fac->total_ttc;
+			$total_a_payer2 += $fac->total_ht;
+			foreach($fac->lines as $line) {
+				// Test acompte MAIS PAS remise
+				if ($line->fk_remise_except) {
+					$remisestatic->fetch($line->fk_remise_except);
+					if ($remisestatic->fk_facture_source) {
+						$total_acomptes -= $line->total_ht;
+						$total_a_payer -= $line->total_ht;
+					}
+					else {
+						$total_remises -= $line->total_ht;
+					}
+				}
+			}
 		}
 		$total_a_payer += $object->total_ht;
 		$total_a_payer_ttc += $object->total_ttc;
+		foreach($object->lines as $line) {
+			// Test acompte MAIS PAS remise
+			if ($line->fk_remise_except) {
+				$remisestatic->fetch($line->fk_remise_except);
+				if ($remisestatic->fk_facture_source) {
+					$total_acomptes -= $line->total_ht;
+					$total_a_payer -= $line->total_ht;
+				}
+				else {
+					$total_remises -= $line->total_ht;
+				}
+			}
+		}
+
+		// On remet les acomptes sur le marché total
+		$total_a_payer_real += $total_acomptes;
+		$total_a_payer_real = round($total_a_payer_real, 2);
+
+		/*
+		  @todo : check total à payer
+		*/
+		$avancementGlobalReal = round(100*$total_a_payer/$total_a_payer_real);
 
 		if (!empty($avancementGlobal)) {
 			$total_a_payer = $total_a_payer * 100 / $avancementGlobal;
@@ -1561,7 +1686,7 @@ class pdf_sponge extends ModelePDFFactures
 			$pdf->setY($tab2_top);
 			$posy = $pdf->GetY();
 
-			foreach ($TPreviousIncoice as &$fac) {
+			foreach ($TPreviousIncoice2 as &$fac) {
 				if ($posy > $this->page_hauteur - 4 - $this->heightforfooter) {
 					$this->_pagefoot($pdf, $object, $outputlangs, 1, $this->getHeightForQRInvoice($pdf->getPage(), $object, $outputlangs));
 					$pdf->addPage();
@@ -1579,7 +1704,7 @@ class pdf_sponge extends ModelePDFFactures
 				$pdf->SetFillColor(255, 255, 255);
 				$pdf->SetXY($col1x, $posy);
 				$pdf->MultiCell($col2x - $col1x, $tab2_hl, $outputlangs->transnoentities("PDFSituationTitle", $fac->situation_counter).' '.$outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
-
+				//var_dump($posy);
 				$pdf->SetXY($col2x, $posy);
 
 				$facSign = '';
@@ -1617,37 +1742,71 @@ class pdf_sponge extends ModelePDFFactures
 			$pdf->MultiCell($largcol2, $tab2_hl, $displayAmount, 0, 'R', 1);
 
 			$posy += $tab2_hl;
+		}
 
+		// MMI Hack : Display order total
+		if ($object->situation_counter) {
+			if (!empty($total_acomptes)) {
+				$pdf->SetFillColor(255, 255, 255);
+				$pdf->SetXY($col1x, $posy);
+				// @todo use $outputlangs->transnoentities("PDFSituationOrder")
+				$pdf->MultiCell($col2x - $col1x, $tab2_hl, 'Acomptes versés '.$outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
+
+				$pdf->SetXY($col2x, $posy);
+				$displayAmount = '+ '.price($total_acomptes, 0, $outputlangs);
+				$pdf->MultiCell($largcol2, $tab2_hl, $displayAmount, 0, 'R', 1);
+
+				$posy += $tab2_hl;
+			}
+		}
+
+		// MMI Hack : Want to show it
+		if ($object->situation_counter) {
 			// Display all total
 			$pdf->SetFont('', '', $default_font_size - 1);
 			$pdf->SetFillColor(255, 255, 255);
 			$pdf->SetXY($col1x, $posy);
-			$pdf->MultiCell($col2x - $col1x, $tab2_hl, $outputlangs->transnoentities("SituationTotalProgress", $avancementGlobal), 0, 'L', 1);
+			$pdf->MultiCell($col2x - $col1x, $tab2_hl, $outputlangs->transnoentities("SituationTotalProgress", $avancementGlobalReal), 0, 'L', 1);
 
 			$pdf->SetXY($col2x, $posy);
 			$pdf->MultiCell($largcol2, $tab2_hl, price($total_a_payer * $avancementGlobal / 100, 0, $outputlangs), 0, 'R', 1);
-			$pdf->SetFont('', '', $default_font_size - 2);
 
 			$posy += $tab2_hl;
-
-			if ($posy > $this->page_hauteur - 4 - $this->heightforfooter) {
-				$pdf->addPage();
-				if (!getDolGlobalInt('MAIN_PDF_DONOTREPEAT_HEAD')) {
-					$this->_pagehead($pdf, $object, 0, $outputlangs, $outputlangsbis);
-					$pdf->setY($this->tab_top_newpage);
-				} else {
-					$pdf->setY($this->marge_haute);
-				}
-
-				$posy = $pdf->GetY();
-			}
-
-			$tab2_top = $posy;
-			$index = 0;
-
-			$tab2_top += 3;
 		}
 
+		// MMI Hack : Display total
+		if ($object->situation_counter) {
+			$pdf->SetFillColor(255, 255, 255);
+			$pdf->SetXY($col1x, $posy);
+			// @todo use $outputlangs->transnoentities("PDFSituationOrder")
+			$pdf->MultiCell($col2x - $col1x, $tab2_hl, 'Marché '.$outputlangs->transnoentities("TotalHT"), 0, 'L', 1);
+
+			$pdf->SetXY($col2x, $posy);
+			$displayAmount = ' '.price(round($total_a_payer_real, 2), 0, $outputlangs);
+			$pdf->MultiCell($largcol2, $tab2_hl, $displayAmount, 0, 'R', 1);
+
+			$posy += $tab2_hl;
+		}
+
+		//var_dump($posy, $this->page_hauteur, $this->heightforfooter, $this->page_hauteur - 5 - $this->heightforfooter);
+		if ($posy > $this->page_hauteur - 5 - $this->heightforfooter) {
+			$pdf->addPage();
+			if (!getDolGlobalInt('MAIN_PDF_DONOTREPEAT_HEAD')) {
+				$this->_pagehead($pdf, $object, 0, $outputlangs, $outputlangsbis);
+				$pdf->setY($this->tab_top_newpage);
+			} else {
+				$pdf->setY($this->marge_haute);
+			}
+
+			$posy = $pdf->GetY();
+		}
+
+		$tab2_top = $posy;
+		$index = 0;
+
+		$tab2_top += 3;
+		
+		$pdf->SetFont('', '', $default_font_size - 2);
 
 		// Get Total HT
 		$total_ht = (isModEnabled("multicurrency") && $object->multicurrency_tx != 1 ? $object->multicurrency_total_ht : $object->total_ht);
@@ -1960,6 +2119,28 @@ class pdf_sponge extends ModelePDFFactures
 					$pdf->MultiCell($col2x - $col1x, $tab2_hl, $retainedWarrantyToPayOn, $useborder, 'L', 1);
 					$pdf->SetXY($col2x, $tab2_top + $tab2_hl * $index);
 					$pdf->MultiCell($largcol2, $tab2_hl, price($retainedWarranty), $useborder, 'R', 1);
+
+					// MMI Moulin Mathieu iProspective
+					if ($conf->global->INVOICE_RETAINED_WARRANTY_CUMULATED_SHOW) {
+						// retained warranty cumulated
+						$index++;
+						$index++;
+						$pdf->SetXY($col1x, $tab2_top + $tab2_hl * $index);
+
+						$retainedWarrantyToPayOn = $outputlangs->transnoentities("RetainedWarrantyCumulated").(is_object($outputlangsbis) ? ' / '.$outputlangsbis->transnoentities("RetainedWarrantyCumulated") : '');
+						//var_dump($object); die();
+						if (!empty($object->retained_warranty_fk_cond_reglement)) {
+							$sql = 'SELECT code, libelle FROM '.MAIN_DB_PREFIX.'c_payment_term WHERE rowid='.$object->retained_warranty_fk_cond_reglement;
+							$resql = $this->db->query($sql);
+							if ($resql && ($obj = $this->db->fetch_object($resql)) && $obj->code=='1AN') {
+								$retainedWarrantyToPayOn .= ' : '.$outputlangs->transnoentities('ToPay').' '.$outputlangs->transnoentities($obj->libelle);
+							}
+						}
+
+						$pdf->MultiCell($col2x - $col1x, $tab2_hl, $retainedWarrantyToPayOn, $useborder, 'L', 1);
+						$pdf->SetXY($col2x, $tab2_top + $tab2_hl * $index);
+						$pdf->MultiCell($largcol2, $tab2_hl, price(round($total_a_payer_ttc * $avancementGlobal/100 * $object->retained_warranty/100, 2)), $useborder, 'R', 1);
+					}
 				}
 			}
 		}
@@ -1986,6 +2167,9 @@ class pdf_sponge extends ModelePDFFactures
 			if ($creditnoteamount) {
 				$labeltouse = ($outputlangs->transnoentities("CreditNotesOrExcessReceived") != "CreditNotesOrExcessReceived") ? $outputlangs->transnoentities("CreditNotesOrExcessReceived") : $outputlangs->transnoentities("CreditNotes");
 				$labeltouse .= (is_object($outputlangsbis) ? (' / '.(($outputlangsbis->transnoentities("CreditNotesOrExcessReceived") != "CreditNotesOrExcessReceived") ? $outputlangsbis->transnoentities("CreditNotesOrExcessReceived") : $outputlangsbis->transnoentities("CreditNotes"))) : '');
+				// MMIDocument Moulin Mathieu Feature update
+				if (!empty($object->array_options['options_avoirs_as_acompte']))
+					$labeltouse = $outputlangs->transnoentities("CreditNotesReceivedBefore") ;
 				$index++;
 				$pdf->SetXY($col1x, $tab2_top + $tab2_hl * $index);
 				$pdf->MultiCell($col2x - $col1x, $tab2_hl, $labeltouse, 0, 'L', 0);
@@ -2378,6 +2562,17 @@ class pdf_sponge extends ModelePDFFactures
 			$hautcadre = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 38 : 40;
 			$widthrecbox = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 92 : 82;
 
+			// Added by MMI Mathieu Moulin iProspective
+			// Multiple contacts shipping & invoice
+			// If CUSTOMER/SHIPPING contact defined, we use it
+			$useshippingcontact = !empty($object->getIdContact('external', 'SHIPPING'));
+			// If Maîtrise d'oeuvre defined, we use it
+			$usemaitrisecontact = !empty($object->getIdContact('external', 'MGMT'));
+			// If CUSTOMER/BILLING contact defined, we use it
+			$usebillingcontact = !empty($object->getIdContact('external', 'BILLING'));
+			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && ($useshippingcontact || $usemaitrisecontact))
+				$widthrecbox = 60;
+
 			// Show sender frame
 			if (!getDolGlobalString('MAIN_PDF_NO_SENDER_FRAME')) {
 				$pdf->SetTextColor(0, 0, 0);
@@ -2403,99 +2598,233 @@ class pdf_sponge extends ModelePDFFactures
 			$pdf->SetFont('', '', $default_font_size - 1);
 			$pdf->MultiCell($widthrecbox - 2, 4, $carac_emetteur, 0, $ltrdirection);
 
-			// If BILLING contact defined on invoice, we use it
-			$usecontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'BILLING');
-			if (count($arrayidcontact) > 0) {
-				$usecontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
-
-			// Recipient name
-			if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || getDolGlobalString('MAIN_USE_COMPANY_NAME_OF_CONTACT')))) {
-				$thirdparty = $object->contact;
-			} else {
-				$thirdparty = $object->thirdparty;
-			}
-
-			$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
-
-			$mode = 'target';
-			$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
-
-			// Show recipient
-			$widthrecbox = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 92 : 100;
-			if ($this->page_largeur < 210) {
-				$widthrecbox = 84; // To work with US executive format
-			}
-			$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
-			$posy += $top_shift;
-			$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
-			if (getDolGlobalString('MAIN_INVERT_SENDER_RECIPIENT')) {
-				$posx = $this->marge_gauche;
-			}
-
-			// Show recipient frame
+			// Added by MMI Mathieu Moulin iProspective
+			// Multiple contacts shipping & invoice
 			if (!getDolGlobalString('MAIN_PDF_NO_RECIPENT_FRAME')) {
-				$pdf->SetTextColor(0, 0, 0);
-				$pdf->SetFont('', '', $default_font_size - 2);
-				$pdf->SetXY($posx + 2, $posy - 5);
-				$pdf->MultiCell($widthrecbox - 2, 5, $outputlangs->transnoentities("BillTo"), 0, $ltrdirection);
-				$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
-			}
+				if ($twocontacts) {
+					// ---- RECIPIENT SHIPPING
 
-			// Show recipient name
-			$pdf->SetXY($posx + 2, $posy + 3);
-			$pdf->SetFont('', 'B', $default_font_size);
-			// @phan-suppress-next-line PhanPluginSuspiciousParamOrder
-			$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_name, 0, $ltrdirection);
+					// If CUSTOMER/SHIPPING contact defined, we use it
+					$usecontact = false;
+					$arrayidcontact = $object->getIdContact('external', 'SHIPPING');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$recipient_type = 'SHIPPING';
+						$address_type_label = $outputlangs->transnoentities("DeliveryAddress");
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
+					// If Maîtrise d'oeuvre defined, we use it
+					$usemaitrisecontact = false;
+					$arrayidcontact = $object->getIdContact('external', 'MGMT');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$recipient_type = 'MGMT';
+						$address_type_label = $outputlangs->transnoentities("ProjectManagementAddress");
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
 
-			$posy = $pdf->getY();
+					// Recipient name
+					if ($usecontact && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || getDolGlobalString('MAIN_USE_COMPANY_NAME_OF_CONTACT'))) {
+						$thirdparty = $object->contact;
+						$thirdparty->fetch_thirdparty();
+					} else {
+						$thirdparty = $object->thirdparty;
+					}
 
-			// Show recipient information
-			$pdf->SetFont('', '', $default_font_size - 1);
-			$pdf->SetXY($posx + 2, $posy);
-			// @phan-suppress-next-line PhanPluginSuspiciousParamOrder
-			$pdf->MultiCell($widthrecbox - 2, 4, $carac_client, 0, $ltrdirection);
+					$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
 
-			// Show shipping address
-			if (getDolGlobalInt('INVOICE_SHOW_SHIPPING_ADDRESS')) {
-				$idaddressshipping = $object->getIdContact('external', 'SHIPPING');
+					$mode =  'target';
+					$carac_client = pdf_build_address($outputlangs, $this->emetteur, $usecontact && empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) ?$object->contact->thirdparty :$object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
 
-				if (!empty($idaddressshipping)) {
-					$contactshipping = $object->fetch_Contact($idaddressshipping[0]);
-					$companystatic = new Societe($this->db);
-					$companystatic->fetch($object->contact->fk_soc);
-					$carac_client_name_shipping = pdfBuildThirdpartyName($object->contact, $outputlangs);
-					$carac_client_shipping = pdf_build_address($outputlangs, $this->emetteur, $companystatic, $object->contact, $usecontact, 'target', $object);
-				} else {
-					$carac_client_name_shipping = pdfBuildThirdpartyName($object->thirdparty, $outputlangs);
-					$carac_client_shipping = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, '', 0, 'target', $object);
-				}
-				if (!empty($carac_client_shipping)) {
-					$posy += $hautcadre;
+					// Show recipient
+					$widthrecbox = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 92 : 100;
+					if ($this->page_largeur < 210) {
+						$widthrecbox = 84; // To work with US executive format
+					}
+					$widthrecbox = 60;
+					$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
+					$posy += $top_shift;
+					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
+					if (getDolGlobalString('MAIN_INVERT_SENDER_RECIPIENT')) {
+						$posx = $this->marge_gauche;
+					}
 
-					$hautcadre = $hautcadre - 10;	// Height for the shipping address does not need to be as high as main box
-
-					// Show shipping frame
-					$pdf->SetXY($posx + 2, $posy - 5);
+					// Show recipient frame
+					$pdf->SetTextColor(0, 0, 0);
 					$pdf->SetFont('', '', $default_font_size - 2);
-					$pdf->MultiCell($widthrecbox, '', $outputlangs->transnoentities('ShippingTo'), 0, 'L', 0);
+					$pdf->SetXY($posx + 2, $posy - 5);
+					$pdf->MultiCell($widthrecbox, 5, $address_type_label, 0, $ltrdirection);
 					$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
 
-					// Show shipping name
+					// Show recipient name
 					$pdf->SetXY($posx + 2, $posy + 3);
 					$pdf->SetFont('', 'B', $default_font_size);
-					$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_name_shipping, '', 'L');
+					$pdf->MultiCell($widthrecbox, 2, $carac_client_name, 0, $ltrdirection);
 
 					$posy = $pdf->getY();
 
-					// Show shipping information
-					$pdf->SetXY($posx + 2, $posy);
+					// Show recipient information
 					$pdf->SetFont('', '', $default_font_size - 1);
-					$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_shipping, '', 'L');
+					$pdf->SetXY($posx + 2, $posy);
+					$pdf->MultiCell($widthrecbox, 4, $carac_client, 0, $ltrdirection);
 
-					$shipp_shift += $hautcadre + 10;
+					// ---- RECIPIENT INVOICE
+
+					// If CUSTOMER contact defined, we use it
+					$usecontact = false;
+					$arrayidcontact = $object->getIdContact('external', 'BILLING');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
+
+					// Recipient name
+					if ($usecontact && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || getDolGlobalString('MAIN_USE_COMPANY_NAME_OF_CONTACT'))) {
+						$thirdparty = $object->contact;
+						$thirdparty->fetch_thirdparty();
+					} else {
+						$thirdparty = $object->thirdparty;
+					}
+
+					$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
+
+					$mode =  'target';
+					$carac_client = pdf_build_address($outputlangs, $this->emetteur, $usecontact ?$object->contact->thirdparty :$object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
+
+					// Show recipient
+					$widthrecbox = !empty($conf->global->MAIN_PDF_USE_ISO_LOCATION) ? 92 : 82;
+					
+					if ($this->page_largeur < 210) {
+						$widthrecbox = 84; // To work with US executive format
+					}
+					$widthrecbox = 60;
+					$posy = !empty($conf->global->MAIN_PDF_USE_ISO_LOCATION) ? 40 : 42;
+					$posy += $top_shift;
+					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
+					if (!empty($conf->global->MAIN_INVERT_SENDER_RECIPIENT)) {
+						$posx = $this->marge_gauche;
+					}
+					$posx -= $widthrecbox +5;
+
+					// Show recipient frame
+					$pdf->SetTextColor(0, 0, 0);
+					$pdf->SetFont('', '', $default_font_size - 2);
+					$pdf->SetXY($posx + 2, $posy - 5);
+					$pdf->MultiCell($widthrecbox, 5, $outputlangs->transnoentities("BillAddress"), 0, $ltrdirection);
+					$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
+
+					// Show recipient name
+					$pdf->SetXY($posx + 2, $posy + 3);
+					$pdf->SetFont('', 'B', $default_font_size);
+					$pdf->MultiCell($widthrecbox, 2, $carac_client_name, 0, $ltrdirection);
+
+					$posy = $pdf->getY();
+
+					// Show recipient information
+					$pdf->SetFont('', '', $default_font_size - 1);
+					$pdf->SetXY($posx + 2, $posy);
+					$pdf->MultiCell($widthrecbox, 4, $carac_client, 0, $ltrdirection);
+				}
+				// 1 seule adresse
+				else {
+					// If CUSTOMER contact defined, we use it
+					$usecontact = false;
+					$arrayidcontact = $object->getIdContact('external', 'CUSTOMER');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
+					// If BILLING contact defined, we use it
+					if (! $usecontact) {
+						$arrayidcontact = $object->getIdContact('external', 'BILLING');
+						if (count($arrayidcontact) > 0) {
+							$usecontact = true;
+							$result = $object->fetch_contact($arrayidcontact[0]);
+						}
+					}
+
+					// Recipient name
+					if ($usecontact && ($object->contact->socid == $object->thirdparty->id && !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT))) {
+						$thirdparty = $object->contact;
+					} else {
+						$thirdparty = $object->thirdparty;
+					}
+
+					$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
+
+					$mode = 'target';
+					$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
+
+					// Show recipient
+					$widthrecbox = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 92 : 100;
+					if ($this->page_largeur < 210) {
+						$widthrecbox = 84; // To work with US executive format
+					}
+					$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
+					$posy += $top_shift;
+					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
+					if (getDolGlobalString('MAIN_INVERT_SENDER_RECIPIENT')) {
+						$posx = $this->marge_gauche;
+					}
+
+					// Show recipient frame
+					if (empty($conf->global->MAIN_PDF_NO_RECIPENT_FRAME)) {
+						$pdf->SetTextColor(0, 0, 0);
+						$pdf->SetFont('', '', $default_font_size - 2);
+						$pdf->SetXY($posx + 2, $posy - 5);
+						$pdf->MultiCell($widthrecbox - 2, 5, $outputlangs->transnoentities("BillTo"), 0, $ltrdirection);
+						$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
+					}
+
+					// Show recipient name
+					$pdf->SetXY($posx + 2, $posy + 3);
+					$pdf->SetFont('', 'B', $default_font_size);
+					$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_name, 0, $ltrdirection);
+
+					$posy = $pdf->getY();
+
+					// Show recipient information
+					$pdf->SetFont('', '', $default_font_size - 1);
+					$pdf->SetXY($posx + 2, $posy);
+					$pdf->MultiCell($widthrecbox - 2, 4, $carac_client, 0, $ltrdirection);
+
+					// Show shipping address
+					if (getDolGlobalInt('INVOICE_SHOW_SHIPPING_ADDRESS')) {
+						$idaddressshipping = $object->getIdContact('external', 'SHIPPING');
+
+						if (!empty($idaddressshipping)) {
+							$contactshipping = $object->fetch_Contact($idaddressshipping[0]);
+							$companystatic = new Societe($this->db);
+							$companystatic->fetch($object->contact->fk_soc);
+							$carac_client_name_shipping=pdfBuildThirdpartyName($object->contact, $outputlangs);
+							$carac_client_shipping = pdf_build_address($outputlangs, $this->emetteur, $companystatic, $object->contact, $usecontact, 'target', $object);
+						} else {
+							$carac_client_name_shipping=pdfBuildThirdpartyName($object->thirdparty, $outputlangs);
+							$carac_client_shipping=pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, '', 0, 'target', $object);
+						}
+						if (!empty($carac_client_shipping)) {
+							$posy += $hautcadre;
+
+							// Show shipping frame
+							$pdf->SetXY($posx + 2, $posy - 5);
+							$pdf->SetFont('', '', $default_font_size - 2);
+							$pdf->MultiCell($widthrecbox, '', $outputlangs->transnoentities('ShippingTo'), 0, 'L', 0);
+							$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
+
+							// Show shipping name
+							$pdf->SetXY($posx + 2, $posy + 3);
+							$pdf->SetFont('', 'B', $default_font_size);
+							$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_name_shipping, '', 'L');
+
+							$posy = $pdf->getY();
+
+							// Show shipping information
+							$pdf->SetXY($posx+2, $posy);
+							$pdf->SetFont('', '', $default_font_size - 1);
+							$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_shipping, '', 'L');
+							$shipp_shift += $hautcadre;
+						}
+					}
 				}
 			}
 		}
@@ -2522,6 +2851,81 @@ class pdf_sponge extends ModelePDFFactures
 	{
 		$showdetails = getDolGlobalInt('MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS', 0);
 		return pdf_pagefoot($pdf, $outputlangs, 'INVOICE_FREE_TEXT', $this->emetteur, $heightforqrinvoice + $this->marge_basse, $this->marge_gauche, $this->page_hauteur, $object, $showdetails, $hidefreetext, $this->page_largeur, $this->watermark);
+	}
+
+	/**
+	 * Added by MMI Mathieu Moulin iProspective
+	 * Text complement
+	 */
+	protected function textComplement(&$object, $outputlangs)
+	{
+		global $conf;
+		$outputlangs->load('mmidocuments@mmidocuments');
+
+		//var_dump($object); die();
+		//var_dump($object->array_options['options_cgv_cpv']); die();
+		$complement = [];
+		if (!empty($object->array_options['options_cgv_cpv'])) {
+			if (!empty($conf->global->MMIDOCUMENT_CGP_TITLE))
+				$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoCGP")."</h3>";
+			$complement[] = $object->array_options['options_cgv_cpv'];
+		}
+		if (!empty($object->array_options['options_propal_decennale'])) {
+			if (!empty($conf->global->MMIPROJECT_DECENNALE_TITLE))
+				$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</h3>";
+			$complement[] = $conf->global->MMIPROJECT_DECENNALE_TEXT;
+		}
+		//var_dump($complement); die();
+		return !empty($complement) ?implode("\r\n", $complement) :'';
+	}
+	protected function heightComplement(&$pdf, $text, $default_font_size)
+	{
+		$pdf->SetFont('', '', $default_font_size - 2);
+		$useborder = 0;
+		$cellpadding = 0;
+		$reseth = false;
+		$autopadding = true;
+		$largcol = ($this->page_largeur - $this->marge_droite - $this->marge_gauche);
+		return $pdf->getStringHeight($largcol, strip_tags($text), $reseth, $autopadding, $cellpadding, $useborder);
+	}
+	protected function heightComplementArea(&$pdf, $text, $default_font_size)
+	{
+		global $conf;
+		$marg_top = 8+(!empty($conf->global->DOCUMENT_COMPLEMENT_TITLE) ?4 :0);
+		$tab_titre = 4;
+		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
+		//var_dump($tab_text);
+		return $marg_top + $tab_titre + $tab_text;
+	}
+	protected function drawComplementArea(&$pdf, $text, $posy, $outputlangs)
+	{
+		global $conf;
+		$outputlangs->load('mmidocuments@mmidocuments');
+		
+		$default_font_size = pdf_getPDFFontSize($outputlangs);
+		$marg_top = 8+(!empty($conf->global->DOCUMENT_COMPLEMENT_TITLE) ?4 :0);
+		$tab_top = $posy + $marg_top;
+
+		$posx = $this->marge_gauche;
+		$largcol = ($this->page_largeur - $this->marge_droite - $posx);
+
+		$pdf->SetFillColor(255, 255, 255);
+		$pdf->SetFont('', '', $default_font_size - 2);
+
+		// Titre
+		if (!empty($conf->global->DOCUMENT_COMPLEMENT_TITLE)) {
+			$pdf->SetXY($posx, $tab_top);
+			$tab_titre = 4;
+			$pdf->WriteHTMLCell($largcol, $tab_titre, $posx, $posy+$marg_top, '<b>'.$outputlangs->transnoentities("DocumentMoreInfo").'</b>', 0);
+		}
+		// Texte
+		$pdf->SetXY($posx, $tab_top + $tab_titre);
+		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
+		//var_dump($tab_text); die();
+		$pdf->WriteHTMLCell($largcol, $tab_text, $posx,$tab_top+$tab_titre, $text, 1, 'L');
+		//var_dump($tab_top + $tab_titre + $tab_text); die();
+
+		return $tab_top + $tab_titre + $tab_text;
 	}
 
 	/**

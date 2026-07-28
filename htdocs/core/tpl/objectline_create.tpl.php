@@ -397,6 +397,14 @@ if ($nolinesbefore) {
 				echo '<div id="attributes_box"></div>';
 			}
 		}
+
+		// Added by MMI Mathieu Moulin iProspective
+		if (is_object($hookmanager)) {
+			$reshook = $hookmanager->executeHooks('formAddProductToDocumentCard', $parameters, $object, $action);
+			if (!empty($hookmanager->resPrint)) {
+				print $hookmanager->resPrint;
+			}
+		}
 		// Editor wysiwyg
 		require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 		$nbrows = ROWS_2;
@@ -780,6 +788,7 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 	});
 			<?php
 	} ?>
+
 	/* When changing predefined product, we reload list of supplier prices required for margin combo */
 	$("#idprod, #idprodfournprice").change(function()
 	{
@@ -827,6 +836,20 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 							jQuery('#date_start').removeClass('inputmandatory');
 							jQuery('#date_end').removeClass('inputmandatory');
 						}
+
+						// Added by MMI Mathieu Moulin iProspective
+						<?php
+						if (!empty($conf->global->MAIN_SHOW_ADDED_PRODUCT_LABEL)) { ?>
+						if (data.ref != undefined) {
+							var label = data.ref+' - '+data.label+' - QTY: '+data.qty;
+							if (data.sellby != undefined)
+								label += ' - DDM: '+data.sellby.split('-').reverse().join('/')+' (QTY:'+data.lot_qty+')';
+							$("#added_labelprod").html('<b>'+label+'</b>');
+						}
+						<?php } ?>
+
+						// MMI Discount
+						jQuery("#remise_percent").val(data.discount);
 
 						if (<?php echo (int) $inputalsopricewithtax; ?> == 1 && data.pricebasetype == 'TTC' && <?php print getDolGlobalInt('MAIN_NO_INPUT_PRICE_WITH_TAX') ? 'false' : 'true'; ?>) {
 							console.log("objectline_create.tpl set content of price_ttc");

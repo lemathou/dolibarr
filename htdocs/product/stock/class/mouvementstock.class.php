@@ -201,6 +201,8 @@ class MouvementStock extends CommonObject
 
 		// Call hook at beginning
 		global $action, $hookmanager;
+		if (empty($hookmanager))
+			$hookmanager = new HookManager($this->db);
 		$hookmanager->initHooks(array('mouvementstock'));
 
 		if (is_object($hookmanager)) {
@@ -617,9 +619,11 @@ class MouvementStock extends CommonObject
 				}
 			}
 
-			if (empty($donotcleanemptylines)) {
+			if (empty($donotcleanemptylines) && ! getDolGlobalInt('STOCK_KEEP_EMPTY_IN_DB')) {
 				// If stock is now 0, we can remove entry into llx_product_stock, but only if there is no child lines into llx_product_batch (detail of batch, because we can imagine
 				// having a lot1/qty=X and lot2/qty=-X, so 0 but we must not loose repartition of different lot.
+				// Added by MMI Mathieu Moulin iProspective
+				// DO NOT DELETE STOCK !!
 				$sql = "DELETE FROM ".$this->db->prefix()."product_stock WHERE reel = 0 AND rowid NOT IN (SELECT fk_product_stock FROM ".$this->db->prefix()."product_batch as pb)";
 				$resql = $this->db->query($sql);
 				// We do not test error, it can fails if there is child in batch details
@@ -902,7 +906,8 @@ class MouvementStock extends CommonObject
 	 */
 	private function createBatch($dluo, $qty)
 	{
-		global $user, $langs;
+		// Added by MMI Mathieu Moulin iProspective
+		global $user, $langs, $conf;
 
 		$langs->load('productbatch');
 
@@ -940,7 +945,12 @@ class MouvementStock extends CommonObject
 				//print "Avant ".$pdluo->qty." Apres ".($pdluo->qty + $qty)."<br>";
 				$pdluo->qty += $qty;
 				if ($pdluo->qty == 0) {
-					$result = $pdluo->delete($user, 1);
+					// Added by MMI Mathieu Moulin iProspective
+					// DO NOT DELETE !
+					if (!empty($conf->global->STOCK_KEEP_EMPTY_IN_DB))
+						$result = $pdluo->update($user, 1);
+					else
+						$result = $pdluo->delete($user, 1);
 				} else {
 					$result = $pdluo->update($user, 1);
 				}
@@ -1038,7 +1048,25 @@ class MouvementStock extends CommonObject
 		}
 
 		if ($origin->fetch($origin_id) > 0) {
-			return $origin->getNomUrl(1);
+			$ret = $origin->getNomUrl(1);
+			// MMI
+			global $conf;
+			if (!empty($conf->global->MMI_CORE_MOVEMENT_LIST_ENHANCE)) {
+				if ($origin_type=='shipping') {
+					require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
+					if ($origin->origin=='commande' && !empty($origin->origin_id)) {
+						$cmd = new Commande($this->db);
+						$cmd->fetch($origin->origin_id);
+						$ret .= ' '.$cmd->getNomUrl(1);
+					}
+					require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
+					$soc = new Societe($this->db);
+					$soc->fetch($origin->socid);
+					$ret .= ' '.$soc->getNomUrl(1);
+				}
+				return $ret;
+			}
+			return $ret;
 		}
 
 		return '';

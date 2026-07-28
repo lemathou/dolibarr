@@ -430,7 +430,7 @@ if (Luracast\Restler\Defaults::$returnResponse) {
 	} elseif (strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'bz') !== false && function_exists('bzcompress')) {
 		header('Content-Encoding: bz');
 		$result = bzcompress($responsedata, 9);
-	} elseif (strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false && function_exists('gzencode')) {
+	} elseif (empty($conf->global->MMI_API_DISABLE_GZIP) && strpos($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') !== false && function_exists('gzencode')) { // MMI Hack for nginx
 		header('Content-Encoding: gzip');
 		$result = gzencode($responsedata, 9);
 	} else {

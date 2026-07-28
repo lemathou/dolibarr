@@ -997,7 +997,7 @@ if (empty($reshook)) {
 						}
 					}
 					$tmptxt .= ')';
-					$desc = dol_concatdesc($desc, $tmptxt);
+					$desc = dol_concatdesc($desc, $tmptxt, !empty($conf->global->MAIN_USE_XML_TAGS));
 				}
 
 				$type = $prod->type;
@@ -2784,9 +2784,18 @@ if ($action == 'create' && $usercancreate) {
 				print '</td>';
 				print '</tr>';
 			}
-
+			
+			// MMI Hack: Other attributes/extrafields show/hide
+			$extrafields_showhide = $conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE && (empty($action) || !in_array($action, ['edit_extras', 'update_extras']));
+			if ($extrafields_showhide) {
+				echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
+				echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
+			}
 			// Other attributes
 			include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
+			if ($extrafields_showhide) {
+				echo '</tbody>';
+			}
 
 			print '</table>';
 
@@ -2862,6 +2871,13 @@ if ($action == 'create' && $usercancreate) {
 			// Margin Infos
 			if (isModEnabled('margin')) {
 				$formmargin->displayMarginInfos($object);
+			}
+	
+			// MMI Hack
+			$parameters = array();
+			$reshook = $hookmanager->executeHooks('doDisplayMoreInfos', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
+			if ($reshook < 0) {
+				setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 			}
 
 
@@ -3135,12 +3151,19 @@ if ($action == 'create' && $usercancreate) {
 				$compatibleImportElementsList = array('commande', 'propal', 'facture'); // import from linked elements
 			}
 			$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem, $compatibleImportElementsList);
-
 			// Show online payment link
 			// The list can be complete by the hook 'doValidatePayment' executed inside getValidOnlinePaymentMethods()
 			include_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
 			$validpaymentmethod = getValidOnlinePaymentMethods('');
 			$useonlinepayment = count($validpaymentmethod);
+
+			// MMI Hack : kept, the MMI payment modules implement 'addOnlinePaymentMeans' and not the upstream 'doValidatePayment' hook
+			if (!$useonlinepayment) {
+				$parameters = array();
+				$reshook = $hookmanager->executeHooks('addOnlinePaymentMeans', $parameters, $object, $action);
+				if ($reshook==0 && !empty($hookmanager->results['useonlinepayment']))
+					$useonlinepayment = true;
+			}
 
 			if (getDolGlobalString('ORDER_HIDE_ONLINE_PAYMENT_ON_ORDER')) {
 				$useonlinepayment = 0;

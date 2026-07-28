@@ -480,6 +480,12 @@ if ($ext == 'csv') {
 	if (GETPOSTINT('dateyear') > 0) {
 		$param .= '&dateyear='.GETPOSTINT('dateyear');
 	}
+	// Added by MMI Mathieu Moulin iProspective
+	$parameters = array();
+	$reshook = $hookmanager->executeHooks('printFieldListFilters', $parameters);
+	if (empty($reshook)) {
+		$param .= $hookmanager->resPrint;
+	}
 
 	// TODO Move this into the title line ?
 	print_barre_liste('', $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, '', $num, $nbtotalofrecords, 'stock', 0, '', '', $limit, 0, 0, 1);
@@ -590,8 +596,12 @@ $totalsellingprice = 0;
 $totalcurrentstock = 0;
 $totalvirtualstock = 0;
 
+// MMI Hack
+$notnullatdate = GETPOST('notnullatdate');
+
 $i = 0;
-while ($i < ($limit ? min($num, $limit) : $num)) {
+$ireal = 0; // MMI Hack
+while ($i < ($limit ? min($num, $limit) : $num) && $ireal < $num) { // MMI Hack
 	$objp = $db->fetch_object($resql);
 
 	if (getDolGlobalString('STOCK_SUPPORTS_SERVICES') || $objp->fk_product_type == 0) {
@@ -654,6 +664,13 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 			}
 		}
 
+		// MMI Hack
+		$ireal++;
+		if ($notnullatdate && !$stock) {
+			// We don't increment $i, but we need to know when to stop the loop !
+			//$i++;
+			continue;
+		}
 
 		if ($ext == 'csv') {
 			if ($mode == 'future') {

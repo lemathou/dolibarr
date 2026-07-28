@@ -45,6 +45,9 @@ htdocs/.well-known/apple-developer-merchantid-domain-association
 /factory/
 /output/
 
+# MMI Mathieu Moulin iProspective
+htdocs/.user.ini
+
 # Node Modules
 build/yarn-error.log
 build/node_modules/

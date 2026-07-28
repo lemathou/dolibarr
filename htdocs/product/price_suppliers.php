@@ -463,6 +463,13 @@ if ($id > 0 || $ref) {
 			}
 			print '</td></tr>';
 
+			// MMI Extrafields
+			$parameters = array('socid'=>$socid, 'id_prod'=>$id, 'form'=>$form, 'usercancreate'=>$usercancreate);
+			$reshook = $hookmanager->executeHooks('ObjectExtraFields', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
+			if ($reshook < 0) {
+				setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+			}
+
 			print '</table>';
 
 			print '</div>';
@@ -788,6 +795,41 @@ if ($id > 0 || $ref) {
 				print '<td><input class="flat" name="remise_percent" size="4" value="'.(GETPOSTISSET('remise_percent') ? vatrate(price2num(GETPOST('remise_percent'), '', 2)) : (isset($object->fourn_remise_percent) ? vatrate($object->fourn_remise_percent) : '')).'"> %';
 				print '</td>';
 				print '</tr>';
+
+				// MMI Hack
+				if (!empty($conf->global->MMIPRODUCT_SUPPLIER_PRICE_REDUCTED_DISPLAY)) {
+					$price = GETPOST('price') ? GETPOST('price') : (isset($object->fourn_price) ? $object->fourn_price : 0);
+					$remise_percent = GETPOSTISSET('remise_percent') ? GETPOST('remise_percent') : (isset($object->fourn_remise_percent) ?$object->fourn_remise_percent : 0);
+					// Supplier priced with rediction
+					print '<tr><td>'.$langs->trans("DiscountPriceQtyMin").'</td>';
+					print '<td><input class="flat" name="discount_price" size="8" value="'.number_format($price*(1-$remise_percent/100), 5, ',', ' ').'" /></td>';
+					print '</tr>';
+					print '<script type="text/javascript">';
+					print 'function dolinumber(x) {
+						var parts = x.toString().split(".");
+    					parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    					return parts.join(".").replace(".", ",");
+					}';
+					print '$("input[name=price]").change(function(){
+						var price = $(this).val().replace(",", ".").replace(" ", "");
+						var remise_percent = $("input[name=remise_percent]").val().replace(",", ".").replace(" ", "");
+						var discount_price = price*(1-remise_percent/100);
+						$("input[name=discount_price]").val(dolinumber(discount_price));
+					}).change();;';
+					print '$("input[name=remise_percent]").change(function(){
+						var remise_percent = $(this).val().replace(",", ".").replace(" ", "");
+						var price = $("input[name=price]").val().replace(",", ".").replace(" ", "");
+						var discount_price = price*(1-remise_percent/100);
+						$("input[name=discount_price]").val(dolinumber(discount_price));
+					});';
+					print '$("input[name=discount_price]").change(function(){
+						var discount_price = $(this).val().replace(",", ".").replace(" ", "");
+						var remise_percent = $("input[name=remise_percent]").val().replace(",", ".").replace(" ", "");
+						var price = discount_price/(1-remise_percent/100);
+						$("input[name=price]").val(dolinumber(price));
+					})';
+					print '</script>';
+				}
 
 				// Delivery delay in days
 				print '<tr>';

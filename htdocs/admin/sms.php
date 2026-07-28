@@ -57,6 +57,8 @@ if ($action == 'update' && !$cancel) {
 
 	dolibarr_set_const($db, "MAIN_SMS_FROM", GETPOST("MAIN_SMS_FROM", 'alphanohtml'), 'chaine', 0, '', $conf->entity);
 
+	dolibarr_set_const($db, "MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT", GETPOST("MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT", 'alphanohtml'), 'chaine', 0, '', $conf->entity);
+
 	header("Location: ".$_SERVER["PHP_SELF"]."?mainmenu=home&leftmenu=setup");
 	exit;
 }
@@ -197,6 +199,11 @@ if ($action == 'edit') {
 	print '<td><input class="flat" name="MAIN_SMS_FROM" size="32" value="'.getDolGlobalString('MAIN_SMS_FROM');
 	print '"></td></tr>';
 
+	// Default prefix - Added by MMI Mathieu Moulin iProspective (used by CSMSFile)
+	print '<tr class="oddeven"><td>'.$langs->trans("MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT", $langs->transnoentities("Undefined")).'</td>';
+	print '<td><input class="flat" name="MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT" size="5" value="'.getDolGlobalString('MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT');
+	print '"></td></tr>';
+
 	print '</table>';
 
 	print '<br><div class="center">';
@@ -230,6 +237,14 @@ if ($action == 'edit') {
 	print '<tr class="oddeven"><td>'.$langs->trans("MAIN_SMS_FROM", $langs->transnoentities("Undefined")).'</td>';
 	print '<td>'.getDolGlobalString('MAIN_SMS_FROM');
 	if (getDolGlobalString('MAIN_SMS_FROM') && !isValidPhone(getDolGlobalString('MAIN_SMS_FROM'))) {
+		print ' '.img_warning($langs->trans("ErrorBadPhone"));
+	}
+	print '</td></tr>';
+
+	// Default prefix - Added by MMI Mathieu Moulin iProspective (used by CSMSFile)
+	print '<tr class="oddeven"><td>'.$langs->trans("MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT", $langs->transnoentities("Undefined")).'</td>';
+	print '<td>'.getDolGlobalString('MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT');
+	if (!empty($conf->global->MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT) && !isValidPhone($conf->global->MAIN_MAIL_SMS_INTL_PREFIX_DEFAULT)) {
 		print ' '.img_warning($langs->trans("ErrorBadPhone"));
 	}
 	print '</td></tr>';

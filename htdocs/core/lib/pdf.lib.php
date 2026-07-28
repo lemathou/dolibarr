@@ -402,6 +402,8 @@ function pdfBuildThirdpartyName($thirdparty, Translate $outputlangs, $includeali
 			}
 		}
 	} elseif ($thirdparty instanceof Contact) {
+		if (!empty($thirdparty->array_options['options_societe_name_hide']))
+			return '';
 		if ($thirdparty->socid > 0) {
 			$thirdparty->fetch_thirdparty();
 			$socname = $thirdparty->thirdparty->name;
@@ -469,8 +471,36 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 			$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->convToOutputCharset(dol_format_address($sourcecompany, $withCountry, "\n", $outputlangs))."\n";
 
 			if (!getDolGlobalString('MAIN_PDF_DISABLESOURCEDETAILS')) {
+				// MMI Hack : Conseiller
+				if (getDolGlobalInt('MMIDOCUMENTS_PDF_COMMERCIAL')) {
+					//var_dump($sourcecompany, $targetcompany, $targetcontact, $usecontact);
+					global $user;
+					if(!empty($object)) {
+						$arrayidcontact = $object->getIdContact('internal', 'SALESREPFOLL');
+						if (!empty($arrayidcontact)) {
+							$object->fetch_user($arrayidcontact[0]);
+							$commercial = [
+								'firstname'=>$object->user->firstname,
+								'lastname'=>$object->user->lastname,
+								'office_phone'=>$object->user->office_phone,
+								'email'=>$object->user->email,
+							];
+						}
+					}
+					if (empty($commercial)) {
+						$commerciaux = $targetcompany->getSalesRepresentatives($user);
+						if(is_array($commerciaux) && !empty($commerciaux))
+							$commercial = $commerciaux[0];
+					}
+					//var_dump($commercial);
+					if (!empty($commercial))
+						$stringaddress .= ($stringaddress ? "\n" : '').'Conseiller: '.$outputlangs->convToOutputCharset($commercial['firstname'].' '.$commercial['lastname']);
+				}
 				// Phone
-				if ($sourcecompany->phone) {
+				if (!empty($commercial) && !empty($commercial['office_phone'])) {
+					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("PhoneShort").": ".$outputlangs->convToOutputCharset($commercial['office_phone']);
+				}
+				elseif ($sourcecompany->phone) {
 					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("PhoneShort").": ".$outputlangs->convToOutputCharset($sourcecompany->phone);
 				}
 				// Fax
@@ -478,7 +508,10 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 					$stringaddress .= ($stringaddress ? ($sourcecompany->phone ? " - " : "\n") : '').$outputlangs->transnoentities("Fax").": ".$outputlangs->convToOutputCharset($sourcecompany->fax);
 				}
 				// EMail
-				if ($sourcecompany->email) {
+				if (!empty($commercial) && !empty($commercial['email'])) {
+					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("Email").": ".$outputlangs->convToOutputCharset($commercial['email']);
+				}
+				elseif ($sourcecompany->email) {
 					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("Email").": ".$outputlangs->convToOutputCharset($sourcecompany->email);
 				}
 				// Web
@@ -646,7 +679,11 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 
 			// Intra VAT
 			if (!getDolGlobalString('MAIN_TVAINTRA_NOT_IN_ADDRESS')) {
-				if ($usecontact && is_object($targetcontact) && getDolGlobalInt('MAIN_USE_COMPANY_NAME_OF_CONTACT')) {
+				// MMI Hack
+				if ($usecontact && is_object($targetcontact) && !empty($targetcontact->array_options['tva_intra'])) {
+					$stringaddress .= ($stringaddress ? "\n" : '').$outputlangs->transnoentities("VATIntraShort").': '.$outputlangs->convToOutputCharset($targetcontact->array_options['tva_intra']);
+				}
+				elseif ($usecontact && is_object($targetcontact) && getDolGlobalInt('MAIN_USE_COMPANY_NAME_OF_CONTACT')) {
 					$targetcontact->fetch_thirdparty();
 					if (!empty($targetcontact->thirdparty->id) && $targetcontact->thirdparty->tva_intra) {
 						$stringaddress .= ($stringaddress ? "\n" : '') . $outputlangs->transnoentities("VATIntraShort") . ': ' . $outputlangs->convToOutputCharset($targetcontact->thirdparty->tva_intra);
@@ -668,14 +705,22 @@ function pdf_build_address($outputlangs, $sourcecompany, $targetcompany = '', $t
 				if (preg_match('/\((.+)\)/', $tmp, $reg)) {
 					$tmp = $reg[1];
 				}
-				$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof1);
+				// MMI Hack
+				if ($usecontact && is_object($targetcontact) && !empty($targetcontact->array_options['options_siren']))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcontact->array_options['options_siren']);
+				elseif (!empty($targetcompany->idprof1))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof1);
 			}
 			if (getDolGlobalString('MAIN_PROFID2_IN_ADDRESS') && !empty($targetcompany->idprof2)) {
 				$tmp = $outputlangs->transcountrynoentities("ProfId2", $targetcompany->country_code);
 				if (preg_match('/\((.+)\)/', $tmp, $reg)) {
 					$tmp = $reg[1];
 				}
-				$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof2);
+				// MMI Hack
+				if ($usecontact && is_object($targetcontact) && !empty($targetcontact->array_options['options_siret']))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcontact->array_options['options_siret']);
+				elseif (!empty($targetcompany->idprof2))
+					$stringaddress .= ($stringaddress ? "\n" : '').$tmp.': '.$outputlangs->convToOutputCharset($targetcompany->idprof2);
 			}
 			if (getDolGlobalString('MAIN_PROFID3_IN_ADDRESS') && !empty($targetcompany->idprof3)) {
 				$tmp = $outputlangs->transcountrynoentities("ProfId3", $targetcompany->country_code);
@@ -1441,7 +1486,7 @@ function pdf_writelinedesc(&$pdf, $object, $i, $outputlangs, $w, $h, $posx, $pos
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -1495,7 +1540,8 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 	global $db, $conf, $langs;
 
 	$idprod = (!empty($object->lines[$i]->fk_product) ? $object->lines[$i]->fk_product : false);
-	$label = (!empty($object->lines[$i]->label) ? $object->lines[$i]->label : (!empty($object->lines[$i]->product_label) ? $object->lines[$i]->product_label : ''));
+	// MMI Hack : Trim & Strip tags to be sure
+	$label = (!empty(trim(strip_tags($object->lines[$i]->label))) ? $object->lines[$i]->label : (!empty($object->lines[$i]->product_label) ? $object->lines[$i]->product_label : ''));
 	$product_barcode = (!empty($object->lines[$i]->product_barcode) ? $object->lines[$i]->product_barcode : "");
 	$desc = (!empty($object->lines[$i]->desc) ? $object->lines[$i]->desc : (!empty($object->lines[$i]->description) ? $object->lines[$i]->description : ''));
 	$ref_supplier = (!empty($object->lines[$i]->ref_supplier) ? $object->lines[$i]->ref_supplier : (!empty($object->lines[$i]->ref_fourn) ? $object->lines[$i]->ref_fourn : '')); // TODO Not yet saved for supplier invoices, only supplier orders
@@ -1673,6 +1719,21 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 			if (getDolGlobalString('INVOICE_ADD_DEPOSIT_DATE')) {
 				$libelleproduitservice .= ' ('.dol_print_date($discount->datec, 'day', '', $outputlangs).')';
 			}
+		} elseif ($desc == '(DEPOSIT)' && $object->lines[$i]->fk_prev_id) { // MMI
+			$prevline = clone $object->lines[$i];
+			while($prevline->fk_prev_id) {
+				$prevline->fetch($prevline->fk_prev_id);
+			}
+			if ($prevline->fk_remise_except > 0) {
+				$discount = new DiscountAbsolute($db);
+				$discount->fetch($prevline->fk_remise_except);
+			}
+			$sourceref = !empty($discount->discount_type) ? $discount->ref_invoice_supplier_source : $discount->ref_facture_source;
+			$libelleproduitservice = $outputlangs->transnoentitiesnoconv("DiscountFromDeposit", $sourceref);
+			// Add date of deposit
+			if (getDolGlobalString('INVOICE_ADD_DEPOSIT_DATE')) {
+				$libelleproduitservice .= ' ('.dol_print_date($discount->datec, 'day', '', $outputlangs).')';
+			}
 		} elseif ($desc == '(EXCESS RECEIVED)' && $object->lines[$i]->fk_remise_except) {
 			$discount = new DiscountAbsolute($db);
 			$discount->fetch($object->lines[$i]->fk_remise_except);
@@ -1718,7 +1779,38 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 		}
 	}
 
-	if (empty($hideref)) {
+	// MMI hack @todo create a Hook
+	if (getDolGlobalInt('MMI_DOCUMENTS_DISPLAY_REF_ACTIVE') && in_array($object->element, ['propal', 'commande', 'facture', 'order_supplier'])) {
+		$documenttypes = explode(',', getDolGlobalString('MMI_DOCUMENTS_DISPLAY_REF_OWN'));
+		$show_own_ref = ($object->array_options['options_pdf_show_productline_ref'] === '1' || (in_array($object->element, $documenttypes) && $object->array_options['options_pdf_show_productline_ref'] !== '0'))
+			&& (empty(getDolGlobalInt('MMI_DOCUMENTS_DISPLAY_REF_MARCHE_HIDE')) || empty($object->array_options['options_appeloffre']) || !in_array($object->array_options['options_appeloffre'], ['1', '2']));
+		$supplierdocumenttypes = explode(',', getDolGlobalString('MMI_DOCUMENTS_DISPLAY_REF_SUPPLIER'));
+		$show_supplier_ref = ($object->array_options['options_pdf_show_productline_supplier_ref'] === '1' || (in_array($object->element, $supplierdocumenttypes) && $object->array_options['options_pdf_show_productline_supplier_ref'] !== '0'))
+			&& (empty(getDolGlobalInt('MMI_DOCUMENTS_DISPLAY_REF_MARCHE_HIDE')) || empty($object->array_options['options_appeloffre']) || !in_array($object->array_options['options_appeloffre'], ['1', '2']));
+		//var_dump($issupplierline, $object->element, $object->array_options, $ref_supplier, $documenttypes, $supplierdocumenttypes);
+
+		if ($issupplierline && $ref_supplier && $show_supplier_ref) {
+			// Both refs
+			if ($prodser->ref && $show_own_ref) {
+				$ref_prodserv = $prodser->ref.' ('.$outputlangs->transnoentitiesnoconv("SupplierRef").' '.$ref_supplier.')';
+			}
+			// Supplier ref only
+			else {
+				$ref_prodserv = $ref_supplier;
+			}
+		}
+		// Own ref only
+		else {
+			if ($prodser->ref && $show_own_ref) {
+				$ref_prodserv = $prodser->ref; // Show local ref only
+			}
+		}
+
+		if (!empty($libelleproduitservice) && !empty($ref_prodserv)) {
+			$ref_prodserv .= " - ";
+		}
+	}
+	elseif (empty($hideref)) {
 		if ($issupplierline) {
 			if (!getDolGlobalString('PDF_HIDE_PRODUCT_REF_IN_SUPPLIER_LINES')) {  // Common case
 				$ref_prodserv = $prodser->ref; // Show local ref
@@ -1828,13 +1920,35 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 		$format = 'day';
 		foreach ($dbatch as $detail) {
 			$dte = array();
+			if ($detail->sellby) {
+				// Added by MMI Mathieu Moulin iProspective
+				// Hack important DDM information
+				if (!empty($conf->global->SHIPPING_PDF_ANTIGASPI) && !empty($object->commande)) {
+					$eatdiff = ($detail->sellby - $object->commande->date_commande);
+					$eatdiff_days = round($eatdiff/86400);
+					$days_antigaspi = $conf->global->PRODUCT_ANTIGASPI_DAYS;
+					$days_daecourte = $conf->global->PRODUCT_DATECOURTE_DAYS;
+					//var_dump($eatdiff_days);
+					if ($eatdiff_days<$days_antigaspi)
+						$antigaspi = ' - '.$outputlangs->transnoentitiesnoconv('printAntiGaspi');
+					elseif ($eatdiff_days<$days_daecourte)
+							$antigaspi = ' - '.$outputlangs->transnoentitiesnoconv('printDateCourte');
+					else
+						$antigaspi = '';
+					//die();
+					//$antigaspi .= ' - '.$eatdiff_days;
+					$dte[] = ($antigaspi ?'<span style="color: red;">' :'').$outputlangs->transnoentitiesnoconv('printSellby', dol_print_date($detail->sellby, $format, false, $outputlangs)).($antigaspi ?$antigaspi.'</span>' :'');
+				}
+				else {
+					$dte[] = $outputlangs->transnoentitiesnoconv('printSellby', dol_print_date($detail->sellby, $format, false, $outputlangs));
+				}
+			}
 			if ($detail->eatby) {
 				$dte[] = $outputlangs->transnoentitiesnoconv('printEatby', dol_print_date($detail->eatby, $format, false, $outputlangs));
 			}
-			if ($detail->sellby) {
-				$dte[] = $outputlangs->transnoentitiesnoconv('printSellby', dol_print_date($detail->sellby, $format, false, $outputlangs));
-			}
-			if ($detail->batch) {
+			// Added by MMI Mathieu Moulin iProspective
+			// Hack Hide Batch number (not very useful)
+			if ($detail->batch && empty($conf->global->SHIPPING_PDF_HIDE_BATCH)) {
 				$dte[] = $outputlangs->transnoentitiesnoconv('printBatch', $detail->batch);
 			}
 			$dte[] = $outputlangs->transnoentitiesnoconv('printQty', $detail->qty);
@@ -1855,6 +1969,66 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 	} else {
 		if (getDolGlobalInt('PRODUCTBATCH_SHOW_WAREHOUSE_ON_SHIPMENT')) {
 			// TODO Show warehouse for shipment line without batch
+		}
+	}
+
+	// Added by MMI Mathieu Moulin iProspective
+	$objecttype = get_class($object);
+	// Show barcode if shipping
+	if (in_array($objecttype, ['Expedition']) && (!empty($conf->global->SHIPPING_PDF_BARCODE))) {
+		if ($prodser->barcode)
+			$libelleproduitservice .= '__N__  Barcode: '.$prodser->barcode;
+	}
+	// Check if export (outside EU)
+	$export = false;
+	$liste_contact = $object->liste_contact(-1, 'external');
+	foreach($liste_contact as $contact) {
+		if ($contact['code']=="SHIPPING" && !empty($contact['country']['code']) && !is_numeric(strpos($conf->global->MAIN_COUNTRIES_IN_EEC, $contact['country']['code']))) {
+			$export = true;
+		}
+	}
+	//var_dump($liste_contact); die();
+	// Show origin, hfcide, weight & dimensions inc ase of Export only
+	if (in_array($objecttype, ['Facture', 'Commande', 'Propale']) && $export && (!empty($conf->global->MMIDOCUMENTS_PDF_EXPORT_ORIGINE))
+		&& (!empty($prodser->customcode) || !empty($prodser->country_code) || !empty($prodser->weight) || !empty($prodser->height) || !empty($prodser->depth) || !empty($prodser->width))) {
+		//var_dump($prodser);
+		$libelleproduitservice .= '__N__'.$outputlangs->transnoentitiesnoconv('ExportInfo').' :';
+		if (!empty($prodser->customcode)) {
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('CustomCode').': '.$prodser->customcode;
+		}
+		if (!empty($prodser->country_code)) {
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('Origin').': '.$prodser->country_code;
+		}
+		if (!empty($prodser->weight)) {
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('Weight').': '.$prodser->weight.(is_numeric($prodser->weight_units) ?measuringUnitString(0, 'weight', $prodser->weight_units) :'');
+		}
+		if (!empty($prodser->height) || !empty($prodser->depth) || !empty($prodser->width)) {
+			$libelleproduitservice .= '__N__- '.$outputlangs->transnoentitiesnoconv('Dimensions').': '.($prodser->height ?$prodser->height :0).(is_numeric($prodser->height_units) ?measuringUnitString(0, 'size', $prodser->height_units) :'').' x '.($prodser->length ?$prodser->length :0).(is_numeric($prodser->length_units) ?measuringUnitString(0, 'size', $prodser->length_units) :'').' x '.($prodser->width ?$prodser->width :0).(is_numeric($prodser->width_units) ?measuringUnitString(0, 'size', $prodser->width_units) :'');
+		}
+	}
+	// Show Location
+	if (in_array($objecttype, ['Expedition']) && !empty($conf->global->SHIPPING_PDF_LOCATION) && !empty($conf->categorie->enabled)) {
+		if (!empty($prodser->array_options['options_fk_categorie'])) {
+			include_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
+			$categorie = new Categorie($db);
+			$categorie->fetch($prodser->array_options['options_fk_categorie']);
+			$categorie_parent = $categorie;
+			while(empty($categorie_parent->array_options['options_fk_entrepot_loc']) && !empty($categorie_parent->fk_parent)) {
+				$fk_parent = $categorie_parent->fk_parent;
+				$categorie_parent = new Categorie($db);
+				$categorie_parent->fetch($fk_parent);
+			}
+			if(!empty($categorie_parent->array_options['options_fk_entrepot_loc'])) {
+				$sql = 'SELECT label
+					FROM '.MAIN_DB_PREFIX.'c_entrepot_loc
+					WHERE rowid='.$categorie_parent->array_options['options_fk_entrepot_loc'];
+				$q = $db->query($sql);
+				list($entrepot_loc) = $q->fetch_row();
+				$libelleproduitservice .= '__N__  Localisation: '.$entrepot_loc.' -> '.$categorie->label;
+			}
+			else
+				$libelleproduitservice .= '__N__  Localisation: '.$categorie->label;
+			//var_dump($prodser->array_options['options_fk_categorie']); die();
 		}
 	}
 
@@ -1884,7 +2058,7 @@ function pdf_getlinenum($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -1917,7 +2091,7 @@ function pdf_getlineref($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -1949,7 +2123,7 @@ function pdf_getlineref_supplier($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -1981,7 +2155,7 @@ function pdf_getlinevatrate($object, $i, $outputlangs, $hidedetails = 0)
 
 	$result = '';
 	$reshook = 0;
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduce this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2048,7 +2222,7 @@ function pdf_getlineupexcltax($object, $i, $outputlangs, $hidedetails = 0)
 
 	$result = '';
 	$reshook = 0;
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2091,7 +2265,7 @@ function pdf_getlineupwithtax($object, $i, $outputlangs, $hidedetails = 0)
 
 	$result = '';
 	$reshook = 0;
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2128,7 +2302,7 @@ function pdf_getlineqty($object, $i, $outputlangs, $hidedetails = 0)
 
 	$result = '';
 	$reshook = 0;
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2168,7 +2342,7 @@ function pdf_getlineqty_asked($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2208,7 +2382,7 @@ function pdf_getlineqty_shipped($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2248,7 +2422,7 @@ function pdf_getlineqty_keeptoship($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2288,7 +2462,7 @@ function pdf_getlineunit($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2333,7 +2507,7 @@ function pdf_getlineremisepercent($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2377,7 +2551,7 @@ function pdf_getlineprogress($object, $i, $outputlangs, $hidedetails = 0, $hookm
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2430,7 +2604,7 @@ function pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {
@@ -2457,11 +2631,12 @@ function pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails = 0)
 					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
 					$progress = ($object->lines[$i]->situation_percent - $prev_progress) / 100;
 				}
-				$result .= price($sign * ($total_ht / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs);
+				$result .= price($sign * ($total_ht / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs, 1, -1, 'MT');
 			} else {
-				$result .= price($sign * $total_ht, 0, $outputlangs);
+				$result .= price($sign * $total_ht, 0, $outputlangs, 1, -1, 'MT');
 			}
 		}
+		//var_dump($result); echo '<br />';
 	}
 	return $result;
 }
@@ -2486,7 +2661,7 @@ function pdf_getlinetotalwithtax($object, $i, $outputlangs, $hidedetails = 0)
 
 	$reshook = 0;
 	$result = '';
-	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && !empty($object->lines[$i]->special_code)) || !empty($object->lines[$i]->fk_parent_line) ) )
+	//if (is_object($hookmanager) && ( (isset($object->lines[$i]->product_type) && $object->lines[$i]->product_type == 9 && ! empty($object->lines[$i]->special_code)) || ! empty($object->lines[$i]->fk_parent_line) ) )
 	if (is_object($hookmanager)) {   // Old code is commented on preceding line. Reproduct this test in the pdf_xxx function if you don't want your hook to run
 		$special_code = empty($object->lines[$i]->special_code) ? '' : $object->lines[$i]->special_code;
 		if (!empty($object->lines[$i]->fk_parent_line) && $object->lines[$i]->fk_parent_line > 0) {

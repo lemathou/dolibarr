@@ -187,6 +187,12 @@ class pdf_rouget extends ModelePdfExpedition
 			$outputlangsbis->loadLangs(array("main", "bills", "orders", "products", "dict", "companies", "propal", "deliveries", "sendings", "productbatch"));
 		}
 
+		// Added by MMI Mathieu Moulin iProspective
+		// Sort by Product Ref
+		if (!empty($conf->global->MMI_EXPE_ORDER_LINES_BY_REF))
+			usort($object->lines, function($i, $j){
+				return ($i->ref > $j->ref) ?1 :(($i->ref < $j->ref) ?-1 :0);
+			});
 		$nblines = is_array($object->lines) ? count($object->lines) : 0;
 
 		// Loop on each lines to detect if there is at least one image to show
@@ -206,7 +212,7 @@ class pdf_rouget extends ModelePdfExpedition
 					$pdir = get_exdir($object->lines[$i]->fk_product, 2, 0, 0, $objphoto, 'product').$object->lines[$i]->fk_product."/photos/";
 					$dir = $conf->product->dir_output.'/'.$pdir;
 				} else {
-					$pdir = get_exdir(0, 2, 0, 0, $objphoto, 'product').dol_sanitizeFileName($objphoto->ref).'/';
+					$pdir = get_exdir(0, 2, 0, 0, $objphoto, 'product');
 					$dir = $conf->product->dir_output.'/'.$pdir;
 				}
 
@@ -349,49 +355,37 @@ class pdf_rouget extends ModelePdfExpedition
 					}
 				}
 
-				// Public note and Tracking code
-				if (!empty($object->note_public) || !empty($object->tracking_number)) {
+				// Tracking number
+				// Added by MMI Mathieu Moulin iProspective : show sending method even without tracking url
+				if (!empty($object->shipping_method_id) || !empty($object->tracking_number)) {
+					$label = '';
+					if ($object->shipping_method_id > 0) {
+						// Get code using getLabelFromKey
+						$code = $outputlangs->getLabelFromKey($this->db, $object->shipping_method_id, 'c_shipment_mode', 'rowid', 'code');
+						$label = $outputlangs->trans("SendingMethod").": ".$outputlangs->trans("SendingMethod".strtoupper($code));
+					}
+
+					$object->getUrlTrackingStatus($object->tracking_number);
+					if (!empty($object->tracking_url) && $object->shipping_method_id > 0 && $object->tracking_url != $object->tracking_number)
+						$label .= ($label ?' / ' :'').$outputlangs->trans("LinkToTrackYourPackage").' : '.$object->tracking_url;
+					if (!empty($object->tracking_number))
+						$label .= ($label ?' / ' :'').$outputlangs->transnoentities("TrackingNumber")." : ".$object->tracking_number;
+
+					$tab_top_alt = $tab_top;
+					$pdf->SetFont('', 'B', $default_font_size - 2);
+					$pdf->writeHTMLCell(160, 4, $this->posxdesc - 1, $tab_top_alt, $label, 0, 1, false, true, 'L');
+
+					$tab_top_alt = $pdf->GetY();
+					$height_incoterms += 10;
+					$tab_top += 10;
+				}
+
+				// Notes
+				if (!empty($object->note_public)) {
 					$tab_top_alt = $tab_top;
 
-					//$tab_top_alt += 1;
-
-					// Tracking number
-					if (!empty($object->tracking_number)) {
-						$height_trackingnumber = 4;
-
-						$pdf->SetFont('', 'B', $default_font_size - 2);
-						$pdf->writeHTMLCell(60, $height_trackingnumber, $this->posxdesc - 1, $tab_top - 1, $outputlangs->transnoentities("TrackingNumber")." : ".$object->tracking_number, 0, 1, false, true, 'L');
-						$tab_top_alt = $pdf->GetY();
-
-						$object->getUrlTrackingStatus($object->tracking_number);
-						if (!empty($object->tracking_url)) {
-							if ($object->shipping_method_id > 0) {
-								// Get code using getLabelFromKey
-								$code = $outputlangs->getLabelFromKey($this->db, $object->shipping_method_id, 'c_shipment_mode', 'rowid', 'code');
-								$label = '';
-								if ($object->tracking_url != $object->tracking_number) {
-									$label .= $outputlangs->trans("LinkToTrackYourPackage")."<br>";
-								}
-								$label .= $outputlangs->trans("SendingMethod").": ".$outputlangs->trans("SendingMethod".strtoupper($code));
-								//var_dump($object->tracking_url != $object->tracking_number);exit;
-								if ($object->tracking_url != $object->tracking_number) {
-									$label .= " : ";
-									$label .= $object->tracking_url;
-								}
-
-								$height_trackingnumber += 4;
-								$pdf->SetFont('', 'B', $default_font_size - 2);
-								$pdf->writeHTMLCell(60, $height_trackingnumber, $this->posxdesc - 1, $tab_top_alt, $label, 0, 1, false, true, 'L');
-							}
-						}
-						$tab_top = $pdf->GetY();
-					}
-
-					// Notes
-					if (!empty($object->note_public)) {
-						$pdf->SetFont('', '', $default_font_size - 1); // Dans boucle pour gerer multi-page
-						$pdf->writeHTMLCell(190, 3, $this->posxdesc - 1, $tab_top_alt, dol_htmlentitiesbr($object->note_public), 0, 1);
-					}
+					$pdf->SetFont('', '', $default_font_size - 1); // Dans boucle pour gerer multi-page
+					$pdf->writeHTMLCell(190, 3, $this->posxdesc - 1, $tab_top_alt, dol_htmlentitiesbr($object->note_public), 0, 1);
 
 					$nexY = $pdf->GetY();
 					$height_note = $nexY - $tab_top;
@@ -490,7 +484,7 @@ class pdf_rouget extends ModelePdfExpedition
 
 					if (isset($imglinesize['width']) && isset($imglinesize['height'])) {
 						$curX = $this->posxpicture - 1;
-						$pdf->Image($realpatharray[$i], $curX + (($this->posxweightvol - $this->posxpicture - $imglinesize['width']) / 2), $curY, $imglinesize['width'], $imglinesize['height'], '', '', '', 2, 300); // Use 300 dpi
+						$pdf->Image($realpatharray[$i], $curX + (($this->posxweightvol - $this->posxpicture - $imglinesize['width']) / 2), $curY, $imglinesize['width'], $imglinesize['height'], '', '', '', 2, !empty($conf->global->MAIN_SHIPPING_PDF_IMAGE_DPI) ?$conf->global->MAIN_SHIPPING_PDF_IMAGE_DPI :300); // Use 300 dpi
 						// $pdf->Image does not increase value return by getY, so we save it manually
 						$posYAfterImage = $curY + $imglinesize['height'];
 					}
@@ -567,7 +561,7 @@ class pdf_rouget extends ModelePdfExpedition
 						$weighttxt = round($object->lines[$i]->weight * $object->lines[$i]->qty_shipped, 5).' '.measuringUnitString(0, "weight", $object->lines[$i]->weight_units, 1);
 					}
 					$voltxt = '';
-					if (empty($object->lines[$i]->fk_product_type) && $object->lines[$i]->volume) {
+					if (empty($object->lines[$i]->fk_product_type) && $object->lines[$i]->volume && !getDolGlobalString('SHIPPING_PDF_HIDE_VOLUME')) {
 						$voltxt = round($object->lines[$i]->volume * $object->lines[$i]->qty_shipped, 5).' '.measuringUnitString(0, "volume", $object->lines[$i]->volume_units ? $object->lines[$i]->volume_units : 0, 1);
 					}
 
@@ -753,13 +747,13 @@ class pdf_rouget extends ModelePdfExpedition
 		if (!empty($totalWeight)) {
 			$totalWeighttoshow = showDimensionInBestUnit($totalWeight, 0, "weight", $outputlangs, -1, 'no', 1);
 		}
-		if (!empty($totalVolume)) {
+		if (!empty($totalVolume) && !getDolGlobalString('SHIPPING_PDF_HIDE_VOLUME')) {
 			$totalVolumetoshow = showDimensionInBestUnit($totalVolume, 0, "volume", $outputlangs, -1, 'no', 1);
 		}
 		if (!empty($object->trueWeight)) {
 			$totalWeighttoshow = showDimensionInBestUnit($object->trueWeight, $object->weight_units, "weight", $outputlangs);
 		}
-		if (!empty($object->trueVolume)) {
+		if (!empty($object->trueVolume) && !getDolGlobalString('SHIPPING_PDF_HIDE_VOLUME')) {
 			$totalVolumetoshow = showDimensionInBestUnit($object->trueVolume, $object->volume_units, "volume", $outputlangs);
 		}
 
@@ -969,7 +963,7 @@ class pdf_rouget extends ModelePdfExpedition
 		$pdf->MultiCell($w, 4, $outputlangs->transnoentities("RefSending")." : ".$object->ref, '', 'R');
 
 		// Date planned delivery
-		if (!empty($object->date_delivery)) {
+		if (!getDolGlobalString('SHIPPING_PDF_HIDE_DELIVERY_DATE') && !empty($object->date_delivery)) {
 			$posy += 4;
 			$pdf->SetXY($posx, $posy);
 			$pdf->SetTextColor(0, 0, 60);

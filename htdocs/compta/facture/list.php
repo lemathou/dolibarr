@@ -117,6 +117,7 @@ $search_town = GETPOST('search_town', 'alpha');
 $search_zip = GETPOST('search_zip', 'alpha');
 $search_state = GETPOST("search_state");
 $search_country = GETPOST("search_country", 'aZ09');
+$search_email = GETPOST('search_email', 'alpha'); // MMI Hack
 $search_customer_code = GETPOST("search_customer_code", 'alphanohtml');
 $search_type_thirdparty = GETPOST("search_type_thirdparty", 'intcomma');
 $search_user = GETPOST('search_user', 'intcomma');
@@ -197,8 +198,10 @@ $fieldstosearchall = array(
 	's.nom' => "ThirdParty",
 	's.code_client' => "CustomerCodeShort",
 	's.name_alias' => "AliasNameShort",
+	's.address' => "Adresse",
 	's.zip' => "Zip",
 	's.town' => "Town",
+	's.email' => "Email",
 	'pd.description' => 'Description',
 );
 if (empty($user->socid)) {
@@ -225,6 +228,7 @@ $arrayfields = array(
 	's.zip' => array('label' => "Zip", 'checked' => -1, 'position' => 60),
 	'state.nom' => array('label' => "StateShort", 'checked' => 0, 'position' => 65),
 	'country.code_iso' => array('label' => "Country", 'checked' => 0, 'position' => 70),
+	's.email' => array('label' => "Email", 'checked' => 0, 'position' => 71),
 	'typent.code' => array('label' => "ThirdPartyType", 'checked' => $checkedtypetiers, 'position' => 75),
 	'f.fk_mode_reglement' => array('label' => "PaymentMode", 'checked' => 1, 'position' => 80),
 	'f.fk_cond_reglement' => array('label' => "PaymentConditionsShort", 'checked' => 1, 'position' => 85),
@@ -375,6 +379,7 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter', 
 	$search_zip = "";
 	$search_state = "";
 	$search_country = '';
+	$search_email = "";
 	$search_type_thirdparty = '';
 	$search_customer_code = '';
 	$search_date_startday = '';
@@ -650,7 +655,8 @@ $sql .= ' f.datef, f.date_valid, f.date_lim_reglement as datelimite, f.module_so
 $sql .= ' f.paye as paye, f.fk_statut, f.close_code,';
 $sql .= ' f.datec as date_creation, f.tms as date_modification, f.date_closing as date_closing,';
 $sql .= ' f.retained_warranty, f.retained_warranty_date_limit, f.situation_final, f.situation_cycle_ref, f.situation_counter,';
-$sql .= ' s.rowid as socid, s.nom as name, s.name_alias as alias, s.email, s.phone, s.fax, s.address, s.town, s.zip, s.fk_pays, s.client, s.fournisseur, s.code_client, s.code_fournisseur, s.code_compta as code_compta_client, s.code_compta_fournisseur,';
+$sql .= ' s.rowid as socid, s.nom as name, s.name_alias as alias, s.email, s.phone, s.fax, s.address, s.town, s.zip, s.fk_pays, s.email, s.client, s.fournisseur, s.code_client, s.code_fournisseur, s.code_compta as code_compta_client, s.code_compta_fournisseur,';
+$sql .= ' s.note_private soc_note_private,'; // MMI
 $sql .= " s.parent as fk_parent,";
 $sql .= " s2.nom as name2,";
 $sql .= ' typent.code as typent_code,';
@@ -686,6 +692,12 @@ $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s2 ON s2.rowid = s.parent";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_country as country on (country.rowid = s.fk_pays)";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_typent as typent on (typent.id = s.fk_typent)";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_departements as state on (state.rowid = s.fk_departement)";
+
+// MMI Hack Hook
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListJoinSoc', $parameters); // Note that $action and $object may have been modified by hook
+$sql .= $hookmanager->resPrint;
+
 $sql .= ', '.MAIN_DB_PREFIX.'facture as f';
 if ($sortfield == "f.datef") {
 	$sql .= $db->hintindex('idx_facture_datef');
@@ -701,6 +713,12 @@ if (!empty($search_fac_rec_source_title)) {
 }
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."projet as p ON p.rowid = f.fk_projet";
 $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON f.fk_user_author = u.rowid';
+
+// MMI Hack Hook
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListJoinInvoice', $parameters); // Note that $action and $object may have been modified by hook
+$sql .= $hookmanager->resPrint;
+
 // Add table from hooks
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
@@ -760,6 +778,9 @@ if ($search_zip) {
 }
 if ($search_state) {
 	$sql .= natural_search("state.nom", $search_state);
+}
+if ($search_email) {
+	$sql .= natural_search("s.email", $search_email);
 }
 if (strlen(trim($search_country))) {
 	$arrayofcode = getCountriesInEEC();
@@ -1122,6 +1143,9 @@ if ($search_zip) {
 }
 if ($search_country) {
 	$param .= "&search_country=".urlencode($search_country);
+}
+if ($search_email) {
+	$param .= '&search_email='.urlencode($search_email);
 }
 if ($search_type_thirdparty != '') {
 	$param .= '&search_type_thirdparty='.urlencode($search_type_thirdparty);
@@ -1488,6 +1512,10 @@ if (!empty($arrayfields['country.code_iso']['checked'])) {
 	print $form->select_country($search_country, 'search_country', '', 0, 'minwidth150imp maxwidth150', 'code2', 1, 0, 1, null, 1);
 	print '</td>';
 }
+// Email
+if (!empty($arrayfields['s.email']['checked'])) { // MMI Hack
+	print '<td class="liste_titre"><input class="flat maxwidth100" type="text" name="search_email" value="'.dol_escape_htmltag($search_email).'"></td>';
+}
 // Company type
 if (!empty($arrayfields['typent.code']['checked'])) {
 	print '<td class="liste_titre maxwidthonsmartphone center">';
@@ -1761,6 +1789,10 @@ if (!empty($arrayfields['country.code_iso']['checked'])) {
 	print_liste_field_titre($arrayfields['country.code_iso']['label'], $_SERVER["PHP_SELF"], "country.code_iso", "", $param, '', $sortfield, $sortorder, 'center ');
 	$totalarray['nbfield']++;
 }
+if (!empty($arrayfields['s.email']['checked'])) { // MMI Hack
+	print_liste_field_titre($arrayfields['s.email']['label'], $_SERVER["PHP_SELF"], "s.email", "", $param, '', $sortfield, $sortorder, 'center ');
+	$totalarray['nbfield']++;
+}
 if (!empty($arrayfields['typent.code']['checked'])) {
 	print_liste_field_titre($arrayfields['typent.code']['label'], $_SERVER["PHP_SELF"], "typent.code", "", $param, '', $sortfield, $sortorder, 'center ');
 	$totalarray['nbfield']++;
@@ -2000,6 +2032,7 @@ if ($num > 0) {
 		$companystatic->zip = $obj->zip;
 		$companystatic->town = $obj->town;
 		$companystatic->country_code = $obj->country_code;
+		$companystatic->note_private = $obj->soc_note_private; // MMI Hack
 
 		$projectstatic->id = $obj->project_id;
 		$projectstatic->ref = $obj->project_ref;
@@ -2009,6 +2042,24 @@ if ($num > 0) {
 		$totalcreditnotes = $facturestatic->getSumCreditNotesUsed();
 		$totaldeposits = $facturestatic->getSumDepositsUsed();
 		$totalpay = $paiement + $totalcreditnotes + $totaldeposits;
+
+		// MMI hack remises
+		// Trop perçus
+		if ($conf->global->MMI_PAYMENT_SOUSTRACT_CREDIT_NOTES) {
+			$sqltroppercu = "SELECT SUM(re.amount_ttc) AS amount_ttc";
+			$sqltroppercu .= " FROM ".MAIN_DB_PREFIX."societe_remise_except as re";
+			$sqltroppercu .= " WHERE re.fk_facture_source = ".((int) $facturestatic->id);
+			$resqltroppercu = $db->query($sqltroppercu);
+			if (!empty($resqltroppercu)) {
+				$objtroppercu = $db->fetch_object($resqltroppercu);
+				$totaltroppercu = $objtroppercu->amount_ttc ?: 0;
+			} else {
+				$totaltroppercu = 0;
+				dol_print_error($db);
+			}
+			$totalpay -= $totaltroppercu;
+		}
+
 		$remaintopay = $obj->total_ttc - $totalpay;
 
 		$multicurrency_paiement = $facturestatic->getSommePaiement(1);
@@ -2016,9 +2067,15 @@ if ($num > 0) {
 		$multicurrency_totaldeposits = $facturestatic->getSumDepositsUsed(1);
 
 		$totalpay = $paiement + $totalcreditnotes + $totaldeposits;
+		if ($conf->global->MMI_PAYMENT_SOUSTRACT_CREDIT_NOTES) {
+			$totalpay -= $totaltroppercu;
+		}
 		$remaintopay = price2num($facturestatic->total_ttc - $totalpay);
 
 		$multicurrency_totalpay = $multicurrency_paiement + $multicurrency_totalcreditnotes + $multicurrency_totaldeposits;
+		if ($conf->global->MMI_PAYMENT_SOUSTRACT_CREDIT_NOTES) {
+			$multicurrency_totalpay -= $totaltroppercu;
+		}
 		$multicurrency_remaintopay = price2num($facturestatic->multicurrency_total_ttc - $multicurrency_totalpay);
 
 		if ($facturestatic->status == Facture::STATUS_CLOSED && $facturestatic->close_code == 'discount_vat') {		// If invoice closed with discount for anticipated payment
@@ -2305,6 +2362,15 @@ if ($num > 0) {
 				$tmparray = getCountry($obj->fk_pays, 'all');
 				print '<td class="center tdoverflowmax100" title="'.dol_escape_htmltag($tmparray['label']).'">';
 				print dol_escape_htmltag($tmparray['label']);
+				print '</td>';
+				if (!$i) {
+					$totalarray['nbfield']++;
+				}
+			}
+			// Email
+			if (!empty($arrayfields['s.email']['checked'])) { // MMI Hack
+				print '<td class="nocellnopadd">';
+				print $obj->email;
 				print '</td>';
 				if (!$i) {
 					$totalarray['nbfield']++;

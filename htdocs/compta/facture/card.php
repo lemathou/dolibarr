@@ -1617,7 +1617,15 @@ if (empty($reshook)) {
 								}
 							} else {
 								if ($typeamount == 'amount') {
-									$amountdeposit[0] = $valuedeposit;
+									// Added by MMI Mathieu Moulin iProspective
+									if ($conf->global->MMI_INVOICE_DEPOSIT_USE_TVA_TX > 0) {
+										$tva_tx = $conf->global->MMI_INVOICE_DEPOSIT_USE_TVA_TX;
+										$amountdeposit[0] = 0;
+										$amountdeposit[$tva_tx] = $valuedeposit/(1+$tva_tx/100);
+									}
+									else {
+										$amountdeposit[0] = $valuedeposit;
+									}
 								} elseif ($typeamount == 'variable') {
 									if ($result > 0) {
 										$totalamount = 0;
@@ -2006,7 +2014,7 @@ if (empty($reshook)) {
 						if (!empty($retained_warranty_date_limit) && $db->jdate($retained_warranty_date_limit)) {
 							$object->retained_warranty_date_limit = $db->jdate($retained_warranty_date_limit);
 						}
-						$object->retained_warranty_date_limit = !empty($object->retained_warranty_date_limit) ? $object->retained_warranty_date_limit : $object->calculate_date_lim_reglement($object->retained_warranty_fk_cond_reglement);
+						$object->retained_warranty_date_limit = !empty($object->retained_warranty_date_limit) ? $object->retained_warranty_date_limit : (getDolGlobalString('INVOICE_RETAINED_WARRANTY_DATE_NOAUTO') ?'' :$object->calculate_date_lim_reglement($object->retained_warranty_fk_cond_reglement));
 					}
 
 					foreach ($object->lines as $i => &$line) {
@@ -2093,6 +2101,12 @@ if (empty($reshook)) {
 		// End of object creation, we show it
 		if ($id > 0 && !$error) {
 			$db->commit();
+			
+			// Added by MMI Mathieu Moulin iProspective
+			// For payment assignment
+			$parameters = array();
+			$reshook = $hookmanager->executeHooks('afterCreateAction', $parameters, $object, $action);
+			
 
 			// Define output language
 			if (!getDolGlobalString('MAIN_DISABLE_PDF_AUTOUPDATE') && count($object->lines)) {
@@ -2410,7 +2424,7 @@ if (empty($reshook)) {
 						}
 					}
 					$tmptxt .= ')';
-					$desc = dol_concatdesc($desc, $tmptxt);
+					$desc = dol_concatdesc($desc, $tmptxt, !empty($conf->global->MAIN_USE_XML_TAGS));
 				}
 
 				$type = $prod->type;
@@ -5070,7 +5084,16 @@ if ($action == 'create') {
 
 		// Other attributes
 		$cols = 2;
+		// MMI Hack : extrafields show/hide
+		$extrafields_showhide = $conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE && (empty($action) || !in_array($action, ['edit_extras', 'update_extras']));
+		if ($extrafields_showhide) {
+			echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
+			echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
+		}
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
+		if ($extrafields_showhide) {
+			echo '</tbody>';
+		}
 
 		print '</table>';
 
@@ -5466,6 +5489,47 @@ if ($action == 'create') {
 		}
 
 		if ($object->type != Facture::TYPE_CREDIT_NOTE) {
+			// Trop perçus
+			if ($conf->global->MMI_PAYMENT_SOUSTRACT_CREDIT_NOTES) {
+				$total_creditnote_and_deposit = 0;
+				$sql = "SELECT re.datec, re.rowid, re.amount_ht, re.amount_tva, re.amount_ttc,";
+				$sql .= " re.description, re.fk_facture, f.ref";
+				$sql .= " FROM ".MAIN_DB_PREFIX."societe_remise_except as re";
+				$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."facture as f ON re.fk_facture = f.rowid";
+				$sql .= " WHERE re.fk_facture_source = ".((int) $object->id);
+				$resql = $db->query($sql);
+				if (!empty($resql)) {
+					print '<tr class="liste_titre">'
+						.'<td class="liste_titre">Trop perçu</td>'
+						.'<td class="liste_titre"><span class="hideonsmartphone">'.$langs->trans('Date').'</span></td>'
+						.'<td class="liste_titre" colspan="2"></td>'
+						.'<td class="liste_titre right">Montant</td>'
+						.'</tr>';
+					while ($obj = $db->fetch_object($resql)) {
+						// Decrement total paid
+						$totalpaid -= $obj->amount_ttc;
+
+						// Link to invoice
+
+						$dateofpayment = $db->jdate($objp->dp);
+						$tmparray = dol_getdate($dateofpayment);
+						if ($tmparray['seconds'] == 0 && $tmparray['minutes'] == 0 && ($tmparray['hours'] == 0 || $tmparray['hours'] == 12)) {	// We set hours to 0:00 or 12:00 because we don't know it
+							$objdate = dol_print_date($dateofpayment, 'day');
+						} else {	// Hours was set to real date of payment (special case for POS for example)
+							$objdate = dol_print_date($dateofpayment, 'dayhour', 'tzuser');
+						}
+						print '<tr>'
+							.'<td>'.($obj->ref ?'<a href="/compta/facture/card.php?id='.$obj->fk_facture.'">'.$obj->ref.'</a>' :'<a href="/comm/remx.php?id='.$object->socid.'">(Non utilisé)</a>').'</td>'
+							.'<td>'.$objdate.'</td>'
+							.'<td colspan="2"></td>'
+							.'<td class="right"><span class="amount">'.price(-$obj->amount_ttc).'</span></td>'
+							.'</tr>';
+					}
+				} else {
+					dol_print_error($db);
+				}
+			}
+
 			// Total already paid
 			print '<tr><td colspan="'.$nbcols.'" class="right">';
 			print '<span class="opacitymedium">';
@@ -5939,7 +6003,8 @@ if ($action == 'create') {
 				}
 
 				// For standard invoice with excess received
-				if (($object->type == Facture::TYPE_STANDARD || $object->type == Facture::TYPE_SITUATION) && $object->status == Facture::STATUS_VALIDATED && empty($object->paye) && $resteapayer < 0 && $usercancreate && empty($discount->id)) {
+				// MMI: show the button as soon as there is a remainder (not only when there is an excess)
+				if (($object->type == Facture::TYPE_STANDARD || $object->type == Facture::TYPE_SITUATION) && $object->status == Facture::STATUS_VALIDATED && empty($object->paye) && $resteapayer && $usercancreate && empty($discount->id)) {
 					print '<a class="butAction'.($conf->use_javascript_ajax ? ' reposition' : '').'" href="'.$_SERVER["PHP_SELF"].'?facid='.$object->id.'&action=converttoreduc&token='.newToken().'">'.$langs->trans('ConvertExcessReceivedToReduc').'</a>';
 				}
 				// For credit note
@@ -6145,6 +6210,15 @@ if ($action == 'create') {
 		include_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
 		$validpaymentmethod = getValidOnlinePaymentMethods('');
 		$useonlinepayment = count($validpaymentmethod);
+
+		// Added by MMI Mathieu Moulin iProspective
+		if (!$useonlinepayment) {
+			$parameters = array();
+			$reshook = $hookmanager->executeHooks('addOnlinePaymentMeans', $parameters, $object, $action);
+			if ($reshook == 0 && !empty($hookmanager->results['useonlinepayment'])) {
+				$useonlinepayment = true;
+			}
+		}
 
 		if ($object->status != Facture::STATUS_DRAFT && $useonlinepayment) {
 			print '<br><!-- Link to pay -->'."\n";

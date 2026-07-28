@@ -252,6 +252,9 @@ class Odf
 				$odtResult .= $text;
 			} elseif (isset($tag['name'])) {
 				switch ($tag['name']) {
+					case 'a':
+						$odtResult = '<text:a xlink:type="simple" xlink:href="'.(is_numeric(strpos($tag['innerText'], '@')) ?'mailto:'.$tag['innerText'] :$tag['innerText']).'" office:name="">'.$this->encode_chars($tag['innerText'], $encode, $charset).'</text:a>';
+						break;
 					case 'br':
 						$odtResult .= '<text:line-break/>';
 						break;
@@ -276,6 +279,7 @@ class Odf
 						$odtResult .= '<text:span text:style-name="supText">' . ($tag['children'] != null ? $this->_replaceHtmlWithOdtTag($tag['children'], $customStyles, $fontDeclarations, $encode) : $this->encode_chars($tag['innerText'], $encode, $charset)) . '</text:span>';
 						break;
 					case 'span':
+					case 'p':
 						if (isset($tag['attributes']['style'])) {
 							$odtStyles = '';
 							foreach ($tag['attributes']['style'] as $styleName => $styleValue) {

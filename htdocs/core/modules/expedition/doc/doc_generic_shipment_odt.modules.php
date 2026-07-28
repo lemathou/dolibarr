@@ -377,6 +377,11 @@ class doc_generic_shipment_odt extends ModelePdfExpedition
 							} else {
 								$odfHandler->setVars($key, 'ErrorFileNotFound', true, 'UTF-8');
 							}
+						// MMI Hack : Hypertext links
+						} elseif (is_string($value) && (preg_match('/^http/', $value) || preg_match('/^[a-z0-9\._-]+@[a-z0-9\._-]+/i', $value))) // link
+						{
+							//var_dump($key); var_dump($value); die();
+							$odfHandler->setVars($key, '<a href="'.$value.'">'.$value.'</a>', false, 'UTF-8');
 						} else { // Text
 							$odfHandler->setVars($key, $value, true, 'UTF-8');
 						}
@@ -395,6 +400,11 @@ class doc_generic_shipment_odt extends ModelePdfExpedition
 							} else {
 								$odfHandler->setVars($key, 'ErrorFileNotFound', true, 'UTF-8');
 							}
+						// MMI Hack : Hypertext links
+						} elseif (is_string($value) && (preg_match('/^http/', $value) || preg_match('/^[a-z0-9\._-]+@[a-z0-9\._-]+/i', $value))) // link
+						{
+							//var_dump($key); var_dump($value); die();
+							$odfHandler->setVars($key, '<a href="'.$value.'">'.$value.'</a>', false, 'UTF-8');
 						} else { // Text
 							$odfHandler->setVars($key, $value, true, 'UTF-8');
 						}
@@ -416,6 +426,11 @@ class doc_generic_shipment_odt extends ModelePdfExpedition
 							} else {
 								$odfHandler->setVars($key, 'ErrorFileNotFound', true, 'UTF-8');
 							}
+						// MMI Hack : Hypertext links
+						} elseif (is_string($value) && (preg_match('/^http/', $value) || preg_match('/^[a-z0-9\._-]+@[a-z0-9\._-]+/i', $value))) // link
+						{
+							//var_dump($key); var_dump($value); die();
+							$odfHandler->setVars($key, '<a href="'.$value.'">'.$value.'</a>', false, 'UTF-8');
 						} else { // Text
 							$odfHandler->setVars($key, $value, true, 'UTF-8');
 						}
@@ -434,6 +449,10 @@ class doc_generic_shipment_odt extends ModelePdfExpedition
 								} else {
 									$odfHandler->setVars($key, 'ErrorFileNotFound', true, 'UTF-8');
 								}
+							// MMI Hack : Hypertext links
+							} elseif (is_string($value) && (preg_match('/^http/', $value) || preg_match('/^[a-z0-9\._-]+@[a-z0-9\._-]+/i', $value))) // link
+							{
+								$odfHandler->setVars($key, '<a href="'.$value.'">'.$value.'</a>', false, 'UTF-8');
 							} else { // Text
 								$odfHandler->setVars($key, $value, true, 'UTF-8');
 							}
@@ -461,6 +480,10 @@ class doc_generic_shipment_odt extends ModelePdfExpedition
 							} else {
 								$odfHandler->setVars($key, 'ErrorFileNotFound', true, 'UTF-8');
 							}
+						// MMI Hack : Hypertext links
+						} elseif (is_string($value) && (preg_match('/^http/', $value) || preg_match('/^[a-z0-9\._-]+@[a-z0-9\._-]+/i', $value))) // link
+						{
+							$odfHandler->setVars($key, '<a href="'.$value.'">'.$value.'</a>', false, 'UTF-8');
 						} else {
 							// Text
 							$odfHandler->setVars($key, $value, true, 'UTF-8');
@@ -490,7 +513,23 @@ class doc_generic_shipment_odt extends ModelePdfExpedition
 						$reshook = $hookmanager->executeHooks('ODTSubstitutionLine', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 						foreach ($tmparray as $key => $val) {
 							try {
-								$listlines->setVars($key, $val, true, 'UTF-8');
+								// Added by MMI Mathieu Moulin iProspective
+								// Logo
+								if (preg_match('/logo$/', $key) || preg_match('/logo2$/', $key)) { // Image
+									if (empty($val)) {
+										$listlines->setVars($key, $val, true, 'UTF-8');
+									}
+									elseif (file_exists($val)) {
+										$listlines->setImage($key, $val);
+									} else {
+										$listlines->setVars($key, 'ErrorFileNotFound', true, 'UTF-8');
+									}
+								} else // Text
+								{
+									$listlines->setVars($key, $val, true, 'UTF-8');
+								}
+							} catch (OdfException $e) {
+								dol_syslog($e->getMessage(), LOG_INFO);
 							} catch (SegmentException $e) {
 								dol_syslog($e->getMessage(), LOG_INFO);
 							}

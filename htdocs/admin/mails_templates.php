@@ -242,6 +242,10 @@ if (isModEnabled('eventorganization') && $user->hasRight('eventorganization', 'r
 if (isModEnabled('partnership') && $user->hasRight('partnership', 'read')) {
 	$elementList['partnership_send'] = img_picto('', 'partnership', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToPartnership'));
 }
+// MMI
+if (!empty($conf->fournisseur->enabled) && !empty($user->rights->fournisseur->commande->lire)) {
+	$elementList['supplier_proposal_send'] = img_picto('', 'supplier_proposal', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToSupplierProposal'));
+}
 
 $parameters = array('elementList' => $elementList);
 $reshook = $hookmanager->executeHooks('emailElementlist', $parameters); // Note that $action and $object may have been modified by some hooks

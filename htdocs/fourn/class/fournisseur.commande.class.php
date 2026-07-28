@@ -1017,6 +1017,7 @@ class CommandeFournisseur extends CommonOrder
 		global $langs, $user, $hookmanager;
 
 		$result = '';
+
 		$params = [
 			'id' => $this->id,
 			'objecttype' => $this->element,

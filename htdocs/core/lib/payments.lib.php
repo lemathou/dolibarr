@@ -279,7 +279,31 @@ function getOnlinePaymentUrl($mode, $type, $ref = '', $amount = 0, $freetag = 'y
 			}
 		}
 		//if ($mode) $out.='&noidempotency=1';
-	} elseif ($type == 'order') {
+	// Added by MMI Mathieu Moulin iProspective
+	} elseif ($type == 'propal') {
+		$out = $urltouse.'/public/payment/newpayment.php?source='.$type.'&ref='.($mode ? '<span style="color: #666666">' : '');
+		if ($mode == 1) {
+			$out .= 'propal_ref';
+		}
+		if ($mode == 0) {
+			$out .= urlencode($ref);
+		}
+		$out .= ($mode ? '</font>' : '');
+		if (!empty($conf->global->PAYMENT_SECURITY_TOKEN)) {
+			if (empty($conf->global->PAYMENT_SECURITY_TOKEN_UNIQUE)) {
+				$out .= '&securekey='.urlencode($conf->global->PAYMENT_SECURITY_TOKEN);
+			} else {
+				$out .= '&securekey='.($mode ? '<font color="#666666">' : '');
+				if ($mode == 1) {
+					$out .= "hash('".$conf->global->PAYMENT_SECURITY_TOKEN."' + '".$type."' + propal_ref)";
+				}
+				if ($mode == 0) {
+					$out .= dol_hash($conf->global->PAYMENT_SECURITY_TOKEN.$type.$ref, 2);
+				}
+				$out .= ($mode ? '</font>' : '');
+			}
+		}
+	}  elseif ($type == 'order') {
 		$out = $urltouse.'/public/payment/newpayment.php?source='.$type.'&ref='.($mode ? '<span style="color: #666666">' : '');
 		if ($mode == 1) {
 			$out .= 'order_ref';

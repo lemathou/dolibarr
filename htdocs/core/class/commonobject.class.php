@@ -1496,10 +1496,10 @@ abstract class CommonObject
 
 		$sql = "SELECT ec.rowid, ec.statut as statuslink, ec.fk_socpeople as id, ec.fk_c_type_contact"; // This field contains id of llx_socpeople or id of llx_user
 		if ($source == 'internal') {
-			$sql .= ", '-1' as socid, t.statut as statuscontact, t.login, t.photo, t.gender";
+			$sql .= ", '-1' as socid, t.statut as statuscontact, t.login, t.photo, t.gender, t.fk_country as country_id";
 		}
 		if ($source == 'external' || $source == 'thirdparty') {
-			$sql .= ", t.fk_soc as socid, t.statut as statuscontact";
+			$sql .= ", t.fk_soc as socid, t.statut as statuscontact, t.fk_pays as country_id";
 		}
 		$sql .= ", t.civility as civility, t.lastname as lastname, t.firstname, t.email";
 		$sql .= ", tc.source, tc.element, tc.code, tc.libelle as type_label";
@@ -1566,6 +1566,13 @@ abstract class CommonObject
 						'status' => $obj->statuslink,
 						'fk_c_type_contact' => $obj->fk_c_type_contact
 					);
+					// MMI : For export options
+					if (getDolGlobalInt('MMIDOCUMENTS_PDF_EXPORT_ORIGINE')) {
+						require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+						$country = (!empty($obj->country_id)) ?getCountry($obj->country_id,'all') :NULL;
+						$tab[$i]['country_id'] = $obj->country_id;
+						$tab[$i]['country'] = $country;
+					}
 				} else {
 					$tab[$i] = $obj->id;
 				}
@@ -3678,7 +3685,7 @@ abstract class CommonObject
 	public function update_note($note, $suffix = '', $notrigger = 0)
 	{
 		// phpcs:enable
-		global $user;
+		global $user, $conf;
 
 		if (!$this->table_element) {
 			$this->error = 'update_note was called on object with property table_element not defined';
@@ -8974,8 +8981,13 @@ abstract class CommonObject
 						$ef_value = dol_htmlentities($this->array_options[$ef_name], ENT_QUOTES | ENT_SUBSTITUTE);
 						$out .= '<input type="hidden" name="' . $ef_name . '" id="' . $ef_name . '" value="' . $ef_value . '" />' . "\n";
 						continue; // <> -1 and <> 1 and <> 3 = not visible on forms, only on list and <> 4 = not visible at the creation
-					} elseif ($mode == 'view' && empty($visibility)) {
-						continue;
+					} elseif ($mode == 'view') {
+						if ((getDolGlobalInt('MMI_DOCUMENT_LINE_EXTRAFIELDS_ALTVIEW') && (abs($visibility) == 3 || $visibility<0))) {
+							continue; // Here this is considered as a "view", but we have no option to hide fields on view form, and the list form is not used, so I suggest considering this as the list view
+						}
+						elseif (empty($visibility)) {
+							continue;
+						}
 					}
 					if (empty($perms)) {
 						continue;
@@ -11186,5 +11198,106 @@ abstract class CommonObject
 
 		$this->db->commit();
 		return true;
+	}
+
+	/**
+	 * Get linked objects ids
+	 * @author MMI Mathieu Moulin iProspective
+	 *
+	 * @return Array
+	 */
+	public function fetchObjectLinkedIDs($object_class=true)
+	{
+		$classname = strtolower(get_class($this));
+
+		$sql = 'SELECT e.sourcetype object_type, e.fk_source fk_object
+			FROM '.MAIN_DB_PREFIX.'element_element e
+			WHERE e.targettype="'.$classname.'" AND e.fk_target="'.$this->id.'"
+			UNION
+			SELECT e.targettype object_type, e.fk_target fk_object
+			FROM '.MAIN_DB_PREFIX.'element_element e
+			WHERE e.sourcetype="'.$classname.'" AND e.fk_source="'.$this->id.'"';
+		//echo $sql;
+		$resql = $this->db->query($sql);
+		if (!$resql)
+			return;
+		$l = [];
+		while ($obj = $this->db->fetch_object($resql)) {
+			//var_dump($obj);
+			$l[] = [$obj->object_type, $obj->fk_object];
+		}
+
+		return $l;
+
+	}
+
+	/**
+	 * Get total amount already paid
+	 * @author MMI Mathieu Moulin iProspective
+	 *
+	 * @return []
+	 */
+	public function getPaiements()
+	{
+		$classname = strtolower(get_class($this));
+
+		$ol = $this->fetchObjectLinkedIDs();
+		//var_dump($ol);
+		if (!is_array($ol))
+			$ol = [];
+		$ol[] = [$classname, $this->id];
+
+		$sql_w = [];
+		foreach($ol as $o) {
+			if ($o[0]=='facture')
+				$sql_w[] = "(pf.`fk_facture`='".$o[1]."')";
+			$sql_w[] = "(po.`objecttype`='".$o[0]."' AND po.`fk_object`='".$o[1]."')";
+		}
+
+		$sql = "SELECT DISTINCT p2.*, p.*
+			FROM ".MAIN_DB_PREFIX."paiement p
+			LEFT JOIN ".MAIN_DB_PREFIX."paiement_extrafields p2 ON p2.fk_object=p.rowid
+			LEFT JOIN ".MAIN_DB_PREFIX."paiement_object po ON po.fk_paiement=p.rowid
+			LEFT JOIN ".MAIN_DB_PREFIX."paiement_facture pf ON pf.fk_paiement=p.rowid
+			WHERE ".implode(' OR ', $sql_w);
+		//echo $sql;
+		$resql = $this->db->query($sql);
+		if (!$resql)
+			return;
+		$l = [];
+		while ($obj = $this->db->fetch_object($resql)) {
+			//var_dump($obj);
+			$l[$obj->rowid] = $obj;
+		}
+
+		return $l;
+	}
+	
+	/**
+	 * Get total amount already paid
+	 * @author MMI Mathieu Moulin iProspective
+	 *
+	 *	@return float
+	 */
+	public function getSommePaiement()
+	{
+		$mt = 0;
+		$l = $this->getPaiements();
+		foreach($l as $p) {
+			$mt += $p->amount;
+		}
+		//echo $mt;
+		return $mt;
+	}
+
+	/**
+	 * Get total amount already paid
+	 * @author MMI Mathieu Moulin iProspective
+	 *
+	 * @return float
+	 */
+	public function paye()
+	{
+		return $this->getSommePaiement() >= $this->total_ttc;
 	}
 }

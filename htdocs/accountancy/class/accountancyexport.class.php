@@ -897,10 +897,23 @@ class AccountancyExport
 			if (!empty($line->subledger_account)) {
 				$tab['type_ligne'] = 'C';
 				$tab['num_compte'] = str_pad(self::trunc($line->subledger_account, 8), 8);
-				$tab['lib_compte'] = str_pad(self::trunc($line->subledger_label, 30), 30);
+				// Added by MMI Mathieu Moulin iProspective
+				// Feature : Option to use Account account as label (in case of multiples customers with same accounts)
+				// Fix : remove accents using dol_string_unaccent()
+				if (!empty($conf->global->MMI_COMPTA_EXPORT_LABEL_AS_ACCOUNT))
+					$tab['lib_compte'] = str_pad(self::trunc(dol_string_unaccent($line->subledger_account), 8), 30);
+				else
+					$tab['lib_compte'] = str_pad(self::trunc(dol_string_unaccent($line->subledger_label), 30), 30);
 
 				if ($line->doc_type == 'customer_invoice') {
-					$tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($line->subledger_label), 6), 7));
+					if (!empty($conf->global->MMI_COMPTA_EXPORT_LIBALPHA_USE_1STLETTER)) {
+						if (substr($tab['num_compte'], 0, 7)=='0CLIENT')
+							$tab['lib_alpha'] = strtoupper(str_pad('C'.substr($line->subledger_account, 7, 1), 7));
+						else
+							$tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($line->subledger_label), 6), 7));
+					}
+					else
+						$tab['lib_alpha'] = strtoupper(str_pad('C'.self::trunc(dol_string_unaccent($line->subledger_label), 6), 6));
 					$tab['filler'] = str_repeat(' ', 52);
 					$tab['coll_compte'] = str_pad(self::trunc(getDolGlobalString('ACCOUNTING_ACCOUNT_CUSTOMER'), 8), 8);
 				} elseif ($line->doc_type == 'supplier_invoice') {
@@ -945,7 +958,7 @@ class AccountancyExport
 			//$tab['date_ecriture'] = $date_ecriture;
 			$tab['date_ecriture'] = dol_print_date($line->doc_date, '%d%m%y');
 			$tab['filler'] = ' ';
-			$tab['libelle_ecriture'] = str_pad(self::trunc($line->doc_ref.' '.$line->label_operation, 20), 20);
+			$tab['libelle_ecriture'] = str_pad(self::trunc(dol_string_unaccent($line->doc_ref.' '.$line->label_operation), 20), 20); // MMI unaccent
 
 			// Credit invoice - invert sens
 			/*
@@ -1065,9 +1078,9 @@ class AccountancyExport
 			$tab['end_line'] = $end_line;
 
 			if ($exportFile) {
-				fwrite($exportFile, implode($tab));
+				fwrite($exportFile, str_replace('…', '.', implode($tab))); // MMI Fix : Quadra does not like …
 			} else {
-				print implode($tab);
+				print str_replace('…', '.', implode($tab)); // MMI Fix : Quadra does not like …
 			}
 		}
 

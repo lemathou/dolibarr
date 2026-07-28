@@ -105,6 +105,8 @@ $search_town = GETPOST('search_town', 'alpha');
 $search_zip = GETPOST('search_zip', 'alpha');
 $search_state = GETPOST("search_state");
 $search_country = GETPOST("search_country", 'aZ09');
+$search_email = GETPOST('search_email', 'alpha');
+$search_phone = GETPOST('search_phone', 'alpha');
 $search_type_thirdparty = GETPOST("search_type_thirdparty", 'intcomma');
 $search_date_startday = GETPOSTINT('search_date_startday');
 $search_date_startmonth = GETPOSTINT('search_date_startmonth');
@@ -205,8 +207,10 @@ $fieldstosearchall = array(
 	'pd.description' => 'Description',
 	's.nom' => "ThirdParty",
 	's.name_alias' => "AliasNameShort",
+	's.address' => "Adresse",
 	's.zip' => "Zip",
 	's.town' => "Town",
+	's.email' => "Email",
 	'p.note_public' => 'NotePublic',
 );
 if (empty($user->socid)) {
@@ -226,6 +230,8 @@ $arrayfields = array(
 	's.zip' => array('label' => "Zip", 'checked' => -1),
 	'state.nom' => array('label' => "StateShort", 'checked' => 0),
 	'country.code_iso' => array('label' => "Country", 'checked' => 0),
+	's.email' => array('label' => "Email", 'checked' => 0),
+	's.phone' => array('label' => "Phone", 'checked' => 0),
 	'typent.code' => array('label' => "ThirdPartyType", 'checked' => $checkedtypetiers),
 	'p.date' => array('label' => "DatePropal", 'checked' => 1),
 	'p.fin_validite' => array('label' => "DateEnd", 'checked' => 1),
@@ -357,6 +363,8 @@ if (empty($reshook)) {
 		$search_state = "";
 		$search_type = '';
 		$search_country = '';
+		$search_email = '';
+		$search_phone = '';
 		$search_type_thirdparty = '';
 		$search_date_startday = '';
 		$search_date_startmonth = '';
@@ -597,6 +605,11 @@ $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_country as country on (country.rowid = s
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_typent as typent on (typent.id = s.fk_typent)";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_departements as state on (state.rowid = s.fk_departement)";
 
+// MMI Hack Hook
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListJoinSoc', $parameters); // Note that $action and $object may have been modified by hook
+$sql .= $hookmanager->resPrint;
+
 $sql .= ' INNER JOIN '.MAIN_DB_PREFIX.'propal as p ON p.fk_soc = s.rowid';
 if (!empty($extrafields->attributes[$object->table_element]['label']) && is_array($extrafields->attributes[$object->table_element]['label']) && count($extrafields->attributes[$object->table_element]['label'])) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX.$object->table_element."_extrafields as ef on (p.rowid = ef.fk_object)";
@@ -607,6 +620,12 @@ if ($search_all) {
 $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user as u ON p.fk_user_author = u.rowid';
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."projet as pr ON pr.rowid = p.fk_projet";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_availability as ava on (ava.rowid = p.fk_availability)";
+
+// MMI Hack Hook
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListJoinPropal', $parameters); // Note that $action and $object may have been modified by hook
+$sql .= $hookmanager->resPrint;
+
 // Add table from hooks
 $parameters = array();
 $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
@@ -625,6 +644,12 @@ if ($search_state) {
 }
 if ($search_country) {
 	$sql .= " AND s.fk_pays IN (".$db->sanitize($db->escape($search_country)).')';
+}
+if ($search_email) {
+	$sql .= natural_search("s.email", $search_email);
+}
+if ($search_phone) {
+	$sql .= natural_search("s.phone", $search_phone);
 }
 if ($search_type_thirdparty != '' && $search_type_thirdparty > 0) {
 	$sql .= " AND s.fk_typent IN (".$db->sanitize($db->escape($search_type_thirdparty)).')';
@@ -1047,6 +1072,12 @@ if ($search_town) {
 if ($search_country) {
 	$param .= '&search_country='.urlencode((string) ($search_country));
 }
+if ($search_email) {
+	$param .= '&search_email='.urlencode($search_email);
+}
+if ($search_phone) {
+	$param .= '&search_phone='.urlencode($search_phone);
+}
 if ($search_date_signature_startday) {
 	$param .= '&search_date_signature_startday='.urlencode((string) ($search_date_signature_startday));
 }
@@ -1269,6 +1300,14 @@ if (!empty($arrayfields['country.code_iso']['checked'])) {
 	print '<td class="liste_titre" align="center">';
 	print $form->select_country($search_country, 'search_country', '', 0, 'minwidth100imp maxwidth100');
 	print '</td>';
+}
+// Email
+if (!empty($arrayfields['s.email']['checked'])) {
+	print '<td class="liste_titre"><input class="flat maxwidth50" type="text" name="search_email" value="'.$search_email.'"></td>';
+}
+// Phone
+if (!empty($arrayfields['s.phone']['checked'])) {
+	print '<td class="liste_titre"><input class="flat maxwidth50" type="text" name="search_phone" value="'.$search_phone.'"></td>';
 }
 // Company type
 if (!empty($arrayfields['typent.code']['checked'])) {
@@ -1546,6 +1585,14 @@ if (!empty($arrayfields['state.nom']['checked'])) {
 }
 if (!empty($arrayfields['country.code_iso']['checked'])) {
 	print_liste_field_titre($arrayfields['country.code_iso']['label'], $_SERVER["PHP_SELF"], "country.code_iso", "", $param, '', $sortfield, $sortorder, 'center ');
+	$totalarray['nbfield']++;
+}
+if (!empty($arrayfields['s.email']['checked'])) {
+	print_liste_field_titre($arrayfields['s.email']['label'], $_SERVER["PHP_SELF"], 's.email', '', $param, '', $sortfield, $sortorder);
+	$totalarray['nbfield']++;
+}
+if (!empty($arrayfields['s.phone']['checked'])) {
+	print_liste_field_titre($arrayfields['s.phone']['label'], $_SERVER["PHP_SELF"], 's.phone', '', $param, '', $sortfield, $sortorder);
 	$totalarray['nbfield']++;
 }
 if (!empty($arrayfields['typent.code']['checked'])) {
@@ -1947,6 +1994,24 @@ while ($i < $imaxinloop) {
 				$totalarray['nbfield']++;
 			}
 		}
+		// Email (MMI Hack)
+		if (!empty($arrayfields['s.email']['checked'])) {
+			print '<td class="nocellnopadd">';
+			print $obj->email;
+			print '</td>';
+			if (!$i) {
+				$totalarray['nbfield']++;
+			}
+		}
+		// Phone (MMI Hack)
+		if (!empty($arrayfields['s.phone']['checked'])) {
+			print '<td class="nocellnopadd">';
+			print $obj->phone;
+			print '</td>';
+			if (!$i) {
+				$totalarray['nbfield']++;
+			}
+		}
 		// Type ent
 		if (!empty($arrayfields['typent.code']['checked'])) {
 			if (!is_array($typenArray) || empty($typenArray)) {
@@ -2140,7 +2205,6 @@ while ($i < $imaxinloop) {
 				$totalarray['nbfield']++;
 			}
 		}
-
 		// Currency rate
 		if (!empty($arrayfields['p.multicurrency_tx']['checked'])) {
 			print '<td class="nowrap">';

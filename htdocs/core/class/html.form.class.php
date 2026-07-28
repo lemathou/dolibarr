@@ -2894,7 +2894,7 @@ class Form
 	public function select_produits_list($selected = 0, $htmlname = 'productid', $filtertype = '', $limit = 20, $price_level = 0, $filterkey = '', $status = 1, $finished = 2, $outputmode = 0, $socid = 0, $showempty = '1', $forcecombo = 0, $morecss = 'maxwidth500', $hidepriceinlabel = 0, $warehouseStatus = '', $status_purchase = -1)
 	{
 		// phpcs:enable
-		global $langs;
+		global $langs, $conf;	// MMI Hack : $conf still needed by the MMI_SEARCH_PRODUCT_BY_FOURN_* options below
 		global $hookmanager;
 
 		$out = '';
@@ -2999,6 +2999,15 @@ class Form
 			$sql .= ' AND e.statut IN (' . $this->db->sanitize($this->db->escape(implode(',', $warehouseStatusArray))) . ')'; // Return line if product is inside the selected stock. If not, an empty line will be returned so we will count 0.
 		}
 
+		// MMI Hack : include search in supplier name.
+		// MAIN_SEARCH_PRODUCT_BY_FOURN_REF is not listed here anymore : upstream v20 handles it with an EXISTS subquery (see below), the join is only needed by the MMI options.
+		if (getDolGlobalString('MAIN_SEARCH_PRODUCT_BY_FOURN_SHOW_MULTIPLE') || getDolGlobalString('MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL')) {
+			$sql .= " LEFT JOIN " . $this->db->prefix() . "product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
+		}
+		if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
+			$sql .= " LEFT JOIN ".$this->db->prefix()."societe as pf ON pfp.fk_soc = pf.rowid";
+		}
+
 		//Price by customer
 		if (getDolGlobalString('PRODUIT_CUSTOMER_PRICES') && !empty($socid)) {
 			$sql .= " LEFT JOIN  " . $this->db->prefix() . "product_customer_price as pcp ON pcp.fk_soc=" . ((int) $socid) . " AND pcp.fk_product=p.rowid";
@@ -3092,6 +3101,10 @@ class Form
 					$sqlSupplierSearch .= !empty($sqlSupplierSearch) ? ' AND ':'';
 					$sqlSupplierSearch .= " pfp.ref_fourn LIKE '" . $this->db->escape($prefix . $crit) . "%'";
 				}
+				if (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL)) {
+					$sql .= " OR pf.nom LIKE '".$this->db->escape($prefix.$crit)."%'";
+					$sql .= " OR pf.name_alias LIKE '".$this->db->escape($prefix.$crit)."%'";
+				}
 				$sql .= ")";
 				$i++;
 			}
@@ -3114,6 +3127,11 @@ class Form
 		}
 		if (count($warehouseStatusArray)) {
 			$sql .= " GROUP BY " . $selectFields;
+		}
+		// Added by MMI Mathieu Moulin iProspective
+		// @todo gérer le cas où on affiche plusieurs lignes par produit et on sélectionne => mettre le bon prix d'achat, etc.
+		elseif (empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_SHOW_MULTIPLE) && (!empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_REF) || !empty($conf->global->MAIN_SEARCH_PRODUCT_BY_FOURN_LABEL))) {
+			$sql .= " GROUP BY p.rowid";
 		}
 
 		//Sort by category
@@ -6761,6 +6779,7 @@ class Form
 				} else {
 					$prodstatic = new Product($this->db);
 					$prodstatic->fetch($idprod);
+
 					if ($prodstatic->type == Product::TYPE_SERVICE) {   // We know product is a service
 						$code_country .= ",'" . $societe_acheteuse->country_code . "'";
 					}

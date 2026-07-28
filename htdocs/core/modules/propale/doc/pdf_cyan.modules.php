@@ -340,6 +340,14 @@ class pdf_cyan extends ModelePDFPropales
 
 				$heightforinfotot = 40; // Height reserved to output the info and total part
 				$heightforsignature = !getDolGlobalString('PROPAL_DISABLE_SIGNATURE') ? (pdfGetHeightForHtmlContent($pdf, $outputlangs->transnoentities("ProposalCustomerSignature")) + 10) : 0;
+				// MMI Hack
+				$heightfocomplement = 0;
+				if (!empty($conf->global->DOCUMENT_SHOW_COMPLEMENT)) {
+					$textComplement = $this->textComplement($object, $outputlangs);
+					$heightfocomplement = $this->heightComplementArea($pdf, $textComplement, $default_font_size);
+					//var_dump($heightfocomplement); die();
+					$heightforsignature += $heightfocomplement;
+				}
 				$heightforfreetext = (isset($conf->global->MAIN_PDF_FREETEXT_HEIGHT) ? $conf->global->MAIN_PDF_FREETEXT_HEIGHT : 5); // Height reserved to output the free text on last page
 				$heightforfooter = $this->marge_basse + (!getDolGlobalString('MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS') ? 12 : 22); // Height reserved to output the footer (value include bottom margin)
 				//print $heightforinfotot + $heightforsignature + $heightforfreetext + $heightforfooter;exit;
@@ -869,6 +877,11 @@ class pdf_cyan extends ModelePDFPropales
 					$posy = $this->drawSignatureArea($pdf, $object, $posy, $outputlangs);
 				}
 
+				// Added by MMI Mathieu Moulin iProspective
+				if (!empty($textComplement)) {
+					$posy = $this->drawComplementArea($pdf, $textComplement, $posy, $outputlangs);
+				}
+
 				// Pagefoot
 				$this->_pagefoot($pdf, $object, $outputlangs);
 				if (method_exists($pdf, 'AliasNbPages')) {
@@ -990,12 +1003,29 @@ class pdf_cyan extends ModelePDFPropales
 
 		$diffsizetitle = (!getDolGlobalString('PDF_DIFFSIZE_TITLE') ? 3 : $conf->global->PDF_DIFFSIZE_TITLE);
 
-		// If France, show VAT mention if not applicable
-		if ($this->emetteur->country_code == 'FR' && empty($mysoc->tva_assuj)) {
+		// MMI Mathieu Moulin iProspective
+		// Replacement for VAT exempt notice
+		global $hookmanager;
+		$parameters = array(
+			'object' => $object,
+			'outputlangs' => $outputlangs,
+			'mysoc' => $mysoc,
+			'emetteur' => $this->emetteur,
+		);
+		$reshook = $hookmanager->executeHooks('VATNotificationOnPDF', $parameters, $this); // Note that $object may have been modified by hook
+		if ($reshook < 0) {
+			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+		} elseif (empty($reshook)) {
+			// If France, show VAT mention if not applicable
+			if ($this->emetteur->country_code == 'FR' && empty($mysoc->tva_assuj))
+				$vat_info = $outputlangs->transnoentities("VATIsNotUsedForInvoice");
+		} else {
+			$vat_info = $hookmanager->resPrint;
+		}
+		if (!empty($vat_info)) {
 			$pdf->SetFont('', 'B', $default_font_size - $diffsizetitle);
 			$pdf->SetXY($this->marge_gauche, $posy);
-			$pdf->MultiCell(100, 3, $outputlangs->transnoentities("VATIsNotUsedForInvoice"), 0, 'L', 0);
-
+			$pdf->MultiCell(100, 3, $vat_info, 0, 'L', 0);
 			$posy = $pdf->GetY() + 4;
 		}
 
@@ -1093,6 +1123,41 @@ class pdf_cyan extends ModelePDFPropales
 				$pdf->MultiCell(80, 5, $lib_mode_reg, 0, 'L');
 
 				$posy = $pdf->GetY() + 2;
+			}
+
+			// Show online payment link
+			if (empty($object->mode_reglement_code) || $object->mode_reglement_code == 'CB' || $object->mode_reglement_code == 'VAD' || getDolGlobalInt('PDF_SHOW_LINK_TO_ONLINE_PAYMENT_ALWAYS')) {
+				$useonlinepayment = 0;
+				if (getDolGlobalString('PDF_SHOW_LINK_TO_ONLINE_PAYMENT')) {
+					if (isModEnabled('paypal')) {
+						$useonlinepayment++;
+					}
+					if (isModEnabled('stripe')) {
+						$useonlinepayment++;
+					}
+					if (isModEnabled('paybox')) {
+						$useonlinepayment++;
+					}
+				}
+
+				if ($object->statut != Facture::STATUS_DRAFT && ($useonlinepayment || getDolGlobalInt('PDF_SHOW_LINK_TO_ONLINE_PAYMENT_ALWAYS'))) {
+					require_once DOL_DOCUMENT_ROOT.'/core/lib/payments.lib.php';
+					global $langs;
+
+					$langs->loadLangs(array('payment', 'paybox', 'stripe'));
+					$servicename = $langs->transnoentities('Online');
+					if (!empty($object->context['propale_history']['original_ref']))
+						$ref = $object->context['propale_history']['original_ref'];
+					else
+						$ref = $object->ref;
+					$paiement_url = getOnlinePaymentUrl('', 'propal', $ref, '', '', '');
+					$linktopay = $langs->trans("ToOfferALinkForOnlinePayment", '').' <a href="'.$paiement_url.'">'.$outputlangs->transnoentities("ClickHere").'</a>';
+
+					$pdf->SetXY($this->marge_gauche, $posy);
+					$pdf->writeHTMLCell($posxend - $this->marge_gauche, 5, '', '', dol_htmlentitiesbr($linktopay), 0, 1);
+
+					$posy = $pdf->GetY() + 1;
+				}
 			}
 
 			// Show payment mode CHQ
@@ -1437,6 +1502,25 @@ class pdf_cyan extends ModelePDFPropales
 			$pdf->SetTextColor(0, 0, 0);
 		}
 
+		// Added by MMI Mathieu Moulin iProspective
+		// @todo Hook
+		$acompte_p = (!empty($object->array_options['options_acompte']) && $object->array_options['options_acompte']>0) ?$object->array_options['options_acompte'] :0;
+		if (!$acompte_p)
+			$acompte_val = (!empty($object->array_options['options_acompte_val']) && $object->array_options['options_acompte_val']>0) ?round($object->array_options['options_acompte_val'], 2) :0;
+		if (!empty($object->array_options['options_acompte_aff']) && ($acompte_p || $acompte_val)) {
+			$index++;
+			$outputlangs->load('mmidocuments@mmidocuments');
+			if ($acompte_p)
+				$acompte_val = round($object->total_ttc*$acompte_p/100, 2);
+			$pdf->SetXY($col1x, $tab2_top + $tab2_hl * $index);
+			$pdf->SetFont('', 'B', $default_font_size - 1);
+			if ($acompte_p)
+				$pdf->MultiCell($col2x, $tab2_hl, $outputlangs->transnoentities('PaymentAcomptePourcent', str_replace('.', ',', $acompte_p).' %', price($acompte_val)), 0, 'L', 0);
+			else
+				$pdf->MultiCell($col2x, $tab2_hl, $outputlangs->transnoentities('PaymentAcompte', price($acompte_val)), 0, 'L', 0);
+			$posy = $pdf->GetY() + 1;
+		}
+
 		$parameters = array('pdf' => &$pdf, 'object' => &$object, 'outputlangs' => $outputlangs, 'index' => &$index, 'posy' => $posy);
 
 		$reshook = $hookmanager->executeHooks('afterPDFTotalTable', $parameters, $this); // Note that $action and $object may have been modified by some hooks
@@ -1697,7 +1781,7 @@ class pdf_cyan extends ModelePDFPropales
 			$carac_emetteur = '';
 			// Add internal contact of object if defined
 			$arrayidcontact = $object->getIdContact('internal', 'SALESREPFOLL');
-			if (count($arrayidcontact) > 0) {
+			if (count($arrayidcontact) > 0 && !getDolGlobalInt('PDF_HIDE_CORE_USER_CONTACT')) {
 				$object->fetch_user($arrayidcontact[0]);
 				$labelbeforecontactname = ($outputlangs->transnoentities("FromContactName") != 'FromContactName' ? $outputlangs->transnoentities("FromContactName") : $outputlangs->transnoentities("Name"));
 				$carac_emetteur .= ($carac_emetteur ? "\n" : '').$labelbeforecontactname." ".$outputlangs->convToOutputCharset($object->user->getFullName($outputlangs));
@@ -1721,6 +1805,16 @@ class pdf_cyan extends ModelePDFPropales
 
 			$hautcadre = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 38 : 40;
 			$widthrecbox = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 92 : 82;
+
+			// Added by MMI Mathieu Moulin iProspective
+			// If CUSTOMER/SHIPPING contact defined, we use it
+			$useshippingcontact = !empty($object->getIdContact('external', 'SHIPPING'));
+			// If Maîtrise d'oeuvre defined, we use it
+			$usemaitrisecontact = !empty($object->getIdContact('external', 'MGMT'));
+			// If CUSTOMER/BILLING contact defined, we use it
+			$usebillingcontact = !empty($object->getIdContact('external', 'BILLING'));
+			if ($twocontacts = !empty($conf->global->MMI_DOCUMENT_PDF_SEPARATE_CONTACTS) && ($useshippingcontact || $usemaitrisecontact))
+				$widthrecbox = 60;
 
 			// Show sender frame
 			if (!getDolGlobalString('MAIN_PDF_NO_SENDER_FRAME')) {
@@ -1747,61 +1841,195 @@ class pdf_cyan extends ModelePDFPropales
 			$pdf->SetFont('', '', $default_font_size - 1);
 			$pdf->MultiCell($widthrecbox - 2, 4, $carac_emetteur, 0, $ltrdirection);
 
-
-			// If CUSTOMER contact defined, we use it
-			$usecontact = false;
-			$arrayidcontact = $object->getIdContact('external', 'CUSTOMER');
-			if (count($arrayidcontact) > 0) {
-				$usecontact = true;
-				$result = $object->fetch_contact($arrayidcontact[0]);
-			}
-
-			// Recipient name
-			if ($usecontact && ($object->contact->socid != $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || getDolGlobalString('MAIN_USE_COMPANY_NAME_OF_CONTACT')))) {
-				$thirdparty = $object->contact;
-			} else {
-				$thirdparty = $object->thirdparty;
-			}
-
-			$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
-
-			$mode = 'target';
-			$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
-
-			// Show recipient
-			$widthrecbox = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 92 : 100;
-			if ($this->page_largeur < 210) {
-				$widthrecbox = 84; // To work with US executive format
-			}
-			$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
-			$posy += $top_shift;
-			$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
-			if (getDolGlobalString('MAIN_INVERT_SENDER_RECIPIENT')) {
-				$posx = $this->marge_gauche;
-			}
-
-			// Show recipient frame
+			// Added by MMI Mathieu Moulin iProspective
+			// Adresses livraison & facturation
 			if (!getDolGlobalString('MAIN_PDF_NO_RECIPENT_FRAME')) {
-				$pdf->SetTextColor(0, 0, 0);
-				$pdf->SetFont('', '', $default_font_size - 2);
-				$pdf->SetXY($posx + 2, $posy - 5);
-				$pdf->MultiCell($widthrecbox, 5, $outputlangs->transnoentities("BillTo"), 0, $ltrdirection);
-				$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
+				if ($twocontacts) {
+					// ---- RECIPIENT SHIPPING
+
+					// If CUSTOMER/SHIPPING contact defined, we use it
+					$usecontact = false;
+					$arrayidcontact = $object->getIdContact('external', 'SHIPPING');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$recipient_type = 'SHIPPING';
+						$address_type_label = $outputlangs->transnoentities("DeliveryAddress");
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
+					// If Maîtrise d'oeuvre defined, we use it
+					$arrayidcontact = $object->getIdContact('external', 'MGMT');
+					$usemaitrisecontact = false;
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$recipient_type = 'MGMT';
+						$address_type_label = $outputlangs->transnoentities("ProjectManagementAddress");
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
+
+					// Recipient name
+					if ($usecontact && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || getDolGlobalString('MAIN_USE_COMPANY_NAME_OF_CONTACT'))) {	
+						$thirdparty = $object->contact;
+						$thirdparty->fetch_thirdparty();
+					} else {
+						$thirdparty = $object->thirdparty;
+					}
+
+					$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
+
+					$mode =  'target';
+					$carac_client = pdf_build_address($outputlangs, $this->emetteur, $usecontact && empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) ?$object->contact->thirdparty :$object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
+
+					// Show recipient
+					$widthrecbox = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 92 : 100;
+					if ($this->page_largeur < 210) {
+						$widthrecbox = 84; // To work with US executive format
+					}
+					$widthrecbox = 60; // Forcage
+					$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
+					$posy += $top_shift;
+					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
+					if (getDolGlobalString('MAIN_INVERT_SENDER_RECIPIENT')) {
+						$posx = $this->marge_gauche;
+					}
+
+					// Show recipient frame
+					$pdf->SetTextColor(0, 0, 0);
+					$pdf->SetFont('', '', $default_font_size - 2);
+					$pdf->SetXY($posx + 2, $posy - 5);
+					$pdf->MultiCell($widthrecbox, 5, $address_type_label, 0, $ltrdirection);
+					$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
+
+					// Show recipient name
+					$pdf->SetXY($posx + 2, $posy + 3);
+					$pdf->SetFont('', 'B', $default_font_size);
+					$pdf->MultiCell($widthrecbox, 2, $carac_client_name, 0, $ltrdirection);
+
+					$posy = $pdf->getY();
+
+					// Show recipient information
+					$pdf->SetFont('', '', $default_font_size - 1);
+					$pdf->SetXY($posx + 2, $posy);
+					$pdf->MultiCell($widthrecbox, 4, $carac_client, 0, $ltrdirection);
+
+					// ---- RECIPIENT INVOICE
+
+					// If CUSTOMER contact defined, we use it
+					$usecontact = false;
+					$arrayidcontact = $object->getIdContact('external', 'BILLING');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
+
+					// Recipient name
+					if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+						$thirdparty = $object->contact;
+					} else {
+						$thirdparty = $object->thirdparty;
+					}
+
+					$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
+
+					$mode =  'target';
+					$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
+
+					// Show recipient
+					$widthrecbox = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 92 : 100;
+					if ($this->page_largeur < 210) {
+						$widthrecbox = 84; // To work with US executive format
+					}
+					$widthrecbox = 60; // Forcage
+					$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42;
+					$posy += $top_shift;
+					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
+					$posx -= $widthrecbox + 5;
+					if (getDolGlobalString('MAIN_INVERT_SENDER_RECIPIENT')) {
+						$posx = $this->marge_gauche;
+					}
+
+					// Show recipient frame
+					$pdf->SetTextColor(0, 0, 0);
+					$pdf->SetFont('', '', $default_font_size - 2);
+					$pdf->SetXY($posx + 2, $posy - 5);
+					$pdf->MultiCell($widthrecbox, 5, $outputlangs->transnoentities("BillAddress"), 0, $ltrdirection);
+					$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
+
+					// Show recipient name
+					$pdf->SetXY($posx + 2, $posy + 3);
+					$pdf->SetFont('', 'B', $default_font_size);
+					$pdf->MultiCell($widthrecbox, 2, $carac_client_name, 0, $ltrdirection);
+
+					$posy = $pdf->getY();
+
+					// Show recipient information
+					$pdf->SetFont('', '', $default_font_size - 1);
+					$pdf->SetXY($posx + 2, $posy);
+					$pdf->MultiCell($widthrecbox, 4, $carac_client, 0, $ltrdirection);
+				}
+				// 1 seule adresse
+				else {
+					// If CUSTOMER contact defined, we use it
+					$usecontact = false;
+					$arrayidcontact = $object->getIdContact('external', 'CUSTOMER');
+					if (count($arrayidcontact) > 0) {
+						$usecontact = true;
+						$result = $object->fetch_contact($arrayidcontact[0]);
+					}
+					// If BILLING contact defined, we use it
+					if (! $usecontact) {
+						$arrayidcontact = $object->getIdContact('external', 'BILLING');
+						if (count($arrayidcontact) > 0) {
+							$usecontact = true;
+							$result = $object->fetch_contact($arrayidcontact[0]);
+						}
+					}
+
+					// Recipient name
+					if ($usecontact && ($object->contact->socid == $object->thirdparty->id && (!isset($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT) || !empty($conf->global->MAIN_USE_COMPANY_NAME_OF_CONTACT)))) {
+						$thirdparty = $object->contact;
+					} else {
+						$thirdparty = $object->thirdparty;
+					}
+
+					$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
+
+					$mode = 'target';
+					$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, $mode, $object);
+
+					// Show recipient
+					$widthrecbox = !empty($conf->global->MAIN_PDF_USE_ISO_LOCATION) ? 92 : 100;
+					if ($this->page_largeur < 210) {
+						$widthrecbox = 84; // To work with US executive format
+					}
+					$posy = !empty($conf->global->MAIN_PDF_USE_ISO_LOCATION) ? 40 : 42;
+					$posy += $top_shift;
+					$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
+					if (!empty($conf->global->MAIN_INVERT_SENDER_RECIPIENT)) {
+						$posx = $this->marge_gauche;
+					}
+
+					// Show recipient frame
+					if (empty($conf->global->MAIN_PDF_NO_RECIPENT_FRAME)) {
+						$pdf->SetTextColor(0, 0, 0);
+						$pdf->SetFont('', '', $default_font_size - 2);
+						$pdf->SetXY($posx + 2, $posy - 5);
+						$pdf->MultiCell($widthrecbox, 5, $outputlangs->transnoentities("BillTo"), 0, $ltrdirection);
+						$pdf->Rect($posx, $posy, $widthrecbox, $hautcadre);
+					}
+
+					// Show recipient name
+					$pdf->SetXY($posx + 2, $posy + 3);
+					$pdf->SetFont('', 'B', $default_font_size);
+					$pdf->MultiCell($widthrecbox, 2, $carac_client_name, 0, $ltrdirection);
+
+					$posy = $pdf->getY();
+
+					// Show recipient information
+					$pdf->SetFont('', '', $default_font_size - 1);
+					$pdf->SetXY($posx + 2, $posy);
+					$pdf->MultiCell($widthrecbox, 4, $carac_client, 0, $ltrdirection);
+				}
 			}
-
-			// Show recipient name
-			$pdf->SetXY($posx + 2, $posy + 3);
-			$pdf->SetFont('', 'B', $default_font_size);
-			// @phan-suppress-next-line PhanPluginSuspiciousParamOrder
-			$pdf->MultiCell($widthrecbox, 2, $carac_client_name, 0, $ltrdirection);
-
-			$posy = $pdf->getY();
-
-			// Show recipient information
-			$pdf->SetFont('', '', $default_font_size - 1);
-			$pdf->SetXY($posx + 2, $posy);
-			// @phan-suppress-next-line PhanPluginSuspiciousParamOrder
-			$pdf->MultiCell($widthrecbox, 4, $carac_client, 0, $ltrdirection);
 		}
 
 		$pdf->SetTextColor(0, 0, 0);
@@ -1858,7 +2086,79 @@ class pdf_cyan extends ModelePDFPropales
 			$pdf->addEmptySignatureAppearance($posx, $tab_top + $tab_hl, $largcol, $tab_hl * 3);
 		}
 
-		return ($tab_hl * 7);
+		return $posy+($tab_hl * 7);
+	}
+
+	/**
+	 *  Added by MMI Mathieu Moulin iProspective
+	 */
+	protected function textComplement(&$object, $outputlangs)
+	{
+		global $conf;
+		$outputlangs->load('mmidocuments@mmidocuments');
+
+		//var_dump($object); die();
+		//var_dump($object->array_options['options_cgv_cpv']); die();
+		$complement = [];
+		if (!empty($object->array_options['options_cgv_cpv'])) {
+			if (!empty($conf->global->MMIDOCUMENT_CGP_TITLE))
+				$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoCGP")."</h3>";
+			$complement[] = $object->array_options['options_cgv_cpv'];
+		}
+		if (!empty($object->array_options['options_propal_decennale'])) {
+			if (!empty($conf->global->MMIPROJECT_DECENNALE_TITLE))
+				$complement[] = '<h3>'.$outputlangs->transnoentities("DocumentMoreInfoDecennale")."</h3>";
+			$complement[] = $conf->global->MMIPROJECT_DECENNALE_TEXT;
+		}
+
+		return !empty($complement) ?implode("\r\n", $complement) :'';
+	}
+	protected function heightComplement(&$pdf, $text, $default_font_size)
+	{
+		$pdf->SetFont('', '', $default_font_size - 2);
+		$useborder = 0;
+		$cellpadding = 0;
+		$reseth = false;
+		$autopadding = true;
+		$largcol = ($this->page_largeur - $this->marge_droite - $this->marge_gauche);
+		return $pdf->getStringHeight($largcol, strip_tags($text), $reseth, $autopadding, $cellpadding, $useborder);
+	}
+	protected function heightComplementArea(&$pdf, $text, $default_font_size)
+	{
+		$marg_top = 8;
+		$tab_titre = 4;
+		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
+		//var_dump($tab_text);
+		return $marg_top + $tab_titre + $tab_text;
+	}
+	protected function drawComplementArea(&$pdf, $text, $posy, $outputlangs)
+	{
+		global $conf;
+		
+		$default_font_size = pdf_getPDFFontSize($outputlangs);
+		$marg_top = 8;
+		$tab_top = $posy + $marg_top;
+
+		$posx = $this->marge_gauche;
+		$largcol = ($this->page_largeur - $this->marge_droite - $posx);
+
+		$pdf->SetFillColor(255, 255, 255);
+		$pdf->SetFont('', '', $default_font_size - 2);
+
+		// Titre
+		if (!empty($conf->global->DOCUMENT_COMPLEMENT_TITLE)) {
+			$pdf->SetXY($posx, $tab_top);
+			$tab_titre = 4;
+			$pdf->WriteHTMLCell($largcol, $tab_titre, $posx, $posy+$marg_top, '<b>'.$outputlangs->transnoentities("DocumentMoreInfo").'</b>', 0);
+		}
+		// Texte
+		$pdf->SetXY($posx, $tab_top + $tab_titre);
+		$tab_text = $this->heightComplement($pdf, $text, $default_font_size);
+		//var_dump($tab_text); die();
+		$pdf->WriteHTMLCell($largcol, $tab_text, $posx,$tab_top+$tab_titre, $text, 1, 'L');
+		//var_dump($tab_top + $tab_titre + $tab_text); die();
+
+		return $tab_top + $tab_titre + $tab_text;
 	}
 
 

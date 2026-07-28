@@ -454,6 +454,10 @@ if (!empty($object->ext_payment_id)) {
 	print '</td></tr>';
 }
 
+// MMI Hack
+$parameters = array();
+$reshook = $hookmanager->executeHooks('addMoreInformations', $parameters, $object, $action);
+
 print '</table>';
 
 print '</div>';
@@ -595,6 +599,10 @@ if ($resql) {
  */
 
 print '<div class="tabsAction">';
+
+// MMI Hack
+$parameters = array();
+$reshook = $hookmanager->executeHooks('addMoreActionsButtons', $parameters, $object, $action);
 
 if (getDolGlobalString('BILL_ADD_PAYMENT_VALIDATION')) {
 	if ($user->socid == 0 && $object->statut == 0 && $action == '') {

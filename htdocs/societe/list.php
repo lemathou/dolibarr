@@ -548,6 +548,8 @@ $sql .= " s.email, s.phone, s.phone_mobile, s.fax, s.url, s.siren as idprof1, s.
 $sql .= " s.tms as date_modification, s.datec as date_creation, s.import_key,";
 $sql .= " s.code_compta, s.code_compta_fournisseur, s.parent as fk_parent,s.price_level,";
 $sql .= " s2.nom as name2,";
+// MMI : get soc private note
+$sql .= ' s.note_private soc_note_private,';
 $sql .= " typent.code as typent_code,";
 $sql .= " staff.code as staff_code,";
 $sql .= " s.fk_forme_juridique as legalform_code,";
@@ -1775,6 +1777,8 @@ while ($i < $imaxinloop) {
 		$companystatic->fk_prospectlevel = $obj->fk_prospectlevel;
 		$companystatic->parent = $obj->fk_parent;
 		$companystatic->entity = $obj->entity;
+
+		$companystatic->note_private = $obj->soc_note_private; // MMI Hack
 
 		$object = $companystatic;
 	}

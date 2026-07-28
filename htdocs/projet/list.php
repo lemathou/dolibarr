@@ -105,8 +105,10 @@ $search_opp_percent = GETPOST("search_opp_percent", 'alpha');
 $search_opp_amount = GETPOST("search_opp_amount", 'alpha');
 $search_budget_amount = GETPOST("search_budget_amount", 'alpha');
 $search_public = GETPOST("search_public", 'intcomma');
-$search_project_user = GETPOSTINT('search_project_user');
-$search_project_contact = GETPOSTINT('search_project_contact');
+$search_project_user = GETPOST('search_project_user', getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE') ? 'array:int' : 'int');
+$search_project_user_multiple_and = getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE_AND');
+$search_project_contact = GETPOST('search_project_contact', getDolGlobalInt('PROJECT_SEARCH_CONTACT_MULTIPLE') ? 'array:int' : 'int');
+$search_project_contact_multiple_and = getDolGlobalInt('PROJECT_SEARCH_CONTACT_MULTIPLE_AND');
 $search_sale = GETPOSTINT('search_sale');
 $search_usage_opportunity = GETPOST('search_usage_opportunity', 'intcomma');
 $search_usage_task = GETPOST('search_usage_task', 'intcomma');
@@ -669,11 +671,33 @@ if ($search_sale && $search_sale != '-1') {
 		$sql .= " AND EXISTS (SELECT sc.fk_soc FROM ".MAIN_DB_PREFIX."societe_commerciaux as sc WHERE sc.fk_soc = p.fk_soc AND sc.fk_user = ".((int) $search_sale).")";
 	}
 }
-if ($search_project_user > 0) {
-	$sql .= " AND EXISTS (SELECT ecp.rowid FROM ".MAIN_DB_PREFIX."element_contact as ecp WHERE ecp.fk_c_type_contact IN (".$db->sanitize(implode(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople = ".((int) $search_project_user).")";
+if (!empty($search_project_user)) {
+	if (is_array($search_project_user)) {
+		if ($search_project_user_multiple_and) {
+			// One EXISTS per selected user: the project must be linked to ALL of them
+			foreach ($search_project_user as $uid) {
+				$sql .= " AND EXISTS (SELECT ecp.rowid FROM ".MAIN_DB_PREFIX."element_contact as ecp WHERE ecp.fk_c_type_contact IN (".$db->sanitize(implode(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople = ".((int) $uid).")";
+			}
+		} else {
+			$sql .= " AND EXISTS (SELECT ecp.rowid FROM ".MAIN_DB_PREFIX."element_contact as ecp WHERE ecp.fk_c_type_contact IN (".$db->sanitize(implode(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople IN (".$db->sanitize(implode(',', $search_project_user))."))";
+		}
+	} elseif ($search_project_user > 0) {
+		$sql .= " AND EXISTS (SELECT ecp.rowid FROM ".MAIN_DB_PREFIX."element_contact as ecp WHERE ecp.fk_c_type_contact IN (".$db->sanitize(implode(',', array_keys($listofprojectcontacttype))).") AND ecp.element_id = p.rowid AND ecp.fk_socpeople = ".((int) $search_project_user).")";
+	}
 }
-if ($search_project_contact > 0) {
-	$sql .= " AND EXISTS (SELECT ecp_contact.rowid FROM ".MAIN_DB_PREFIX."element_contact as ecp_contact WHERE ecp_contact.fk_c_type_contact IN (".$db->sanitize(implode(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact.element_id = p.rowid AND ecp_contact.fk_socpeople = ".((int) $search_project_contact).")";
+if (!empty($search_project_contact)) {
+	if (is_array($search_project_contact)) {
+		if ($search_project_contact_multiple_and) {
+			// One EXISTS per selected contact: the project must be linked to ALL of them
+			foreach ($search_project_contact as $cid) {
+				$sql .= " AND EXISTS (SELECT ecp_contact.rowid FROM ".MAIN_DB_PREFIX."element_contact as ecp_contact WHERE ecp_contact.fk_c_type_contact IN (".$db->sanitize(implode(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact.element_id = p.rowid AND ecp_contact.fk_socpeople = ".((int) $cid).")";
+			}
+		} else {
+			$sql .= " AND EXISTS (SELECT ecp_contact.rowid FROM ".MAIN_DB_PREFIX."element_contact as ecp_contact WHERE ecp_contact.fk_c_type_contact IN (".$db->sanitize(implode(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact.element_id = p.rowid AND ecp_contact.fk_socpeople IN (".$db->sanitize(implode(',', $search_project_contact))."))";
+		}
+	} elseif ($search_project_contact > 0) {
+		$sql .= " AND EXISTS (SELECT ecp_contact.rowid FROM ".MAIN_DB_PREFIX."element_contact as ecp_contact WHERE ecp_contact.fk_c_type_contact IN (".$db->sanitize(implode(',', array_keys($listofprojectcontacttypeexternal))).") AND ecp_contact.element_id = p.rowid AND ecp_contact.fk_socpeople = ".((int) $search_project_contact).")";
+	}
 }
 if ($search_opp_amount != '') {
 	$sql .= natural_search('p.opp_amount', $search_opp_amount, 1);
@@ -1016,11 +1040,23 @@ if ($search_opp_percent != '') {
 if ($search_public != '') {
 	$param .= '&search_public='.urlencode($search_public);
 }
-if ($search_project_user > 0) {
-	$param .= '&search_project_user='.urlencode($search_project_user);
+if (!empty($search_project_user)) {
+	if (is_array($search_project_user)) {
+		foreach($search_project_user as $uid)
+			$param .= '&search_project_user[]='.urlencode($uid);
+	}
+	elseif ($search_project_user > 0) {
+		$param .= '&search_project_user='.urlencode($search_project_user);
+	}
 }
-if ($search_project_contact > 0) {
-	$param .= '&search_project_contact='.urlencode((string) ($search_project_contact));
+if (!empty($search_project_contact)) {
+	if (is_array($search_project_contact)) {
+		foreach ($search_project_contact as $cid) {
+			$param .= '&search_project_contact[]='.urlencode((string) ($cid));
+		}
+	} elseif ($search_project_contact > 0) {
+		$param .= '&search_project_contact='.urlencode((string) ($search_project_contact));
+	}
 }
 if ($search_sale > 0) {
 	$param .= '&search_sale='.urlencode((string) ($search_sale));
@@ -1161,12 +1197,17 @@ $includeonly = '';
 if (!$user->hasRight('user', 'user', 'lire')) {
 	$includeonly = array($user->id);
 }
-$moreforfilter .= img_picto($tmptitle, 'user', 'class="pictofixedwidth"').$form->select_dolusers($search_project_user ? $search_project_user : '', 'search_project_user', $tmptitle, '', 0, $includeonly, '', 0, 0, 0, '', 0, '', 'maxwidth300 widthcentpercentminusx');
+$moreforfilter .= img_picto($tmptitle, 'user', 'class="pictofixedwidth"').$form->select_dolusers($search_project_user ? $search_project_user : '', 'search_project_user', $tmptitle, '', 0, $includeonly, '', 0, 0, 0, '', 0, '', 'maxwidth300 widthcentpercentminusx', 0, 0, getDolGlobalInt('PROJECT_SEARCH_USER_MULTIPLE'));
 $moreforfilter .= '</div>';
 
 $moreforfilter .= '<div class="divsearchfield">';
 $tmptitle = $langs->trans('ProjectsWithThisContact');
-$moreforfilter .= img_picto($tmptitle, 'contact', 'class="pictofixedwidth"').$form->select_contact(0, $search_project_contact ? $search_project_contact : '', 'search_project_contact', $tmptitle, '', '', 0, 'maxwidth300 widthcentpercentminusx');
+if (getDolGlobalInt('PROJECT_SEARCH_CONTACT_MULTIPLE')) {
+	// select_contact() is not able to support multiple select, so we use selectcontacts() when the multiple search is enabled
+	$moreforfilter .= img_picto($tmptitle, 'contact', 'class="pictofixedwidth"').$form->selectcontacts(0, $search_project_contact ? $search_project_contact : '', 'search_project_contact', $tmptitle, '', '', 0, 'maxwidth300 widthcentpercentminusx', 0, 0, 0, array(), '', '', 1);
+} else {
+	$moreforfilter .= img_picto($tmptitle, 'contact', 'class="pictofixedwidth"').$form->select_contact(0, $search_project_contact ? $search_project_contact : '', 'search_project_contact', $tmptitle, '', '', 0, 'maxwidth300 widthcentpercentminusx');
+}
 
 $moreforfilter .= '</div>';
 

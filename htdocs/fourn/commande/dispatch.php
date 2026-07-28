@@ -359,7 +359,7 @@ if ($action == 'dispatch' && $permissiontoreceive) {
 				}
 
 				if (!$error) {
-					$result = $object->dispatchProduct($user, $productId, $qtytomove, GETPOSTINT($ent), $puformove, GETPOST('comment'), $dDLUO, $dDLC, GETPOST($lot, 'alpha'), GETPOSTINT($fk_commandefourndet), $notrigger);
+					$result = $object->dispatchProduct($user, $productId, $qtytomove, GETPOSTINT($ent), $puformove, GETPOST('comment'), $dDLC, $dDLUO, GETPOST($lot, 'alpha'), GETPOSTINT($fk_commandefourndet), $notrigger);
 					if ($result < 0) {
 						setEventMessages($object->error, $object->errors, 'errors');
 						$error++;
@@ -727,7 +727,12 @@ if ($id > 0 || !empty($ref)) {
 		$sql .= $hookmanager->resPrint;
 
 		//$sql .= " GROUP BY p.ref, p.label, p.tobatch, p.fk_default_warehouse, l.rowid, l.fk_product, l.subprice, l.remise_percent, l.ref"; // Calculation of amount dispatched is done per fk_product so we must group by fk_product
-		$sql .= " ORDER BY l.rang, p.ref, p.label";
+		// Added by MMI Mathieu Moulin iProspective
+		// Sort commandedet lines by id when receive
+		if (!empty($conf->global->ORDER_DISPATCH_BY_COMMANDEDET_ID))
+			$sql .= " ORDER BY l.rowid";
+		else
+			$sql .= " ORDER BY l.rang, p.ref, p.label";
 
 		$resql = $db->query($sql);
 		if ($resql) {
@@ -741,10 +746,10 @@ if ($id > 0 || !empty($ref)) {
 				if (isModEnabled('productbatch')) {
 					print '<td class="dispatch_batch_number_title">'.$langs->trans("batch_number").'</td>';
 					if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
-						print '<td class="dispatch_dlc_title">'.$langs->trans("SellByDate").'</td>';
+						print '<td class="dispatch_dluo_title">'.$langs->trans("SellByDate").'</td>';
 					}
 					if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
-						print '<td class="dispatch_dluo_title">'.$langs->trans("EatByDate").'</td>';
+						print '<td class="dispatch_dlc_title">'.$langs->trans("EatByDate").'</td>';
 					}
 				} else {
 					print '<td></td>';
@@ -847,10 +852,10 @@ if ($id > 0 || !empty($ref)) {
 								print "</td>";
 								print '<td class="dispatch_batch_number"></td>';
 								if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
-									print '<td class="dispatch_dlc"></td>';
+									print '<td class="dispatch_dluo"></td>';
 								}
 								if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
-									print '<td class="dispatch_dluo"></td>';
+									print '<td class="dispatch_dlc"></td>';
 								}
 							} else {
 								// Product
@@ -861,10 +866,10 @@ if ($id > 0 || !empty($ref)) {
 								print '<span class="opacitymedium small">'.$langs->trans("ProductDoesNotUseBatchSerial").'</small>';
 								print '</td>';
 								if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
-									print '<td class="dispatch_dlc"></td>';
+									print '<td class="dispatch_dluo"></td>';
 								}
 								if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
-									print '<td class="dispatch_dluo"></td>';
+									print '<td class="dispatch_dlc"></td>';
 								}
 							}
 						} else {
@@ -937,14 +942,14 @@ if ($id > 0 || !empty($ref)) {
 							print '</td>';
 							if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
 								print '<td class="nowraponall">';
-								$dlcdatesuffix = dol_mktime(0, 0, 0, GETPOST('dlc'.$suffix.'month'), GETPOST('dlc'.$suffix.'day'), GETPOST('dlc'.$suffix.'year'));
-								print $form->selectDate($dlcdatesuffix, 'dlc'.$suffix, 0, 0, 1, '');
+								$dluodatesuffix = dol_mktime(0, 0, 0, GETPOST('dluo'.$suffix.'month'), GETPOST('dluo'.$suffix.'day'), GETPOST('dluo'.$suffix.'year'));
+								print $form->selectDate($dluodatesuffix, 'dluo'.$suffix, 0, 0, 1, '');
 								print '</td>';
 							}
 							if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
 								print '<td class="nowraponall">';
-								$dluodatesuffix = dol_mktime(0, 0, 0, GETPOST('dluo'.$suffix.'month'), GETPOST('dluo'.$suffix.'day'), GETPOST('dluo'.$suffix.'year'));
-								print $form->selectDate($dluodatesuffix, 'dluo'.$suffix, 0, 0, 1, '');
+								$dlcdatesuffix = dol_mktime(0, 0, 0, GETPOST('dlc'.$suffix.'month'), GETPOST('dlc'.$suffix.'day'), GETPOST('dlc'.$suffix.'year'));
+								print $form->selectDate($dlcdatesuffix, 'dlc'.$suffix, 0, 0, 1, '');
 								print '</td>';
 							}
 							print '<td colspan="3">&nbsp;</td>'; // Supplier ref + Qty ordered + qty already dispatched
@@ -1207,10 +1212,10 @@ if ($id > 0 || !empty($ref)) {
 			if (isModEnabled('productbatch')) {
 				print '<td class="dispatch_batch_number_title">'.$langs->trans("batch_number").'</td>';
 				if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
-					print '<td class="dispatch_dlc_title">'.$langs->trans("SellByDate").'</td>';
+					print '<td class="dispatch_dluo_title">'.$langs->trans("SellByDate").'</td>';
 				}
 				if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
-					print '<td class="dispatch_dluo_title">'.$langs->trans("EatByDate").'</td>';
+					print '<td class="dispatch_dlc_title">'.$langs->trans("EatByDate").'</td>';
 				}
 			}
 			print '<td class="right">'.$langs->trans("QtyDispatched").'</td>';
@@ -1285,18 +1290,18 @@ if ($id > 0 || !empty($ref)) {
 						$lot->fetch(0, $objp->pid, $objp->batch);
 						print '<td class="dispatch_batch_number">'.$lot->getNomUrl(1).'</td>';
 						if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
-							print '<td class="dispatch_dlc">'.dol_print_date($lot->sellby, 'day').'</td>';
+							print '<td class="dispatch_dluo">'.dol_print_date($lot->sellby, 'day').'</td>';
 						}
 						if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
-							print '<td class="dispatch_dluo">'.dol_print_date($lot->eatby, 'day').'</td>';
+							print '<td class="dispatch_dlc">'.dol_print_date($lot->eatby, 'day').'</td>';
 						}
 					} else {
 						print '<td class="dispatch_batch_number"></td>';
 						if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
-							print '<td class="dispatch_dlc"></td>';
+							print '<td class="dispatch_dluo"></td>';
 						}
 						if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
-							print '<td class="dispatch_dluo"></td>';
+							print '<td class="dispatch_dlc"></td>';
 						}
 					}
 				}

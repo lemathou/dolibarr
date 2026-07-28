@@ -2584,7 +2584,11 @@ class Societe extends CommonObject
 
 		$sql = "SELECT u.rowid, u.login, u.lastname, u.firstname, u.office_phone, u.job, u.email, u.statut as status, u.entity, u.photo, u.gender";
 		$sql .= ", u.office_fax, u.user_mobile, u.personal_mobile";
+		if (isModEnabled('mmicrm') && getDolGlobalInt('MMICRM_USER_MAILFROM_NAME'))
+			$sql .= ", u2.email_sender_name";
 		$sql .= " FROM ".MAIN_DB_PREFIX."societe_commerciaux as sc, ".MAIN_DB_PREFIX."user as u";
+		if (isModEnabled('mmicrm') && getDolGlobalInt('MMICRM_USER_MAILFROM_NAME'))
+			$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user_extrafields u2 ON u2.fk_object=u.rowid';
 		// Condition here should be the same than into select_dolusers()
 		if (isModEnabled('multicompany') && getDolGlobalString('MULTICOMPANY_TRANSVERSE_MODE')) {
 			$sql .= " WHERE u.rowid IN (SELECT ug.fk_user FROM ".$this->db->prefix()."usergroup_user as ug WHERE ug.entity IN (".getEntity('usergroup')."))";
@@ -2623,6 +2627,8 @@ class Societe extends CommonObject
 					$reparray[$i]['login'] = $obj->login;
 					$reparray[$i]['photo'] = $obj->photo;
 					$reparray[$i]['gender'] = $obj->gender;
+					if (getDolGlobalInt('MMICRM_USER_MAILFROM_NAME'))
+						$reparray[$i]['email_sender_name'] = $obj->email_sender_name;
 				} else {
 					$reparray[] = $obj->rowid;
 				}
@@ -2914,6 +2920,10 @@ class Societe extends CommonObject
 			$datas['categories_supplier'] = '<br>' . $form->showCategories($this->id, Categorie::TYPE_SUPPLIER, 1, 1);
 		}
 
+		if (!empty($conf->global->MMICORE_SHOW_PICTO_NOTE) && !empty($this->note_private)) { // MMI Hack : Show picto if private note
+			$datas['note_private'] = '<br><b>'.$langs->trans('NotePrivate').':</b> '.$this->note_private;
+		}
+
 		$datas['divclose'] = '</div>';
 
 		return $datas;
@@ -3055,6 +3065,9 @@ class Societe extends CommonObject
 		$result .= $linkstart;
 		if ($withpicto) {
 			$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), (' class="'.(($withpicto != 2) ? 'paddingright' : '').'"'), 0, 0, $notooltip ? 0 : 1);
+			if (!empty($conf->global->MMICORE_SHOW_PICTO_NOTE) && !empty($this->note_private)) { // MMI Hack
+				$result .= '<span class="far fa-sticky-note" style=" color: '.(!empty($conf->global->MMICORE_SHOW_PICTO_NOTE_COLOR) ?$conf->global->MMICORE_SHOW_PICTO_NOTE_COLOR :'#999').';"></span> ';
+			}
 		}
 		if ($withpicto != 2) {
 			$result .= dol_escape_htmltag($maxlen ? dol_trunc($name, $maxlen) : $name);

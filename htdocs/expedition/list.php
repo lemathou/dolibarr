@@ -656,6 +656,8 @@ if (getDolGlobalInt('MAIN_SUBMODULE_DELIVERY')) {
 	$sql .= " l.date_delivery as date_reception,";
 }
 $sql .= " s.rowid as socid, s.nom as name, s.town, s.zip, s.fk_pays, s.client, s.code_client, ";
+// MMI : get soc private note
+$sql .= ' s.note_private soc_note_private,';
 $sql .= " typent.code as typent_code,";
 $sql .= " state.code_departement as state_code, state.nom as state_name,";
 $sql .= " e.date_creation as date_creation, e.tms as date_modification,e.note_public, e.note_private,";
@@ -1415,6 +1417,8 @@ while ($i < $imaxinloop) {
 	$companystatic->id = $obj->socid;
 	$companystatic->ref = $obj->name;
 	$companystatic->name = $obj->name;
+	// MMI : get soc private note
+	$companystatic->note_private = $obj->soc_note_private;
 
 	$object = new Expedition($db);
 	$object->fetch($obj->rowid);

@@ -686,6 +686,8 @@ if (empty($reshook)) {
 
 								$line->detail_batch->fk_origin_stock = $batch_id;
 								$line->detail_batch->batch = $lotStock->batch;
+								$line->detail_batch->sellby = $lotStock->sellby;
+								$line->detail_batch->eatby = $lotStock->eatby;
 								$line->detail_batch->id = $detail_batch->id;
 								$line->detail_batch->entrepot_id = $lotStock->warehouseid;
 								$line->detail_batch->qty = $batch_qty;
@@ -731,6 +733,8 @@ if (empty($reshook)) {
 								if ($line->fetch($lineIdToAddLot) > 0) {
 									$line->detail_batch->fk_origin_stock = $batch_id;
 									$line->detail_batch->batch = $lotStock->batch;
+									$line->detail_batch->sellby = $lotStock->sellby;
+									$line->detail_batch->eatby = $lotStock->eatby;
 									$line->detail_batch->entrepot_id = $lotStock->warehouseid;
 									$line->detail_batch->qty = $batch_qty;
 									if ($line->update($user) < 0) {
@@ -750,6 +754,8 @@ if (empty($reshook)) {
 								$line->detail_batch[0] = new ExpeditionLineBatch($db);
 								$line->detail_batch[0]->fk_origin_stock = $batch_id;
 								$line->detail_batch[0]->batch = $lotStock->batch;
+								$line->detail_batch[0]->sellby = $lotStock->sellby;
+								$line->detail_batch[0]->eatby = $lotStock->eatby;
 								$line->detail_batch[0]->entrepot_id = $lotStock->warehouseid;
 								$line->detail_batch[0]->qty = $batch_qty;
 								if ($object->create_line_batch($line, $line->array_options) < 0) {
@@ -1332,7 +1338,7 @@ if ($action == 'create') {
 									$deliverableQty = GETPOSTINT('qtyl'.$indiceAsked);
 								}
 								print '<input name="idl'.$indiceAsked.'" type="hidden" value="'.$line->id.'">';
-								print '<input name="qtyl'.$indiceAsked.'" id="qtyl'.$indiceAsked.'" class="qtyl right" type="text" size="4" value="'.$deliverableQty.'">';
+								print '<input name="qtyl'.$indiceAsked.'" id="qtyl'.$indiceAsked.'" class="qtyl right"'.(getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ENHANCED') && $quantityToBeDelivered>0 ?($stock < $quantityToBeDelivered ?' style="background-color: #f88;"' :' style="background-color: #8f8;"') :'').' type="text" size="4" value="'.$deliverableQty.'">';
 							} else {
 								if (getDolGlobalString('SHIPMENT_GETS_ALL_ORDER_PRODUCTS')) {
 									print '<input name="idl'.$indiceAsked.'" type="hidden" value="'.$line->id.'">';
@@ -1362,7 +1368,7 @@ if ($action == 'create') {
 
 										if ($tmpentrepot_id > 0 && $tmpentrepot_id == $warehouse_id) {
 											//print $stock.' '.$quantityToBeDelivered;
-											if ($stock < $quantityToBeDelivered) {
+											if ($stock < $quantityToBeDelivered && (!getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ONLY_NEEDED') || $quantityToBeDelivered>0)) {
 												print ' '.img_warning($langs->trans("StockTooLow")); // Stock too low for this $warehouse_id but you can change warehouse
 											}
 										}
@@ -1461,7 +1467,7 @@ if ($action == 'create') {
 
 									print '<!-- subj='.$subj.'/'.$nbofsuggested.' --><tr '.((($subj + 1) == $nbofsuggested) ? 'oddeven' : '').'>';
 									print '<td colspan="3" ></td><td class="center">';
-									print '<input class="qtyl '.$tooltipClass.' right" title="'.$tooltipTitle.'" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'" type="text" size="4" value="'.$deliverableQty.'">';
+									print '<input class="qtyl '.$tooltipClass.' right" title="'.$tooltipTitle.'" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'" type="text" size="4" value="'.$deliverableQty.'"'.(getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ENHANCED') && $quantityToBeDelivered>0 ?($batchStock < $quantityToBeDelivered ?' style="background-color: #f88;"' :' style="background-color: #8f8;"') :'').'>';
 									print '</td>';
 
 									print '<!-- Show details of lot -->';
@@ -1497,7 +1503,7 @@ if ($action == 'create') {
 							} else {
 								print '<!-- Case there is no details of lot at all -->';
 								print '<tr class="oddeven"><td colspan="3"></td><td class="center">';
-								print '<input class="qtyl right" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'" type="text" size="4" value="0" disabled="disabled"> ';
+								print '<input class="qtyl right" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'"'.(getDolGlobalInt('STOCK_DISPLAY_WARN_IN_SHIPMENT_ENHANCED') && $quantityToBeDelivered>0 ?' style="background-color: #f88;"' :'').' type="text" size="4" value="0" disabled="disabled"> ';
 								print '</td>';
 
 								print '<td class="left">';
@@ -1575,7 +1581,7 @@ if ($action == 'create') {
 											$deliverableQty = GETPOSTINT($inputName);
 										}
 
-										print '<input class="qtyl'.$tooltipClass.' right" title="'.$tooltipTitle.'" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'" type="text" size="4" value="'.$deliverableQty.'">';
+										print '<input class="qtyl'.$tooltipClass.' right" title="'.$tooltipTitle.'" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'" type="text" size="4" value="'.$deliverableQty.'"'.($quantityToBeDelivered>0 ?($stock_warehouse->real<$quantityToBeDelivered ?' style="background-color: #f77;"' :' style="background-color: #7f7;"') :'').'>';
 										print '<input name="ent1'.$indiceAsked.'_'.$subj.'" type="hidden" value="'.$warehouse_id.'">';
 									} else {
 										if (getDolGlobalString('SHIPMENT_GETS_ALL_ORDER_PRODUCTS')) {
@@ -1699,7 +1705,7 @@ if ($action == 'create') {
 										$alreadyQtyBatchSetted[$line->fk_product][$dbatch->batch][intval($warehouse_id)] = $deliverableQty + $alreadyQtyBatchSetted[$line->fk_product][$dbatch->batch][intval($warehouse_id)];
 
 										print '<!-- subj='.$subj.'/'.$nbofsuggested.' --><tr '.((($subj + 1) == $nbofsuggested) ? 'oddeven' : '').'><td colspan="3"></td><td class="center">';
-										print '<input class="qtyl right '.$tooltipClass.'" title="'.$tooltipTitle.'" name="'.$inputName.'" id="'.$inputName.'" type="text" size="4" value="'.$deliverableQty.'">';
+										print '<input class="qtyl right '.$tooltipClass.'"'.($quantityToBeDelivered>0 ?($stock_warehouse->real<$quantityToBeDelivered ?' style="background-color: #f77;"' :' style="background-color: #7f7;"') :'').' title="'.$tooltipTitle.'" name="'.$inputName.'" id="'.$inputName.'" type="text" size="4" value="'.$deliverableQty.'">';
 										print '</td>';
 
 										print '<td class="left">';
@@ -1714,6 +1720,12 @@ if ($action == 'create') {
 										$result = $productlotObject->fetch(0, $line->fk_product, $dbatch->batch);
 										if ($result > 0) {
 											print $productlotObject->getNomUrl(1);
+											if (empty($conf->global->PRODUCT_DISABLE_SELLBY) && !empty($dbatch->sellby)) {
+												print ' - '.$langs->trans("SellByDate").': '.dol_print_date($dbatch->sellby, "day");
+											}
+											if (empty($conf->global->PRODUCT_DISABLE_EATBY) && !empty($dbatch->eatby)) {
+												print ' - '.$langs->trans("EatByDate").': '.dol_print_date($dbatch->eatby, "day");
+											}
 										} else {
 											print $langs->trans("TableLotIncompleteRunRepairWithParamStandardEqualConfirmed");
 										}
@@ -1753,7 +1765,7 @@ if ($action == 'create') {
 								if ($warehouse_selected_id <= 0) {		// We did not force a given warehouse, so we won't have no warehouse to change qty.
 									$disabled = 'disabled="disabled"';
 								}
-								print '<input class="qtyl right" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'" type="text" size="4" value="0"'.($disabled ? ' '.$disabled : '').'> ';
+								print '<input class="qtyl right" name="qtyl'.$indiceAsked.'_'.$subj.'" id="qtyl'.$indiceAsked.'_'.$subj.'" type="text" size="4" value="0"'.($disabled ? ' '.$disabled : '').($quantityToBeDelivered>0 ?' style="background-color: #f77;"' :'').'> ';
 								if (empty($disabled) && getDolGlobalString('STOCK_ALLOW_NEGATIVE_TRANSFER')) {
 									print '<input name="ent1' . $indiceAsked . '_' . $subj . '" type="hidden" value="' . $warehouse_selected_id . '">';
 								}
@@ -2125,7 +2137,17 @@ if ($action == 'create') {
 
 	// Other attributes
 	$cols = 2;
+	// Added by MMI Mathieu Moulin iProspective
+	// Extrafields show/hide
+	$extrafields_showhide = $conf->global->DOCUMENT_EXTRAFIELDS_SHOWHIDE && (empty($action) || !in_array($action, ['edit_extras', 'update_extras']));
+	if ($extrafields_showhide) {
+		echo '<tr> <td colspan="2"><a href="javascript:;" onclick="$(\'#extrafields_form\').toggle();">'.$langs->trans('ToggleExtrafields').'</a></td> </tr>';
+		echo '<tbody id="extrafields_form" class="extrafields" style="display: none;">';
+	}
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
+	if ($extrafields_showhide) {
+		echo '</tbody>';
+	}
 
 	print '</table>';
 

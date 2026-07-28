@@ -67,6 +67,12 @@ $workflowcodes = array(
 		'enabled' => (isModEnabled("propal") && isModEnabled('order')),
 		'picto' => 'order'
 	),
+	'WORKFLOW_PROPAL_AUTOCREATE_ORDER_IFNOTEXISTS' => array(
+		'family' => 'create',
+		'position' => 11,
+		'enabled' => (isModEnabled("propal") && isModEnabled('order')),
+		'picto' => 'order'
+	),
 	'WORKFLOW_ORDER_AUTOCREATE_INVOICE' => array(
 		'family' => 'create',
 		'position' => 20,

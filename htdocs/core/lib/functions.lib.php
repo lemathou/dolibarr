@@ -1699,6 +1699,10 @@ function dol_string_unaccent($str)
 		'%C3%BD' => 'y', '%C3%BF' => 'y'
 		);
 		$string = strtr($string, $replacements);
+		$replacements = [];
+		foreach(['%CC%8','%CC%9','%CC%A','%CC%B','%CD%8','%CD%9','%CD%A'] as $i) foreach([0,1,2,3,4,5,6,7,8,9,'A','B','C','D','E','F'] as $j)
+				$replacements["$i$j"] = '';
+		$string = strtr($string, $replacements);
 		return rawurldecode($string);
 	} else {
 		// See http://www.ascii-code.com/
@@ -3166,6 +3170,11 @@ function dol_format_address($object, $withcountry = 0, $sep = "\n", $outputlangs
 	// Address
 	if (empty($mode)) {
 		$ret .= ($extralangcode ? $object->array_languages['address'][$extralangcode] : (empty($object->address) ? '' : preg_replace('/(\r\n|\r|\n)+/', $sep, $object->address)));
+	}
+	// Added by MMI Mathieu Moulin iProspective
+	// MMIPrestaSync : Complément d'adresse
+	if (!empty($object->array_options['options_p_address2'])) {
+		$ret .= (empty($object->address) ? '' : ($ret ? $sep : '').$object->array_options['options_p_address2']);
 	}
 	// Zip/Town/State
 	if (isset($object->country_code) && in_array($object->country_code, array('AU', 'CA', 'US', 'CN')) || getDolGlobalString('MAIN_FORCE_STATE_INTO_ADDRESS')) {
@@ -9169,6 +9178,9 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 
 				$amounttouse = 0;
 				$typeforonlinepayment = 'free';
+				if (is_object($object) && $object->element == 'propal') {
+					$typeforonlinepayment = 'propal';
+				}
 				if (is_object($object) && $object->element == 'commande') {
 					$typeforonlinepayment = 'order';
 				}
@@ -12959,7 +12971,7 @@ function getElementProperties($elementType)
 		$classpath = 'opensurvey/class';
 		$module = 'opensurvey';
 		$subelement = 'opensurveysondage';
-	} elseif ($elementType == 'order_supplier') {
+	} elseif ($elementType == 'order_supplier' || $elementType == 'commande_fournisseur') {
 		$classpath = 'fourn/class';
 		$module = 'fournisseur';
 		$classfile = 'fournisseur.commande';

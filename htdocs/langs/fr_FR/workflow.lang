@@ -4,6 +4,7 @@ WorkflowDesc=Ce module est conçu pour modifier le comportement des actions auto
 ThereIsNoWorkflowToModify=Il n'y a pas de modifications de workflow disponibles avec les modules activés.
 # Autocreate
 descWORKFLOW_PROPAL_AUTOCREATE_ORDER=Créer automatiquement une commande client à la signature d'un proposition commerciale (la commande sera du même montant que la proposition commerciale)
+descWORKFLOW_PROPAL_AUTOCREATE_ORDER_IFNOTEXISTS=Créer automatiquement une commande client à la signature d'un proposition commerciale seulement si il n'y a pas déjà une commande liée à la proposition
 descWORKFLOW_PROPAL_AUTOCREATE_INVOICE=Créer automatiquement une facture client à la signature d'une proposition commerciale (la facture sera du même montant que la proposition commerciale source)
 descWORKFLOW_CONTRACT_AUTOCREATE_INVOICE=Créer une facture client automatiquement à la validation d'un contrat
 descWORKFLOW_ORDER_AUTOCREATE_INVOICE=Créer automatiquement une facture client à la cloture d'un commande (la facture sera du même montant que la commande)

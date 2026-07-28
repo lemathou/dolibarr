@@ -949,7 +949,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 			}
 		}
 		// Prospect / Customer
-		if (GETPOST("type", 'aZ') == 'c') {
+		if (GETPOST("type", 'aZ') == 'c' || (getDolGlobalString('THIRDPARTY_CUSTOMER_BY_DEFAULT') && empty(GETPOST("type", 'aZ')))) {
 			if (getDolGlobalString('THIRDPARTY_CUSTOMERTYPE_BY_DEFAULT')) {
 				$object->client = getDolGlobalString('THIRDPARTY_CUSTOMERTYPE_BY_DEFAULT');
 			} else {
@@ -966,6 +966,9 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 
 		if ((isModEnabled("supplier_order") || isModEnabled("supplier_invoice")) && (GETPOST("type") == 'f' || (GETPOST("type") == '' && getDolGlobalString('THIRDPARTY_SUPPLIER_BY_DEFAULT')))) {
 			$object->fournisseur = 1;
+		}
+		if (getDolGlobalString('THIRDPARTY_CUSTOMER_BY_DEFAULT') && empty(GETPOST("type", 'aZ'))) {
+			$object->fournisseur = 0;
 		}
 
 		$object->name = GETPOST('name', 'alphanohtml');
@@ -1388,6 +1391,8 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 				$default = -1;
 				if (getDolGlobalString('THIRDPARTY_SUPPLIER_BY_DEFAULT')) {
 					$default = 1;
+				} elseif (getDolGlobalString('THIRDPARTY_CUSTOMER_BY_DEFAULT')) {
+					$default = 0;
 				}
 				print $form->selectyesno("fournisseur", (GETPOSTINT('fournisseur') > 0 ? GETPOSTINT('fournisseur') : (GETPOST("type") == '' ? $default : $object->fournisseur)), 1, 0, (GETPOST("type") == '' ? 1 : 0), 1);
 				print '</td>';

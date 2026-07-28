@@ -94,6 +94,8 @@ $search_timespent_startmin = GETPOSTINT("search_timespent_duration_startmin");
 $search_timespent_endhour = GETPOSTINT("search_timespent_duration_endhour");
 $search_timespent_endmin = GETPOSTINT("search_timespent_duration_endmin");
 
+$addtimespent_multiple_userid = $conf->global->PROJECT_ADDTIMESPENT_MULTIPLE_USERID; // MMI Hack
+
 $limit = GETPOSTINT('limit') ? GETPOSTINT('limit') : $conf->liste_limit;
 $sortfield = GETPOST('sortfield', 'aZ09comma');
 $sortorder = GETPOST('sortorder', 'aZ09comma');
@@ -210,10 +212,20 @@ if ($action == 'addtimespent' && $user->hasRight('projet', 'time')) {
 		setEventMessages($langs->trans('ErrorFieldRequired', $langs->transnoentitiesnoconv("Duration")), null, 'errors');
 		$error++;
 	}
-	if (!GETPOSTINT("userid")) {
-		$langs->load("errors");
-		setEventMessages($langs->trans('ErrorUserNotAssignedToTask'), null, 'errors');
-		$error++;
+	// Added by MMI Mathieu Moulin iProspective
+	if ($addtimespent_multiple_userid) {
+		if (empty(GETPOST("userid", 'array:int'))) {
+			$langs->load("errors");
+			setEventMessages($langs->trans('ErrorUserNotAssignedToTask'), null, 'errors');
+			$error++;
+		}
+	}
+	else {
+		if (!GETPOSTINT("userid")) {
+			$langs->load("errors");
+			setEventMessages($langs->trans('ErrorUserNotAssignedToTask'), null, 'errors');
+			$error++;
+		}
 	}
 
 	if (!$error) {
@@ -250,16 +262,33 @@ if ($action == 'addtimespent' && $user->hasRight('projet', 'time')) {
 					$object->timespent_date = dol_mktime(12, 0, 0, GETPOSTINT("timemonth"), GETPOSTINT("timeday"), GETPOSTINT("timeyear"));
 					$object->timespent_withhour = 0;
 				}
-				$object->timespent_fk_user = GETPOSTINT("userid");
-				$object->timespent_fk_product = GETPOSTINT("fk_product");
+				if ($addtimespent_multiple_userid) { // MMI Hack
+					foreach(GETPOST("userid", 'array:int') as $userid) {
+						$object->timespent_fk_user = $userid;
+						$object->timespent_fk_product = GETPOSTINT("fk_product");
 
-				$result = $object->addTimeSpent($user);
+						$result = $object->addTimeSpent($user);
 
-				if ($result >= 0) {
-					setEventMessages($langs->trans("RecordSaved"), null, 'mesgs');
-				} else {
-					setEventMessages($langs->trans($object->error), null, 'errors');
-					$error++;
+						if ($result >= 0) {
+							setEventMessages($langs->trans("RecordSaved"), null, 'mesgs');
+						} else {
+							setEventMessages($langs->trans($object->error), null, 'errors');
+							$error++;
+						}
+					}
+				}
+				else {
+					$object->timespent_fk_user = GETPOSTINT("userid");
+					$object->timespent_fk_product = GETPOSTINT("fk_product");
+
+					$result = $object->addTimeSpent($user);
+
+					if ($result >= 0) {
+						setEventMessages($langs->trans("RecordSaved"), null, 'mesgs');
+					} else {
+						setEventMessages($langs->trans($object->error), null, 'errors');
+						$error++;
+					}
 				}
 			}
 		}
@@ -1422,6 +1451,14 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		print '<input type="hidden" name="tab" value="' . $tab . '">';
 		print '<input type="hidden" name="page_y" value="">';
 
+		$objectclass = 'TaskTime';
+		$objectlabel = 'TimeSpent';
+		$permissiontoread = $user->hasRight('projet', 'lire');
+		$permissiontodelete = $user->hasRight('projet', 'supprimer');
+		$permissiontoadd = $user->hasRight('projet', 'creer');
+		$uploaddir = $conf->project->dir_output;
+		include DOL_DOCUMENT_ROOT.'/core/actions_massactions.inc.php';
+
 		// Form to convert time spent into invoice
 		if ($massaction == 'generateinvoice') {
 			if (!empty($projectstatic->thirdparty) && $projectstatic->thirdparty->id > 0) {
@@ -1799,9 +1836,54 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 			print '<tr class="oddeven nohover">';
 
 			// Date
-			print '<td class="maxwidthonsmartphone">';
+			print '<td class="maxwidthonsmartphone" align="right">';
 			$newdate = '';
 			print $form->selectDate($newdate, 'time', ($conf->browser->layout == 'phone' ? 2 : 1), 1, 2, "timespent_date", 1, 0);
+			// Added by MMI Mathieu Moulin iProspective
+			if (true) {
+				print '<br />'.$form->selectDate($newdate, 'time2', ($conf->browser->layout == 'phone' ? 2 : 1), 1, 2, "timespent_date", 1, 0);
+				echo '<script type="text/javascript">
+					$(document).ready(function(){
+						$("#time2").parent().find("img.ui-datepicker-trigger").remove();
+						$("#time2").remove();
+						$("#timehour, #timemin, #time2hour, #time2min").change(function(){
+							var timehour = $("#timehour").val();
+							var timemin = $("#timemin").val();
+							var timehour2 = $("#time2hour").val();
+							var timemin2 = $("#time2min").val();
+							
+							//alert(timemin2);
+							//alert(timemin2-timemin);
+							
+							if (timehour==timehour2) {
+								if (timemin<timemin2) {
+									$("input[name=timespent_durationhour]").val(0);
+									$("input[name=timespent_durationmin]").val(timemin2-timemin);
+								}
+								else {
+									$("input[name=timespent_durationhour]").val("");
+									$("input[name=timespent_durationmin]").val("");
+								}
+							}
+							else if (timehour<timehour2) {
+								if (timemin<=timemin2) {
+									$("input[name=timespent_durationhour]").val(timehour2-timehour);
+									$("input[name=timespent_durationmin]").val(timemin2-timemin);
+								}
+								else {
+									$("input[name=timespent_durationhour]").val(timehour2-timehour-1);
+									$("input[name=timespent_durationmin]").val(60-(timemin-timemin2));
+								}
+							}
+							else {
+								$("input[name=timespent_durationhour]").val("");
+								$("input[name=timespent_durationmin]").val("");
+							}
+							
+						});
+					});
+				</script>';
+			}
 			print '</td>';
 
 			if (!empty($allprojectforuser)) {
@@ -1832,7 +1914,11 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 				if ($projectstatic->public) {
 					$contactsofproject = array();
 				}
-				print $form->select_dolusers((GETPOSTINT('userid') ? GETPOSTINT('userid') : $userid), 'userid', 0, '', 0, '', $contactsofproject, 0, 0, 0, '', 0, $langs->trans("ResourceNotAssignedToProject"), 'minwidth150imp maxwidth200');
+				// MMI Hack
+				if ($addtimespent_multiple_userid)
+					print $form->select_dolusers((GETPOST('userid', 'array:int') ? GETPOST('userid', 'array:int') : [$userid]), 'userid', 0, '', 0, '', $contactsofproject, 0, 0, 0, '', 0, $langs->trans("ResourceNotAssignedToProject"), 'maxwidth250', 0, 0, 1);
+				else
+					print $form->select_dolusers((GETPOSTINT('userid') ? GETPOSTINT('userid') : $userid), 'userid', 0, '', 0, '', $contactsofproject, 0, 0, 0, '', 0, $langs->trans("ResourceNotAssignedToProject"), 'minwidth150imp maxwidth200');
 			} else {
 				if ($nboftasks) {
 					print img_error($langs->trans('FirstAddRessourceToAllocateTime')) . ' ' . $langs->trans('FirstAddRessourceToAllocateTime');

@@ -553,6 +553,18 @@ if ($usevirtualstock) {
 	}
 }
 
+// Added by MMI Mathieu Moulin iProspective
+// Add Having from hooks
+$parameters = array(
+	'includeproductswithoutdesiredqty' => $includeproductswithoutdesiredqty,
+	//'sqlCommandesCli' => $sqlCommandesCli,
+	//'sqlExpeditionsCli' => $sqlExpeditionsCli,
+	//'sqlCommandesFourn' => $sqlCommandesFourn,
+	//'sqlReceptionFourn' => $sqlReceptionFourn,
+);
+$reshook = $hookmanager->executeHooks('printFieldListHaving', $parameters); // Note that $action and $object may have been modified by hook
+$sql .= $hookmanager->resPrint;
+
 $includeproductswithoutdesiredqtychecked = '';
 if ($includeproductswithoutdesiredqty == 'on') {
 	$includeproductswithoutdesiredqtychecked = 'checked';
@@ -703,6 +715,13 @@ if (!empty($includeproductswithoutdesiredqty)) {
 }
 if (!empty($salert)) {
 	$filters .= '&salert='.urlencode($salert);
+}
+
+// Added by MMI Mathieu Moulin iProspective
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListFilters', $parameters);
+if (empty($reshook)) {
+	$filters .= $hookmanager->resPrint;
 }
 
 $param = (isset($type) ? '&type='.urlencode((string) ($type)) : '');

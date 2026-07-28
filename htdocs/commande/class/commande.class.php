@@ -3177,7 +3177,8 @@ class Commande extends CommonOrder
 
 			// Anciens indicateurs: $price, $subprice (a ne plus utiliser)
 			$price = $pu_ht;
-			if ($price_base_type == 'TTC') {
+			// disabled, because $tabprice returns already the right prices, so subprice should always be equal to $pu_ht
+			if (false && $price_base_type == 'TTC') {
 				$subprice = $pu_ttc;
 			} else {
 				$subprice = $pu_ht;
@@ -4821,5 +4822,42 @@ class OrderLine extends CommonOrderLine
 			$this->db->rollback();
 			return -2;
 		}
+	}
+
+	/**
+	 *	Return clicable link of object line (with eventually picto)
+	 *
+	 *	@param      int			$withpicto                Add picto into link
+	 *	@param      string	    $option                   Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
+	 *	@param      int			$max          	          Max length to show
+	 *	@param      int			$short			          ???
+	 *  @param	    int   	    $notooltip		          1=Disable tooltip
+	 *  @param      int         $save_lastsearch_value    -1=Auto, 0=No save of lastsearch_values when clicking, 1=Save lastsearch_values whenclicking
+	 *  @param		int			$addlinktonotes			  Add link to notes
+	 *  @param		string		$target			  		  attribute target for link
+	 *	@return     string          			          String with URL
+	 */
+	public function getNomUrl($withpicto = 0, $option = '', $max = 0, $short = 0, $notooltip = 0, $save_lastsearch_value = -1, $addlinktonotes = 0, $target = '')
+	{
+		$commande = new Commande($this->db);
+		$commande->fetch($this->fk_commande);
+
+		$product = new Product($this->db);
+		$product->fetch($this->fk_product);
+
+		return $commande->getNomUrl($withpicto, $option, $max, $short, $notooltip, $save_lastsearch_value, $addlinktonotes, $target)
+			.' '
+			.$product->getNomURL(
+			$withpicto,
+			$option,
+			$max,
+			$short,
+			$notooltip,
+			$save_lastsearch_value,
+			$addlinktonotes,
+			$target
+			)
+			.' x'.$this->qty
+			.' (#'.$this->id.')';
 	}
 }

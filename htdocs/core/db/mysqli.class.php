@@ -410,6 +410,39 @@ class DoliDBMysqli extends DoliDB
 		return $resultset->fetch_object();
 	}
 
+	// Added by MMI Mathieu Moulin iProspective
+	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
+	/**
+	 *	Return datas as an array
+	 *
+	 *	@param	mysqli_result	$resultset	Resultset of request
+	 *	@return	array|null					Array or null if KO or end of cursor
+	 */
+	public function fetch_assoc($resultset)
+	{
+		// phpcs:enable
+		// If resultset not provided, we take the last used by connexion
+		if (!is_object($resultset)) {
+			$resultset = $this->_results;
+		}
+		return $resultset->fetch_assoc();
+	}
+
+	// Added by MMI Mathieu Moulin iProspective
+	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
+	/**
+	 *	Return datas as an array
+	 *
+	 *	@param	mysqli_result	$resultset	Resultset of request
+	 *	@return	array					Array or null if KO or end of cursor
+	 */
+	public function fetch_assoc_all($resultset)
+	{
+		$l = [];
+		while($row=$this->fetch_assoc($resultset))
+			$l[] = $row;
+		return $l;
+	}
 
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 	/**

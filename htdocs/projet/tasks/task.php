@@ -286,6 +286,19 @@ if ($id > 0 || !empty($ref)) {
 
 	//$userWrite = $projectstatic->restrictedProjectArea($user, 'write');
 
+	// MMI Hack formconfirm actions
+	$formconfirm = '';
+	// Call Hook formConfirm
+	$parameters = array('formConfirm' => $formconfirm, 'form'=>$form);
+	$reshook = $hookmanager->executeHooks('formConfirm', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+	if (empty($reshook)) {
+		$formconfirm .= $hookmanager->resPrint;
+	} elseif ($reshook > 0) {
+		$formconfirm = $hookmanager->resPrint;
+	}
+	// Print form confirm
+	print $formconfirm;
+	
 	if (!empty($withproject)) {
 		// Tabs for project
 		$tab = 'tasks';
@@ -621,7 +634,7 @@ if ($id > 0 || !empty($ref)) {
 		if ($object->fk_task_parent > 0) {
 			$tasktmp = new Task($db);
 			$tasktmp->fetch($object->fk_task_parent);
-			print $tasktmp->getNomUrl(1);
+			print $tasktmp->getNomUrl(1, '', 'task', getDolGlobalInt('TASK_SHOW_PARENT_LABEL') ?1 :0);
 		}
 		print '</td></tr>';
 

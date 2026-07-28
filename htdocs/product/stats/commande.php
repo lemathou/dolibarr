@@ -3,6 +3,7 @@
  * Copyright (C) 2004-2009 Laurent Destailleur  <eldy@users.sourceforge.net>
  * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@inodbox.com>
  * Copyright (C) 2014	   Florian Henry		<florian.henry@open-concept.pro>
+ * Copyright (C) 2026	   Mathieu Moulin		<contact@iprospective.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,6 +83,7 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter', 
 
 $result = restrictedArea($user, 'produit|service', $fieldvalue, 'product&product', '', '', $fieldtype);
 
+$showShippedQty = getDolGlobalInt('PRODUCT_ORDERS_STATS_SHOW_SHIPPED_QTY', 0);
 
 /*
  * View
@@ -152,6 +154,9 @@ if ($id > 0 || !empty($ref)) {
 			if (!$user->hasRight('societe', 'client', 'voir')) {
 				$sql .= ", sc.fk_soc, sc.fk_user ";
 			}
+			if ($showShippedQty) {
+				$sql .= ", (SELECT SUM(ed.qty) FROM ".MAIN_DB_PREFIX."expeditiondet as ed WHERE ed.fk_origin_line = d.rowid) AS shippedqty";
+			}
 			$sql .= " FROM ".MAIN_DB_PREFIX."societe as s";
 			$sql .= ", ".MAIN_DB_PREFIX."commande as c";
 			$sql .= ", ".MAIN_DB_PREFIX."commandedet as d";
@@ -184,6 +189,9 @@ if ($id > 0 || !empty($ref)) {
 			//Calcul total qty and amount for global if full scan list
 			$total_ht = 0;
 			$total_qty = 0;
+			if ($showShippedQty) {
+				$total_shippedqty = 0;
+			}
 
 			// Count total nb of records
 			$totalofrecords = '';
@@ -254,6 +262,8 @@ if ($id > 0 || !empty($ref)) {
 				print_liste_field_titre("OrderDate", $_SERVER["PHP_SELF"], "c.date_commande", "", $option, '', $sortfield, $sortorder, 'center ');
 				print_liste_field_titre('DateDeliveryPlanned', $_SERVER['PHP_SELF'], 'c.date_livraison', '', $option, '', $sortfield, $sortorder, 'center ');
 				print_liste_field_titre("Qty", $_SERVER["PHP_SELF"], "d.qty", "", $option, '', $sortfield, $sortorder, 'center ');
+				if ($showShippedQty)
+					print_liste_field_titre("ShippedQty", $_SERVER["PHP_SELF"], "shippedqty", "", $option, '', $sortfield, $sortorder, 'center ');
 				print_liste_field_titre("AmountHT", $_SERVER["PHP_SELF"], "c.total_ht", "", $option, '', $sortfield, $sortorder, 'right ');
 				print_liste_field_titre("Status", $_SERVER["PHP_SELF"], "c.fk_statut", "", $option, '', $sortfield, $sortorder, 'right ');
 				print "</tr>\n";
@@ -264,7 +274,10 @@ if ($id > 0 || !empty($ref)) {
 
 						$total_ht += $objp->total_ht;
 						$total_qty += $objp->qty;
-
+						if ($showShippedQty) {
+							$total_shippedqty += $objp->shippedqty;
+						}
+						
 						$orderstatic->id = $objp->commandeid;
 						$orderstatic->ref = $objp->ref;
 						$orderstatic->ref_client = $objp->ref_client;
@@ -283,6 +296,8 @@ if ($id > 0 || !empty($ref)) {
 						print dol_print_date($db->jdate($objp->delivery_date), 'dayhour');
 						print '</td>';
 						print  '<td class="center">'.$objp->qty."</td>\n";
+						if ($showShippedQty)
+							print  '<td class="center">'.$objp->shippedqty."</td>\n";
 						print '<td align="right">'.price($objp->total_ht)."</td>\n";
 						print '<td align="right">'.$orderstatic->LibStatut($objp->statut, $objp->facture, 5).'</td>';
 						print "</tr>\n";
@@ -299,6 +314,8 @@ if ($id > 0 || !empty($ref)) {
 				// delivery planned date
 				print '<td></td>';
 				print '<td class="center">'.$total_qty.'</td>';
+				if ($showShippedQty)
+					print '<td class="center">'.$total_shippedqty.'</td>';
 				print '<td align="right">'.price($total_ht).'</td>';
 				print '<td></td>';
 				print "</table>";

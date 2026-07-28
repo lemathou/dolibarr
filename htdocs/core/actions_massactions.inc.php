@@ -38,7 +38,6 @@
 // $diroutputmassaction may be defined
 // $confirm
 
-
 // Protection
 if (empty($objectclass) || empty($uploaddir)) {
 	dol_print_error(null, 'include of actions_massactions.inc.php is done but var $objectclass or $uploaddir was not defined');
@@ -248,19 +247,19 @@ if (!$error && $massaction == 'confirm_presend') {
 
 			foreach ($listofobjectref[$thirdpartyid] as $objectid => $objectobj) {
 				//var_dump($thirdpartyid.' - '.$objectid.' - '.$objectobj->statut);
-				if ($objectclass == 'Propal' && $objectobj->statut == Propal::STATUS_DRAFT) {
+				if ($objectclass == 'Propal' && $objectobj->statut == Propal::STATUS_DRAFT && empty($conf->global->DOCUMENT_DRAFT_MASSACTION_CAN_SEND) && empty($conf->global->PROPAL_DRAFT_MASSACTION_CAN_SEND)) {
 					$langs->load("errors");
 					$nbignored++;
 					$resaction .= '<div class="error">'.$langs->trans('ErrorOnlyProposalNotDraftCanBeSentInMassAction', $objectobj->ref).'</div><br>';
 					continue; // Payment done or started or canceled
 				}
-				if ($objectclass == 'Commande' && $objectobj->statut == Commande::STATUS_DRAFT) {
+				if ($objectclass == 'Commande' && $objectobj->statut == Commande::STATUS_DRAFT && empty($conf->global->DOCUMENT_DRAFT_MASSACTION_CAN_SEND) && empty($conf->global->ORDER_DRAFT_MASSACTION_CAN_SEND)) {
 					$langs->load("errors");
 					$nbignored++;
 					$resaction .= '<div class="error">'.$langs->trans('ErrorOnlyOrderNotDraftCanBeSentInMassAction', $objectobj->ref).'</div><br>';
 					continue;
 				}
-				if ($objectclass == 'Facture' && $objectobj->statut == Facture::STATUS_DRAFT) {
+				if ($objectclass == 'Facture' && $objectobj->statut == Facture::STATUS_DRAFT && empty($conf->global->INVOICE_DRAFT_MASSACTION_CAN_SEND)) {
 					$langs->load("errors");
 					$nbignored++;
 					$resaction .= '<div class="error">'.$langs->trans('ErrorOnlyInvoiceValidatedCanBeSentInMassAction', $objectobj->ref).'</div><br>';
@@ -344,7 +343,15 @@ if (!$error && $massaction == 'confirm_presend') {
 					// TODO Set subdir to be compatible with multi levels dir trees
 					// $subdir = get_exdir($objectobj->id, 2, 0, 0, $objectobj, $objectobj->element)
 					$filedir = $uploaddir.'/'.$subdir.dol_sanitizeFileName($objectobj->ref);
+
 					$filepath = $filedir.'/'.$filename;
+					// Added By MMI Mathieu Moulin iProspective
+					// Fix search by filename
+					if (!file_exists($filepath)) {
+						$files = glob($filedir.'/'.dol_sanitizeFileName($objectobj->ref).'*.pdf');
+						if (!empty($files))
+							$filepath = $files[0];
+					}
 
 					// For supplier invoices, we use the file provided by supplier, not the one we generate
 					if ($objectobj->element == 'invoice_supplier') {
@@ -407,7 +414,9 @@ if (!$error && $massaction == 'confirm_presend') {
 				$reg = array();
 				$fromtype = GETPOST('fromtype');
 				if ($fromtype === 'user') {
-					$from = dol_string_nospecial($user->getFullName($langs), ' ', array(",")).' <'.$user->email.'>';
+					// MMI Hack
+					$user_email_name = (!empty($user->array_options['options_email_sender_name'])) ?$user->array_options['options_email_sender_name'] :$user->getFullName($langs);
+					$from = dol_string_nospecial($user_email_name, ' ', array(",")).' <'.$user->email.'>';
 				} elseif ($fromtype === 'company') {
 					$from = getDolGlobalString('MAIN_INFO_SOCIETE_NOM') . ' <' . getDolGlobalString('MAIN_INFO_SOCIETE_MAIL').'>';
 				} elseif (preg_match('/user_aliases_(\d+)/', $fromtype, $reg)) {
@@ -570,6 +579,10 @@ if (!$error && $massaction == 'confirm_presend') {
 					// Send mail (substitutionarray must be done just before this)
 					require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 					$mailfile = new CMailFile($subjectreplaced, $sendto, $from, $messagereplaced, $filepath, $mimetype, $filename, $sendtocc, $sendtobcc, $deliveryreceipt, -1, '', '', $trackid, '', $sendcontext, '', $upload_dir_tmp);
+					// MMI : Specific options for hooks
+					if (isset($sendoptions) && is_array($sendoptions)) {
+						$mailfile->sendoptions = $sendoptions;
+					}
 					if ($mailfile->error) {
 						$resaction .= '<div class="error">'.$mailfile->error.'</div>';
 					} else {
