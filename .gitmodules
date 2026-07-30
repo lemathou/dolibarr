@@ -304,3 +304,7 @@
 	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-relatedproducts.git
 	branch = 19.0-mmi
 
+[submodule "htdocs/custom/ylvfournisseurpricepisceen"]
+	path = htdocs/custom/ylvfournisseurpricepisceen
+	url = gitlab@repos.iprospective.net:iprospective/dolibarr/dolibarr-module-ylvfournisseurpricepisceen.git
+	branch = 19.0-mmi
