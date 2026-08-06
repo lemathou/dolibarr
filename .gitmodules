@@ -86,7 +86,7 @@
 	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-supplierorderfromorder.git
 	url = gitlab:iprospective/dolibarr/dolibarr-module-supplierorderfromorder.git
 	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-supplierorderfromorder.git
-	branch = 20.0-mmi-fix-v20-schema
+	branch = 20.0-mmi
 [submodule "htdocs/custom/zenfusionmaps"]
 	path = htdocs/custom/zenfusionmaps
 	#url = https://github.com/GPCsolutions/zenfusionmaps.git
@@ -117,7 +117,7 @@
 	#url = https://gogs.iprospective.fr/iProspective/dolibarr-module-subtotal.git
 	url = gitlab:iprospective/dolibarr/dolibarr-module-subtotal.git
 	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-module-subtotal.git
-	branch = 20.0-mmi-fix-v20-schema
+	branch = 20.0-mmi
 [submodule "htdocs/custom/discountrules"]
 	path = htdocs/custom/discountrules
 	#url = https://github.com/ATM-Consulting/dolibarr_module_discountrules.git
