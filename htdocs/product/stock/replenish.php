@@ -853,6 +853,10 @@ print '</td>';
 print '</tr>';
 
 // Lines of title
+// MMI RM2869 : la ligne de titres est bufferisée pour COMPTER les colonnes réellement
+// émises — hooks compris. Le `colspan` de la ligne « aucun résultat » était une constante
+// (9) qui ignorait les colonnes ajoutées par les modules.
+ob_start();
 print '<tr class="liste_titre">';
 print_liste_field_titre('<input type="checkbox" onClick="toggle(this)" />', $_SERVER["PHP_SELF"], '');
 print_liste_field_titre('ProductRef', $_SERVER["PHP_SELF"], 'p.ref', $param, '', '', $sortfield, $sortorder);
@@ -883,6 +887,10 @@ $reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters); // No
 print $hookmanager->resPrint;
 
 print "</tr>\n";
+$titlerowhtml = ob_get_clean();							// MMI RM2869
+// `print_liste_field_titre` rend des <th>, les hooks des <td> : compter les deux.
+$nbcolumns = preg_match_all('/<t[dh][\s>]/', $titlerowhtml);	// MMI RM2869
+print $titlerowhtml;
 
 while ($i < ($limit ? min($num, $limit) : $num)) {
 	$objp = $db->fetch_object($resql);
@@ -1058,23 +1066,9 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 }
 
 if ($num == 0) {
-	$colspan = 9;
-	// MMI RM2865 : suivre les colonnes optionnelles, sinon la ligne « aucun » se décale
-	if ($showean) {
-		$colspan++;
-	}
-	if ($hidedesiredstock) {
-		$colspan--;
-	}
-	if ($hidestocklimit) {
-		$colspan--;
-	}
-	if (isModEnabled("service") && $type == 1) {
-		$colspan++;
-	}
-	if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) {
-		$colspan++;
-	}
+	// MMI RM2869 : compté sur la ligne de titres réellement émise (hooks compris),
+	// au lieu d'une constante que chaque colonne optionnelle ou de module périmait.
+	$colspan = ($nbcolumns > 0 ? $nbcolumns : 9);
 	print '<tr><td colspan="' . $colspan . '">';
 	print '<span class="opacitymedium">';
 	print $langs->trans("None");
