@@ -359,6 +359,18 @@ if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrep
 // vit dans la cellule de filtre de la colonne « Stock désiré » : quand cette colonne est
 // masquée, le filtre est relogé au-dessus de « Réf. produit » — le masquer avec sa
 // colonne ferait disparaître un filtre fonctionnel, pas seulement une colonne.
+// MMI RM2867 — expression du STOCK utilisée par la clause HAVING, rendue substituable.
+// « Utiliser DDM > 30j comme stock physique » veut dire SUBSTITUER cette expression, pas
+// ajouter un ` OR (…)` derrière le groupe de filtres : `A AND B OR C` vaut `(A AND B) OR C`
+// en SQL, donc le OR court-circuitait TOUS les autres filtres (mesuré : 555 -> 788 lignes,
+// dont 198 produits qui n'etaient pas en reapprovisionnement).
+$sqlstock = "SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")";
+$parameters = array('sqlstock' => $sqlstock);
+$reshook = $hookmanager->executeHooks('printFieldListStock', $parameters);
+if (!empty($hookmanager->resPrint)) {
+	$sqlstock = $hookmanager->resPrint;
+}
+
 $hidedesiredstock = getDolGlobalInt('MMIPRODUCT_REPLENISH_HIDE_DESIREDSTOCK');
 $hidestocklimit   = getDolGlobalInt('MMIPRODUCT_REPLENISH_HIDE_STOCKLIMIT');
 $showean          = getDolGlobalInt('MMIPRODUCT_REPLENISH_SHOW_EAN');
@@ -380,18 +392,25 @@ if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrep
 	$sql .= ", SUM(".$db->ifsql("s.reel IS NULL OR s.fk_entrepot <> ".((int) $fk_entrepot), "0", "s.reel").') as stock_real_warehouse';
 }
 
+// MMI RM2867 : les listes d'entrepôts sont calculées AVANT le hook SELECT et lui sont
+// passées. Un module qui ajoute une colonne de stock (ex. quantités par DDM) doit pouvoir
+// la borner au MÊME périmètre que `stock_physique` — sinon les deux colonnes affichées côte
+// à côte ne parlent pas du même stock dès qu'un entrepôt est sélectionné.
+$list_warehouse = (empty($listofqualifiedwarehousesid) ? '0' : $listofqualifiedwarehousesid);
+$list_warehouse_selected = ($fk_entrepot < 0 || empty($fk_entrepot)) ? $list_warehouse : $fk_entrepot;
+
 // Add fields from hooks
-$parameters = array();
+$parameters = array(
+	'list_warehouse' => $list_warehouse,
+	'list_warehouse_selected' => $list_warehouse_selected,
+);
 $reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
-
-$list_warehouse = (empty($listofqualifiedwarehousesid) ? '0' : $listofqualifiedwarehousesid);
 
 $sql .= ' FROM ' . MAIN_DB_PREFIX . 'product as p';
 $sql .= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'product_stock as s ON p.rowid = s.fk_product';
 $sql .= ' AND s.fk_entrepot  IN (' . $db->sanitize($list_warehouse) . ')';
 
-$list_warehouse_selected = ($fk_entrepot < 0 || empty($fk_entrepot)) ? $list_warehouse : $fk_entrepot;
 $sql .= ' AND s.fk_entrepot  IN (' . $db->sanitize($list_warehouse_selected) . ')';
 
 
@@ -516,13 +535,13 @@ if ($usevirtualstock) {
 	}
 
 	$sql .= ' HAVING (';
-	$sql .= " (" . $sqldesiredtock . " >= 0 AND (" . $sqldesiredtock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ')';
+	$sql .= " (" . $sqldesiredtock . " >= 0 AND (" . $sqldesiredtock . " > " . $sqlstock . '';
 	$sql .= " - (" . $sqlCommandesCli . " - " . $sqlExpeditionsCli . ") + (" . $sqlCommandesFourn . " - " . $sqlReceptionFourn . ") + (" . $sqlProductionToProduce . " - " . $sqlProductionToConsume . ")))";
 	$sql .= ' OR';
 	if ($includeproductswithoutdesiredqty == 'on') {
-		$sql .= " ((" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")";
+		$sql .= " ((" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > " . $sqlstock . "";
 	} else {
-		$sql .= " (" . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ')';
+		$sql .= " (" . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > " . $sqlstock . '';
 	}
 	$sql .= " - (" . $sqlCommandesCli . " - " . $sqlExpeditionsCli . ") + (" . $sqlCommandesFourn . " - " . $sqlReceptionFourn . ") + (" . $sqlProductionToProduce . " - " . $sqlProductionToConsume . ")))";
 	$sql .= ")";
@@ -534,9 +553,9 @@ if ($usevirtualstock) {
 	if ($salert == 'on') {    // Option to see when stock is lower than alert
 		$sql .= ' AND (';
 		if ($includeproductswithoutdesiredqty == 'on') {
-			$sql .= "(" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")";
+			$sql .= "(" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > " . $sqlstock . "";
 		} else {
-			$sql .= $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")";
+			$sql .= $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > " . $sqlstock . "";
 		}
 		$sql .= " - (" . $sqlCommandesCli . " - " . $sqlExpeditionsCli . ") + (" . $sqlCommandesFourn . " - " . $sqlReceptionFourn . ")  + (" . $sqlProductionToProduce . " - " . $sqlProductionToConsume . "))";
 		$sql .= ")";
@@ -544,12 +563,12 @@ if ($usevirtualstock) {
 	}
 } else {
 	$sql .= ' HAVING (';
-	$sql .= "(" . $sqldesiredtock . " >= 0 AND (" . $sqldesiredtock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")))";
+	$sql .= "(" . $sqldesiredtock . " >= 0 AND (" . $sqldesiredtock . " > " . $sqlstock . "))";
 	$sql .= ' OR';
 	if ($includeproductswithoutdesiredqty == 'on') {
-		$sql .= " ((" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ')))';
+		$sql .= " ((" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > " . $sqlstock . '))';
 	} else {
-		$sql .= " (" . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ')))';
+		$sql .= " (" . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > " . $sqlstock . '))';
 	}
 	$sql .= ')';
 	if (!empty($conf->global->STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE) && $fk_entrepot > 0) {
@@ -560,9 +579,9 @@ if ($usevirtualstock) {
 	if ($salert == 'on') {    // Option to see when stock is lower than alert
 		$sql .= " AND (";
 		if ($includeproductswithoutdesiredqty == 'on') {
-			$sql .= " (" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . "))";
+			$sql .= " (" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > " . $sqlstock . ")";
 		} else {
-			$sql .= " " . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . '))';
+			$sql .= " " . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > " . $sqlstock . ')';
 		}
 		$sql .= ')';
 		$alertchecked = 'checked';
@@ -571,8 +590,13 @@ if ($usevirtualstock) {
 
 // Added by MMI Mathieu Moulin iProspective
 // Add Having from hooks
+// ⚠ RM2867 — ce point d'injection est HORS des parenthèses du groupe de filtres : un ` OR (…)`
+// rendu ici s'évalue au niveau le plus haut (`AND` lie plus fort que `OR`) et annule donc tous
+// les autres filtres. Un module qui veut restreindre doit rendre un ` AND (…)` ; pour
+// SUBSTITUER l'expression de stock, utiliser le hook `printFieldListStock` (plus haut).
 $parameters = array(
 	'includeproductswithoutdesiredqty' => $includeproductswithoutdesiredqty,
+	'sqlstock' => $sqlstock,
 	//'sqlCommandesCli' => $sqlCommandesCli,
 	//'sqlExpeditionsCli' => $sqlExpeditionsCli,
 	//'sqlCommandesFourn' => $sqlCommandesFourn,
