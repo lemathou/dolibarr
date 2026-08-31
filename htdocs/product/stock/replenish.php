@@ -353,9 +353,34 @@ if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrep
 	$sqlalertstock = 'p.seuil_stock_alerte';
 }
 
+// Added by MMI Mathieu Moulin iProspective (RM2865)
+// Colonnes optionnelles. Les valeurs masquées restent CALCULÉES (elles alimentent
+// « à commander ») : seul l'affichage disparaît. La case « Inclure stock désiré vide »
+// vit dans la cellule de filtre de la colonne « Stock désiré » : quand cette colonne est
+// masquée, le filtre est relogé au-dessus de « Réf. produit » — le masquer avec sa
+// colonne ferait disparaître un filtre fonctionnel, pas seulement une colonne.
+// MMI RM2867 — expression du STOCK utilisée par la clause HAVING, rendue substituable.
+// « Utiliser DDM > 30j comme stock physique » veut dire SUBSTITUER cette expression, pas
+// ajouter un ` OR (…)` derrière le groupe de filtres : `A AND B OR C` vaut `(A AND B) OR C`
+// en SQL, donc le OR court-circuitait TOUS les autres filtres (mesuré : 555 -> 788 lignes,
+// dont 198 produits qui n'etaient pas en reapprovisionnement).
+$sqlstock = "SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")";
+$parameters = array('sqlstock' => $sqlstock);
+$reshook = $hookmanager->executeHooks('printFieldListStock', $parameters);
+if (!empty($hookmanager->resPrint)) {
+	$sqlstock = $hookmanager->resPrint;
+}
+
+$hidedesiredstock = getDolGlobalInt('MMIPRODUCT_REPLENISH_HIDE_DESIREDSTOCK');
+$hidestocklimit   = getDolGlobalInt('MMIPRODUCT_REPLENISH_HIDE_STOCKLIMIT');
+$showean          = getDolGlobalInt('MMIPRODUCT_REPLENISH_SHOW_EAN');
+
 $sql = 'SELECT p.rowid, p.ref, p.label, p.description, p.price,';
 $sql .= ' p.price_ttc, p.price_base_type, p.fk_product_type,';
 $sql .= ' p.tms as datem, p.duration, p.tobuy,';
+if ($showean) {
+	$sql .= ' p.barcode,';								// MMI RM2865
+}
 $sql .= ' p.desiredstock, p.seuil_stock_alerte,';
 if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) {
 	$sql .= ' pse.desiredstock as desiredstockpse, pse.seuil_stock_alerte as seuil_stock_alertepse,';
@@ -367,18 +392,25 @@ if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrep
 	$sql .= ", SUM(".$db->ifsql("s.reel IS NULL OR s.fk_entrepot <> ".((int) $fk_entrepot), "0", "s.reel").') as stock_real_warehouse';
 }
 
+// MMI RM2867 : les listes d'entrepôts sont calculées AVANT le hook SELECT et lui sont
+// passées. Un module qui ajoute une colonne de stock (ex. quantités par DDM) doit pouvoir
+// la borner au MÊME périmètre que `stock_physique` — sinon les deux colonnes affichées côte
+// à côte ne parlent pas du même stock dès qu'un entrepôt est sélectionné.
+$list_warehouse = (empty($listofqualifiedwarehousesid) ? '0' : $listofqualifiedwarehousesid);
+$list_warehouse_selected = ($fk_entrepot < 0 || empty($fk_entrepot)) ? $list_warehouse : $fk_entrepot;
+
 // Add fields from hooks
-$parameters = array();
+$parameters = array(
+	'list_warehouse' => $list_warehouse,
+	'list_warehouse_selected' => $list_warehouse_selected,
+);
 $reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters); // Note that $action and $object may have been modified by hook
 $sql .= $hookmanager->resPrint;
-
-$list_warehouse = (empty($listofqualifiedwarehousesid) ? '0' : $listofqualifiedwarehousesid);
 
 $sql .= ' FROM ' . MAIN_DB_PREFIX . 'product as p';
 $sql .= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'product_stock as s ON p.rowid = s.fk_product';
 $sql .= ' AND s.fk_entrepot  IN (' . $db->sanitize($list_warehouse) . ')';
 
-$list_warehouse_selected = ($fk_entrepot < 0 || empty($fk_entrepot)) ? $list_warehouse : $fk_entrepot;
 $sql .= ' AND s.fk_entrepot  IN (' . $db->sanitize($list_warehouse_selected) . ')';
 
 
@@ -424,6 +456,9 @@ $sql .= $hookmanager->resPrint;
 $sql .= ' GROUP BY p.rowid, p.ref, p.label, p.description, p.price';
 $sql .= ', p.price_ttc, p.price_base_type,p.fk_product_type, p.tms';
 $sql .= ', p.duration, p.tobuy';
+if ($showean) {
+	$sql .= ', p.barcode';								// MMI RM2865
+}
 $sql .= ', p.desiredstock';
 $sql .= ', p.seuil_stock_alerte';
 if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) {
@@ -500,13 +535,13 @@ if ($usevirtualstock) {
 	}
 
 	$sql .= ' HAVING (';
-	$sql .= " (" . $sqldesiredtock . " >= 0 AND (" . $sqldesiredtock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ')';
+	$sql .= " (" . $sqldesiredtock . " >= 0 AND (" . $sqldesiredtock . " > " . $sqlstock . '';
 	$sql .= " - (" . $sqlCommandesCli . " - " . $sqlExpeditionsCli . ") + (" . $sqlCommandesFourn . " - " . $sqlReceptionFourn . ") + (" . $sqlProductionToProduce . " - " . $sqlProductionToConsume . ")))";
 	$sql .= ' OR';
 	if ($includeproductswithoutdesiredqty == 'on') {
-		$sql .= " ((" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")";
+		$sql .= " ((" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > " . $sqlstock . "";
 	} else {
-		$sql .= " (" . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ')';
+		$sql .= " (" . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > " . $sqlstock . '';
 	}
 	$sql .= " - (" . $sqlCommandesCli . " - " . $sqlExpeditionsCli . ") + (" . $sqlCommandesFourn . " - " . $sqlReceptionFourn . ") + (" . $sqlProductionToProduce . " - " . $sqlProductionToConsume . ")))";
 	$sql .= ")";
@@ -518,9 +553,9 @@ if ($usevirtualstock) {
 	if ($salert == 'on') {    // Option to see when stock is lower than alert
 		$sql .= ' AND (';
 		if ($includeproductswithoutdesiredqty == 'on') {
-			$sql .= "(" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")";
+			$sql .= "(" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > " . $sqlstock . "";
 		} else {
-			$sql .= $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")";
+			$sql .= $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > " . $sqlstock . "";
 		}
 		$sql .= " - (" . $sqlCommandesCli . " - " . $sqlExpeditionsCli . ") + (" . $sqlCommandesFourn . " - " . $sqlReceptionFourn . ")  + (" . $sqlProductionToProduce . " - " . $sqlProductionToConsume . "))";
 		$sql .= ")";
@@ -528,12 +563,12 @@ if ($usevirtualstock) {
 	}
 } else {
 	$sql .= ' HAVING (';
-	$sql .= "(" . $sqldesiredtock . " >= 0 AND (" . $sqldesiredtock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ")))";
+	$sql .= "(" . $sqldesiredtock . " >= 0 AND (" . $sqldesiredtock . " > " . $sqlstock . "))";
 	$sql .= ' OR';
 	if ($includeproductswithoutdesiredqty == 'on') {
-		$sql .= " ((" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ')))';
+		$sql .= " ((" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > " . $sqlstock . '))';
 	} else {
-		$sql .= " (" . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . ')))';
+		$sql .= " (" . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > " . $sqlstock . '))';
 	}
 	$sql .= ')';
 	if (!empty($conf->global->STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE) && $fk_entrepot > 0) {
@@ -544,9 +579,9 @@ if ($usevirtualstock) {
 	if ($salert == 'on') {    // Option to see when stock is lower than alert
 		$sql .= " AND (";
 		if ($includeproductswithoutdesiredqty == 'on') {
-			$sql .= " (" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . "))";
+			$sql .= " (" . $sqlalertstock . " >= 0 OR " . $sqlalertstock . " IS NULL) AND (" . $db->ifsql($sqlalertstock . " IS NULL", "0", $sqlalertstock) . " > " . $sqlstock . ")";
 		} else {
-			$sql .= " " . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > SUM(" . $db->ifsql("s.reel IS NULL", "0", "s.reel") . '))';
+			$sql .= " " . $sqlalertstock . " >= 0 AND (" . $sqlalertstock . " > " . $sqlstock . ')';
 		}
 		$sql .= ')';
 		$alertchecked = 'checked';
@@ -555,8 +590,13 @@ if ($usevirtualstock) {
 
 // Added by MMI Mathieu Moulin iProspective
 // Add Having from hooks
+// ⚠ RM2867 — ce point d'injection est HORS des parenthèses du groupe de filtres : un ` OR (…)`
+// rendu ici s'évalue au niveau le plus haut (`AND` lie plus fort que `OR`) et annule donc tous
+// les autres filtres. Un module qui veut restreindre doit rendre un ` AND (…)` ; pour
+// SUBSTITUER l'expression de stock, utiliser le hook `printFieldListStock` (plus haut).
 $parameters = array(
 	'includeproductswithoutdesiredqty' => $includeproductswithoutdesiredqty,
+	'sqlstock' => $sqlstock,
 	//'sqlCommandesCli' => $sqlCommandesCli,
 	//'sqlExpeditionsCli' => $sqlExpeditionsCli,
 	//'sqlCommandesFourn' => $sqlCommandesFourn,
@@ -795,13 +835,26 @@ print '<table class="liste centpercent">';
 // Fields title search
 print '<tr class="liste_titre_filter">';
 print '<td class="liste_titre">&nbsp;</td>';
-print '<td class="liste_titre"><input class="flat" type="text" name="search_ref" size="8" value="' . dol_escape_htmltag($search_ref) . '"></td>';
+// MMI RM2865 : le filtre « Inclure stock désiré vide » remonte ici quand sa colonne est masquée
+$includeemptydesiredstockfilter = $form->textwithpicto($langs->trans('IncludeEmptyDesiredStock'), $langs->trans('IncludeProductWithUndefinedAlerts')) . '&nbsp;<input type="checkbox" id="includeproductswithoutdesiredqty" name="includeproductswithoutdesiredqty" ' . (!empty($includeproductswithoutdesiredqtychecked) ? $includeproductswithoutdesiredqtychecked : '') . '>';
+print '<td class="liste_titre"><input class="flat" type="text" name="search_ref" size="8" value="' . dol_escape_htmltag($search_ref) . '">';
+if ($hidedesiredstock) {
+	print '<br>' . $includeemptydesiredstockfilter;
+}
+print '</td>';
 print '<td class="liste_titre"><input class="flat" type="text" name="search_label" size="8" value="' . dol_escape_htmltag($search_label) . '"></td>';
+if ($showean) {
+	print '<td class="liste_titre">&nbsp;</td>';					// MMI RM2865
+}
 if (isModEnabled("service") && $type == 1) {
 	print '<td class="liste_titre">&nbsp;</td>';
 }
-print '<td class="liste_titre right">' . $form->textwithpicto($langs->trans('IncludeEmptyDesiredStock'), $langs->trans('IncludeProductWithUndefinedAlerts')) . '&nbsp;<input type="checkbox" id="includeproductswithoutdesiredqty" name="includeproductswithoutdesiredqty" ' . (!empty($includeproductswithoutdesiredqtychecked) ? $includeproductswithoutdesiredqtychecked : '') . '></td>';
-print '<td class="liste_titre right"></td>';
+if (!$hidedesiredstock) {
+	print '<td class="liste_titre right">' . $includeemptydesiredstockfilter . '</td>';
+}
+if (!$hidestocklimit) {
+	print '<td class="liste_titre right"></td>';
+}
 print '<td class="liste_titre right">'.$langs->trans('AlertOnly').'&nbsp;<input type="checkbox" id="salert" name="salert" '.(!empty($alertchecked) ? $alertchecked : '').'></td>';
 if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) {
 	print '<td class="liste_titre">&nbsp;</td>';
@@ -824,15 +877,26 @@ print '</td>';
 print '</tr>';
 
 // Lines of title
+// MMI RM2869 : la ligne de titres est bufferisée pour COMPTER les colonnes réellement
+// émises — hooks compris. Le `colspan` de la ligne « aucun résultat » était une constante
+// (9) qui ignorait les colonnes ajoutées par les modules.
+ob_start();
 print '<tr class="liste_titre">';
 print_liste_field_titre('<input type="checkbox" onClick="toggle(this)" />', $_SERVER["PHP_SELF"], '');
 print_liste_field_titre('ProductRef', $_SERVER["PHP_SELF"], 'p.ref', $param, '', '', $sortfield, $sortorder);
 print_liste_field_titre('Label', $_SERVER["PHP_SELF"], 'p.label', $param, '', '', $sortfield, $sortorder);
+if ($showean) {														// MMI RM2865
+	print_liste_field_titre('BarCode', $_SERVER["PHP_SELF"], 'p.barcode', $param, '', '', $sortfield, $sortorder);
+}
 if (isModEnabled("service") && $type == 1) {
 	print_liste_field_titre('Duration', $_SERVER["PHP_SELF"], 'p.duration', $param, '', '', $sortfield, $sortorder, 'center ');
 }
-print_liste_field_titre('DesiredStock', $_SERVER["PHP_SELF"], 'p.desiredstock', $param, '', '', $sortfield, $sortorder, 'right ');
-print_liste_field_titre('StockLimitShort', $_SERVER["PHP_SELF"], 'p.seuil_stock_alerte', $param, '', '', $sortfield, $sortorder, 'right ');
+if (!$hidedesiredstock) {
+	print_liste_field_titre('DesiredStock', $_SERVER["PHP_SELF"], 'p.desiredstock', $param, '', '', $sortfield, $sortorder, 'right ');
+}
+if (!$hidestocklimit) {
+	print_liste_field_titre('StockLimitShort', $_SERVER["PHP_SELF"], 'p.seuil_stock_alerte', $param, '', '', $sortfield, $sortorder, 'right ');
+}
 print_liste_field_titre($stocklabel, $_SERVER["PHP_SELF"], 'stock_physique', $param, '', '', $sortfield, $sortorder, 'right ', $stocktooltip);
 if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) {
 	print_liste_field_titre($stocklabelbis, $_SERVER["PHP_SELF"], 'stock_real_warehouse', $param, '', '', $sortfield, $sortorder, 'right ');
@@ -847,6 +911,10 @@ $reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters); // No
 print $hookmanager->resPrint;
 
 print "</tr>\n";
+$titlerowhtml = ob_get_clean();							// MMI RM2869
+// `print_liste_field_titre` rend des <th>, les hooks des <td> : compter les deux.
+$nbcolumns = preg_match_all('/<t[dh][\s>]/', $titlerowhtml);	// MMI RM2869
+print $titlerowhtml;
 
 while ($i < ($limit ? min($num, $limit) : $num)) {
 	$objp = $db->fetch_object($resql);
@@ -960,6 +1028,11 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 		print '<input type="hidden" name="desc' . $i . '" value="' . dol_escape_htmltag($objp->description) . '">'; // TODO Remove this and make a fetch to get description when creating order instead of a GETPOST
 		print '</td>';
 
+		// EAN / code-barres (MMI RM2865)
+		if ($showean) {
+			print '<td class="nowraponall">' . dol_escape_htmltag($objp->barcode) . '</td>';
+		}
+
 		if (isModEnabled("service") && $type == 1) {
 			$regs = array();
 			if (preg_match('/([0-9]+)y/i', $objp->duration, $regs)) {
@@ -975,10 +1048,14 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 		}
 
 		// Desired stock
-		print '<td class="right">'.((getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) > 0 ? $desiredstockwarehouse : $desiredstock).'</td>';
+		if (!$hidedesiredstock) {
+			print '<td class="right">'.((getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) > 0 ? $desiredstockwarehouse : $desiredstock).'</td>';
+		}
 
 		// Limit stock for alert
-		print '<td class="right">'.((getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) > 0 ? $alertstockwarehouse : $alertstock).'</td>';
+		if (!$hidestocklimit) {
+			print '<td class="right">'.((getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) > 0 ? $alertstockwarehouse : $alertstock).'</td>';
+		}
 
 		// Current stock (all warehouses)
 		print '<td class="right">' . $warning . $stock;
@@ -1013,13 +1090,9 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 }
 
 if ($num == 0) {
-	$colspan = 9;
-	if (isModEnabled("service") && $type == 1) {
-		$colspan++;
-	}
-	if (getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) {
-		$colspan++;
-	}
+	// MMI RM2869 : compté sur la ligne de titres réellement émise (hooks compris),
+	// au lieu d'une constante que chaque colonne optionnelle ou de module périmait.
+	$colspan = ($nbcolumns > 0 ? $nbcolumns : 9);
 	print '<tr><td colspan="' . $colspan . '">';
 	print '<span class="opacitymedium">';
 	print $langs->trans("None");
