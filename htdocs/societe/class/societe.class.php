@@ -5458,6 +5458,42 @@ class Societe extends CommonObject
 			$error++;
 		}
 
+		// MMI Hack (RM3234) : la fusion déplace les prix d'achat par un UPDATE SQL en bloc
+		// (ProductFournisseur::replaceThirdparty) — aucun trigger ne part, donc le fournisseur
+		// par défaut des produits (extrafield fk_soc_fournisseur) resterait sur le tiers
+		// supprimé et la synchro PrestaShop ne serait pas notifiée. Sous option, on relève ici
+		// les lignes à déplacer pour leur rejouer SUPPLIER_PRODUCT_BUYPRICE_MODIFY après coup.
+		// On contrôle AUSSI, avant toute écriture, les collisions sur la clé unique
+		// uk_product_fournisseur_price_ref (ref_fourn, fk_soc, quantity, entity) : sans ce
+		// garde-fou l'UPDATE échoue et annule toute la fusion sur une erreur SQL opaque.
+		$mmibuypricelines = array();
+		if (!$error && getDolGlobalInt('MMICORE_MERGE_THIRDPARTY_BUYPRICE_TRIGGERS')) {
+			$sql = "SELECT o.rowid, o.fk_product, o.ref_fourn, o.quantity,";
+			$sql .= " (SELECT COUNT(*) FROM ".$this->db->prefix()."product_fournisseur_price d";
+			$sql .= "  WHERE d.fk_soc = ".((int) $this->id)." AND d.ref_fourn = o.ref_fourn";
+			$sql .= "    AND d.quantity = o.quantity AND d.entity = o.entity) as dupe";
+			$sql .= " FROM ".$this->db->prefix()."product_fournisseur_price as o";
+			$sql .= " WHERE o.fk_soc = ".((int) $soc_origin_id);
+			$resql = $this->db->query($sql);
+			if (!$resql) {
+				$this->error = $this->db->lasterror();
+				$error++;
+			} else {
+				$dupes = array();
+				while ($obj = $this->db->fetch_object($resql)) {
+					if ($obj->dupe > 0) {
+						$dupes[] = $obj->ref_fourn;
+					} else {
+						$mmibuypricelines[] = array('rowid' => $obj->rowid, 'fk_product' => $obj->fk_product);
+					}
+				}
+				if (!empty($dupes)) {
+					$this->error = 'Fusion impossible : le tiers cible a déjà un prix d\'achat pour '.count($dupes).' référence(s) fournisseur de '.$soc_origin->name.' ('.implode(', ', array_slice($dupes, 0, 10)).(count($dupes) > 10 ? ', …' : '').'). Supprimez ou renommez ces lignes avant de fusionner.';
+					$error++;
+				}
+			}
+		}
+
 		if (!$error) {
 			$this->db->begin();
 
@@ -5501,6 +5537,10 @@ class Societe extends CommonObject
 			}
 
 			// Merge categories
+			// MMI Hack (RM3234) : mergeCompany() ne chargeait pas la classe — elle ne l'était que
+			// par la page appelante. Une fusion déclenchée hors interface (script, outil de
+			// bascule) tombait sur « Class 'Categorie' not found ».
+			require_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
 			$static_cat = new Categorie($this->db);
 
 			$custcats_ori = $static_cat->containing($soc_origin->id, 'customer', 'id');
@@ -5578,6 +5618,26 @@ class Societe extends CommonObject
 					if (!$error && !$object_name::replaceThirdparty($this->db, $soc_origin->id, $this->id)) {
 						$error++;
 						$this->error = $this->db->lasterror();
+						break;
+					}
+				}
+			}
+
+			// MMI Hack (RM3234) : les lignes de prix d'achat viennent d'être déplacées en SQL.
+			// On rejoue le trigger sur chacune pour que le module mmiproduct remette à jour le
+			// fournisseur par défaut du produit (RM3233) et que la synchro Presta soit notifiée.
+			if (!$error && !empty($mmibuypricelines)) {
+				require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
+				foreach ($mmibuypricelines as $mmiline) {
+					$mmiprodfourn = new ProductFournisseur($this->db);
+					$mmiprodfourn->id = $mmiline['fk_product'];
+					$mmiprodfourn->product_id = $mmiline['fk_product'];
+					$mmiprodfourn->product_fourn_price_id = $mmiline['rowid'];
+					$mmiprodfourn->fourn_id = $this->id;
+					if ($mmiprodfourn->call_trigger('SUPPLIER_PRODUCT_BUYPRICE_MODIFY', $user) < 0) {
+						$this->error = $mmiprodfourn->error;
+						$this->errors = $mmiprodfourn->errors;
+						$error++;
 						break;
 					}
 				}
