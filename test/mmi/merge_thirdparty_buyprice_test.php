@@ -111,8 +111,23 @@ function line_supplier($pfp_id)
 
 $db->begin();
 
+// La file de synchro Presta (_sync) est écrite par mmiprestasync sur une AUTRE connexion :
+// elle échappe à notre transaction (et à son instantané de lecture). On l'interroge donc
+// avec une connexion dédiée, et on nettoie nos propres lignes à la fin.
+$sync_db = new mysqli($GLOBALS['dolibarr_main_db_host'], $GLOBALS['dolibarr_main_db_user'], $GLOBALS['dolibarr_main_db_pass'], $GLOBALS['dolibarr_main_db_name']);
+function sync_count($sql)
+{
+	global $sync_db;
+	$r = $sync_db->query($sql);
+	$row = $r ? $r->fetch_row() : null;
+	return $row ? (int) $row[0] : 0;
+}
+$sync_max_id = sync_count('SELECT IFNULL(MAX(id),0) FROM `_sync`');
+
 // --- 1. Option ACTIVE : la fusion doit déplacer les prix ET mettre à jour le fournisseur par défaut
 $conf->global->MMICORE_MERGE_THIRDPARTY_BUYPRICE_TRIGGERS = 1;
+// Pour ce cas, on veut vérifier que la synchro Presta est bien notifiée
+$conf->global->MMIPRESTASYNC_SYNC = 1;
 
 $origin = mk_supplier('ORIG');
 $dest = mk_supplier('DEST');
@@ -129,6 +144,11 @@ $state = default_supplier_of($product->id);
 check('fournisseur par défaut suit la cible', $state['fk_soc'] === (int) $dest->id, json_encode($state));
 check('réf du produit conservée', $state['ref'] === 'REF-A', json_encode($state));
 check('tiers d\'origine supprimé', (int) $db->fetch_object($db->query('SELECT COUNT(*) as nb FROM '.MAIN_DB_PREFIX.'societe WHERE rowid='.((int) $origin->id)))->nb === 0);
+
+// La mise à jour du produit doit avoir déposé une notification de synchro Presta
+$nbnotif = sync_count('SELECT COUNT(*) FROM `_sync` WHERE id>'.$sync_max_id.' AND type="product" AND t_oid='.((int) $product->id));
+check('synchro Presta notifiée pour le produit', $nbnotif > 0, "notifications=$nbnotif");
+$conf->global->MMIPRESTASYNC_SYNC = 0;
 
 // --- 2. Collision de réf fournisseur : la fusion est refusée AVANT toute écriture
 $origin2 = mk_supplier('ORIG2');
@@ -154,6 +174,11 @@ check('option off : prix déplacé (comportement natif)', line_supplier($pfp3)['
 check('option off : fournisseur par défaut NON mis à jour', default_supplier_of($product3->id)['fk_soc'] === (int) $origin3->id);
 
 $db->rollback();
+
+// Nettoyage de la file de synchro (hors transaction) : nos notifications visent des objets
+// qui viennent d'être annulés.
+$sync_db->query('DELETE FROM `_sync` WHERE id>'.$sync_max_id);
+check('file de synchro nettoyée', sync_count('SELECT COUNT(*) FROM `_sync` WHERE id>'.$sync_max_id) === 0);
 
 $nb = (int) $db->fetch_object($db->query('SELECT COUNT(*) as nb FROM '.MAIN_DB_PREFIX.'societe WHERE nom LIKE "TEST-RM3234-%"'))->nb;
 $nb += (int) $db->fetch_object($db->query('SELECT COUNT(*) as nb FROM '.MAIN_DB_PREFIX.'product WHERE ref LIKE "TEST-RM3234-%"'))->nb;
