@@ -229,7 +229,15 @@ if ($disablenofollow) {
 <?php
 if (!empty($captcha)) {
 		// Add a variable param to force not using cache (jmobile)
-	$php_self = preg_replace('/[&\?]time=(\d+)/', '', $php_self); // Remove param time
+	// Remove ALL previous 'time' params. Note that $php_self was built with
+	// dol_escape_htmltag() above, so its separators are '&amp;' and not '&' —
+	// the pattern must accept the three forms, like the other cleanups do.
+	// Without this, one 'time' param is appended on every page load and none is
+	// ever removed: the URL grows without bound and becomes a crawler trap.
+	$php_self = preg_replace('/(\?|&amp;|&)time=\d+/', '$1', $php_self);
+	$php_self = preg_replace('/(&amp;|&)+/', '&amp;', $php_self);
+	$php_self = preg_replace('/(\?|&amp;|&)+$/', '', $php_self);
+	$php_self = preg_replace('/\?(&amp;|&)/', '?', $php_self);
 	if (preg_match('/\?/', $php_self)) {
 		$php_self .= '&time='.dol_print_date(dol_now(), 'dayhourlog');
 	} else {
