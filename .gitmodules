@@ -9,6 +9,12 @@
 	url = gitlab:dolibarr/dolibarr-modules-dolicloud.git
 	#url = https://gitlab.iprospective.fr/iprospective/dolibarr/dolibarr-modules-dolicloud.git
 	branch = 19.0-mmi
+[submodule "htdocs/custom_community"]
+	path = htdocs/custom_community
+	#url = https://github.com/Dolibarr/dolibarr-community-modules.git
+	url = gitlab:dolibarr/dolibarr-community-modules.git
+	#url = https://gitlab.iprospective.fr/dolibarr/dolibarr-community-modules.git
+	branch = 19.0-mmi
 [submodule "htdocs/custom/abricot"]
 	path = htdocs/custom/abricot
 	#url = https://github.com/ATM-Consulting/dolibarr_module_abricot.git
