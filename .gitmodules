@@ -314,3 +314,7 @@
 	path = htdocs/custom/ylvfournisseurpricepisceen
 	url = gitlab:dolibarr/dolibarr-module-ylvfournisseurpricepisceen.git
 	branch = 19.0-mmi
+[submodule "htdocs/custom/mmimail"]
+	path = htdocs/custom/mmimail
+	url = gitlab:dolibarr/dolibarr-module-mmimail.git
+	branch = 19.0
