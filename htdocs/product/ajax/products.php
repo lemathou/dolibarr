@@ -158,50 +158,31 @@ if ($action == 'fetch' && !empty($id)) {
 			}
 		}
 
-		// MMI
-		// Price by DDM
-		if (!empty($conf->global->MMIPRODUCTDLUO_ORDER_PROMOPRICE_ENABLE)) { // If we need a particular price related to qty
-			$sql = "SELECT l.rowid, l.fk_product, l.sellby, sl.qty stock";
-			$sql .= " FROM ".MAIN_DB_PREFIX."product_lot l";
-			$sql .= " INNER JOIN ".MAIN_DB_PREFIX."product_stock s ON s.fk_product=l.fk_product";
-			$sql .= " INNER JOIN ".MAIN_DB_PREFIX."product_batch sl ON sl.fk_product_stock=s.rowid AND sl.batch=l.batch";
-			$sql .= " WHERE l.fk_product = ".((int) $id);
-			$sql .= " AND sl.qty >0";
-			$sql .= " ORDER BY l.sellby";
-			$sql .= " LIMIT 1";
-			// @todo considérer le stock réservé ET ce qui est déjà mis dans le même document !
-			// cela permettra d'ajouter le même produit plusieurs fois,
-			// et au fur et à mesure les lots les plus vieux disparaissent et les prix sont bons
-			//echo $sql; die();
-
-			$result = $db->query($sql);
-			if ($result) {
-				$time = time();
-				$date_promo = date('Y-m-d', $time+86400*$conf->global->MMIPRODUCTDLUO_PROMO);
-				$date_antigaspi = date('Y-m-d', $time+86400*$conf->global->MMIPRODUCTDLUO_ANTIGASPI);
-				$objp = $db->fetch_object($result);
-				$sellby = $objp->sellby;
-				$lot_qty = $objp->stock;
-				if ($objp) {
-					//var_dump($objp); die();
-					if ($objp->sellby < $date_antigaspi) {
-						$outdiscount = $conf->global->MMIPRODUCTDLUO_ORDER_PROMOPRICE_ANTIGASPI;
-						$upd = true;
-					}
-					elseif ($objp->sellby < $date_promo) {
-						$outdiscount = $conf->global->MMIPRODUCTDLUO_ORDER_PROMOPRICE_PROMO;
-						$upd = true;
-					}
-				}
-				if (!empty($upd)) {
-					$found = true;
-					$outprice_ht = price($object->price);
-					$outprice_ttc = price($object->price_ttc);
-					$outqty = $objp->stock;
-					$outpricebasetype = $object->price_base_type;
-					$outtva_tx = $object->tva_tx;
-					$outdefault_vat_code = $object->default_vat_code;
-				}
+		// MMI — prix selon la DDM des lots du produit.
+		//
+		// Ce bloc portait la règle EN DUR : deux bandes (date courte, antigaspi) et leurs
+		// remises, lues dans des constantes nommées. Il ignorait la bande « dernière minute »,
+		// si bien qu'un lot dépassé de 71 jours repartait à −25 % au lieu de −70 %. Une règle
+		// métier dans le cœur ne suit pas celle du module : elle en diverge en silence.
+		//
+		// Il ne reste ici qu'un point d'extension, volontairement générique — aucun nom de
+		// module, aucune constante métier. Le module qui répond fournit prix, remise et
+		// quantité ; ce fichier ne fait que les appliquer. Patch à reporter aux montées de
+		// version de Dolibarr (cf. knowledge/dolibarr/mep.md).
+		if (is_object($hookmanager)) {
+			$hookmanager->initHooks(array('productajax'));
+			$parameters = array('id' => $id, 'object' => $object, 'price_level' => isset($price_level) ? $price_level : 0);
+			$reshook = $hookmanager->executeHooks('productAjaxPrice', $parameters, $object, $action);
+			if ($reshook > 0 && !empty($hookmanager->resArray) && is_array($hookmanager->resArray)) {
+				$r = $hookmanager->resArray;
+				$found = true;
+				if (isset($r['price_ht'])) { $outprice_ht = $r['price_ht']; }
+				if (isset($r['price_ttc'])) { $outprice_ttc = $r['price_ttc']; }
+				if (isset($r['discount'])) { $outdiscount = $r['discount']; }
+				if (isset($r['qty'])) { $outqty = $r['qty']; }
+				if (isset($r['price_base_type'])) { $outpricebasetype = $r['price_base_type']; }
+				if (isset($r['tva_tx'])) { $outtva_tx = $r['tva_tx']; }
+				if (isset($r['default_vat_code'])) { $outdefault_vat_code = $r['default_vat_code']; }
 			}
 		}
 
