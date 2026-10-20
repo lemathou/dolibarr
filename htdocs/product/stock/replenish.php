@@ -1072,6 +1072,12 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 
 		// To order
 		$tobuy = ((getDolGlobalString('STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE') && $fk_entrepot > 0) > 0 ? $stocktobuywarehouse : $stocktobuy);
+		// MMI RM3491 : arrondi au conditionnement fournisseur quand il est connu (colonne `packaging`
+		// ajoutée par le hook mmiproduct printFieldListSelect lorsqu'un fournisseur est filtré).
+		// 7 proposés pour un carton de 12 n'est pas une quantité commandable.
+		if ($tobuy > 0 && !empty($objp->packaging) && $objp->packaging > 1) {
+			$tobuy = ceil($tobuy / $objp->packaging) * $objp->packaging;
+		}
 		print '<td class="right"><input type="text" size="4" name="tobuy'.$i.'" value="'.$tobuy.'"></td>';
 
 		// Supplier
