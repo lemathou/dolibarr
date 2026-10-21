@@ -181,7 +181,17 @@ if ($action == 'fetch' && !empty($id)) {
 				if (isset($r['discount'])) { $outdiscount = $r['discount']; }
 				if (isset($r['qty'])) { $outqty = $r['qty']; }
 				if (isset($r['price_base_type'])) { $outpricebasetype = $r['price_base_type']; }
-				if (isset($r['tva_tx'])) { $outtva_tx = $r['tva_tx']; }
+				// La TVA se NORMALISE, comme partout ailleurs dans ce fichier : le champ du
+				// formulaire est un <select> dont les options valent « 5.5 », pas « 5.500 ».
+				// Une valeur brute n'y correspond à aucune option, `val()` ne change alors rien
+				// et la ligne part au taux par défaut — 20 % au lieu de 5,5 %, constaté en
+				// production le 2026-10-21 (commande CO2610-018743). Il faut les DEUX formes :
+				// `tva_tx` pour la sélection, `tva_tx_formated` pour l'affichage, sans quoi
+				// cette dernière reste à 0.
+				if (isset($r['tva_tx'])) {
+					$outtva_tx = price2num($r['tva_tx']);
+					$outtva_tx_formated = price($r['tva_tx']);
+				}
 				if (isset($r['default_vat_code'])) { $outdefault_vat_code = $r['default_vat_code']; }
 			}
 		}
