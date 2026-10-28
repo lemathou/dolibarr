@@ -187,12 +187,6 @@ class pdf_rouget extends ModelePdfExpedition
 			$outputlangsbis->loadLangs(array("main", "bills", "orders", "products", "dict", "companies", "propal", "deliveries", "sendings", "productbatch"));
 		}
 
-		// Added by MMI Mathieu Moulin iProspective
-		// Sort by Product Ref
-		if (!empty($conf->global->MMI_EXPE_ORDER_LINES_BY_REF))
-			usort($object->lines, function($i, $j){
-				return ($i->ref > $j->ref) ?1 :(($i->ref < $j->ref) ?-1 :0);
-			});
 		$nblines = is_array($object->lines) ? count($object->lines) : 0;
 
 		// Loop on each lines to detect if there is at least one image to show
