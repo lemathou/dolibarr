@@ -164,7 +164,11 @@ if ($showlinktoai) {
 		$formai->setSubstitFromObject($object, $langs);
 		$aiprompt = make_substitutions($aiprompt, $formai->substit);
 	}
-	$out .= $formai->getSectionForAIEnhancement($showlinktoai, $formmail->withaiprompt, $htmlname, $onlyenhancements, $aiprompt);
+	$format = '';
+	if (!empty($formmail) && is_object($formmail) && !empty($formmail->withaiprompt)) {
+		$format = $formmail->withaiprompt;
+	}
+	$out .= $formai->getSectionForAIEnhancement($showlinktoai, $format, $htmlname, $onlyenhancements, $aiprompt);
 } else {
 	$out .= '<!-- No link to the AI feature, $formmail->withaiprompt must be set to the ai feature and module ai must be enabled -->';
 }
