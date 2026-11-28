@@ -164,6 +164,7 @@ if ($object->id > 0) {
 	*/
 	// Project
 	if (isModEnabled('project')) {
+		require_once DOL_DOCUMENT_ROOT."/core/class/html.formprojet.class.php";
 		$formproject = new FormProjets($db);
 		$langs->load("projects");
 		$morehtmlref .= $langs->trans('Project').' ';
