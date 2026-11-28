@@ -1166,6 +1166,12 @@ class Partnership extends CommonObject
 	public function LibStatut($status, $mode = 0)
 	{
 		// phpcs:enable
+
+		// if $status is null or undefined, return empty string
+		if (is_null($status)) {
+			return '';
+		}
+
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("partnership");

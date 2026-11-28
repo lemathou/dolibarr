@@ -277,6 +277,7 @@ class mailing_partnership extends MailingTargets
 		// filter_status_thirdparties
 		include_once DOL_DOCUMENT_ROOT.'/partnership/class/partnership.class.php';
 		$tmppartnership = new Partnership($this->db);
+		$tmppartnership->status = 0;
 		$dummy = $tmppartnership->getLibStatut(0);	// We call this only to have $tmppartnership->labelStatus loaded
 
 		$s .= $form->selectarray('filter_status_partnership', $tmppartnership->labelStatus, GETPOST('filter_status_partnership'), $langs->trans("Status"));
